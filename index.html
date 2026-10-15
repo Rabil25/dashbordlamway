@@ -1778,6 +1778,10 @@ function filteredOrders() {
 }
 
 function renderPeta() {
+  if (S.orders === null) {
+    loadOrders().then(renderPeta);
+    return;
+  }
   const orders = filteredOrders();
   const withCoords = orders.filter(o => o.lat && o.lng);
 
