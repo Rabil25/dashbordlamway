@@ -293,7 +293,9 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     io:        findCol(['Validasi IO']),
     tanggalIO: findCol(['Tanggal IO']),
     re:        findCol(['Validasi RE']),
+    tanggalRE: findCol(['Tanggal RE']),
     ps:        findCol(['Validasi PS']),
+    tanggalPS: findCol(['Tanggal PS']),
     codeSF:    findCol(['CODE SF', 'Validasi SF']),
     kendala:   findCol(['Kategori Kendala']),
     produk:    findCol(['Validasi Produk']),
@@ -317,12 +319,6 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     const r = rows[i];
     if (!r[C.status]) continue;
 
-    // Filter rentang tanggal berdasarkan Tanggal IO (format YYYYMMDD)
-    if (startStr && C.tanggalIO !== -1) {
-      const tgl = r[C.tanggalIO] ? r[C.tanggalIO].toString().replace(/-/g, '').substring(0, 8) : '';
-      if (!tgl || tgl < startStr || tgl > endStr) continue;
-    }
-
     const ch       = (C.channel2 !== -1 ? r[C.channel2] : '').toString().trim().toLowerCase();
     const isAgency = ch === 'agency';
 
@@ -335,24 +331,40 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
       const rowProduk = (C.produk !== -1 ? r[C.produk] : '').toString().trim().toLowerCase();
       if (!rowProduk.includes(produkFilter)) continue;
     }
-    const kabRaw   = C.kab !== -1 && r[C.kab] ? r[C.kab].toString().trim().toUpperCase() : '';
+
+    // Tanggal masing-masing metric (format YYYYMMDD)
+    const getTgl = (col) => col !== -1 && r[col] ? r[col].toString().replace(/-/g, '').substring(0, 8) : '';
+    const tglIO = getTgl(C.tanggalIO);
+    const tglRE = getTgl(C.tanggalRE);
+    const tglPS = getTgl(C.tanggalPS);
+
+    // Tiap metric dihitung hanya kalau tanggalnya masuk range filter
+    const inRange = (tgl) => !startStr || (tgl && tgl >= startStr && tgl <= endStr);
+    const countIO = inRange(tglIO);
+    const countRE = inRange(tglRE);
+    const countPS = inRange(tglPS);
+
+    // Skip baris kalau tidak ada metric yang masuk range sama sekali
+    if (!countIO && !countRE && !countPS) continue;
+
+    const kabRaw = C.kab !== -1 && r[C.kab] ? r[C.kab].toString().trim().toUpperCase() : '';
 
     const valIO = (C.io !== -1 ? r[C.io] : '').toString().toLowerCase();
     const valRE = (C.re !== -1 ? r[C.re] : '').toString().toLowerCase();
     const valPS = (C.ps !== -1 ? r[C.ps] : '').toString().toLowerCase();
 
     // ── Total semua channel ──
-    if (valIO.includes('valid io')) {
+    if (countIO && valIO.includes('valid io')) {
       total.io++;
       addKab(total, kabRaw, 'io');
       if (!isAgency) digital.io++;
     }
-    if (valRE.includes('valid re')) {
+    if (countRE && valRE.includes('valid re')) {
       total.re++;
       addKab(total, kabRaw, 're');
       if (!isAgency) digital.re++;
     }
-    if (valPS.includes('put in service')) {
+    if (countPS && valPS.includes('put in service')) {
       total.ps++;
       addKab(total, kabRaw, 'ps');
       if (!isAgency) digital.ps++;
@@ -360,9 +372,9 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
 
     // ── Agency only ──
     if (isAgency) {
-      if (valIO.includes('valid io')) { agency.io++; addKab(agency, kabRaw, 'io'); }
-      if (valRE.includes('valid re')) { agency.re++; addKab(agency, kabRaw, 're'); }
-      if (valPS.includes('put in service')) { agency.ps++; addKab(agency, kabRaw, 'ps'); }
+      if (countIO && valIO.includes('valid io')) { agency.io++; addKab(agency, kabRaw, 'io'); }
+      if (countRE && valRE.includes('valid re')) { agency.re++; addKab(agency, kabRaw, 're'); }
+      if (countPS && valPS.includes('put in service')) { agency.ps++; addKab(agency, kabRaw, 'ps'); }
     }
 
     // ── Per-SF (agency only) ──
@@ -373,9 +385,9 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
 
     if (!bySF[kode]) bySF[kode] = { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {} };
 
-    if (valIO.includes('valid io')) bySF[kode].io++;
-    if (valRE.includes('valid re')) bySF[kode].re++;
-    if (valPS.includes('put in service')) {
+    if (countIO && valIO.includes('valid io')) bySF[kode].io++;
+    if (countRE && valRE.includes('valid re')) bySF[kode].re++;
+    if (countPS && valPS.includes('put in service')) {
       bySF[kode].ps++;
       if (kabRaw) bySF[kode].kab[kabRaw] = (bySF[kode].kab[kabRaw] || 0) + 1;
     }
