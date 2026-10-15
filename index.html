@@ -2761,8 +2761,8 @@ function init() {
   if (token) document.getElementById('cfgToken').value = token;
   loadTargetInputs();
   // Simpan default ke LS kalau belum ada
-  if (!LS.get('apiUrl'))   LS.set('apiUrl', DEFAULT_API_URL);
-  if (!LS.get('apiToken')) LS.set('apiToken', DEFAULT_API_TOKEN);
+  LS.set('apiUrl', DEFAULT_API_URL);
+  LS.set('apiToken', DEFAULT_API_TOKEN);
   // Cek session login
   const sess = getSession();
   if (!sess) { showLoginModal(); return; }
