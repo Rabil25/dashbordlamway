@@ -156,6 +156,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);font-size:13px
 .filter-bar{
   display:flex;gap:8px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px 20px;
   background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;
+  position:sticky;top:52px;z-index:99;
 }
 .filter-label{font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;}
 .filter-select{
@@ -1803,10 +1804,16 @@ function renderPeta() {
   if (_mapInstance) { _mapInstance.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.LayerGroup) _mapInstance.removeLayer(l); }); }
   else {
     _mapInstance = L.map('map-container').setView([-4.85, 104.5], 9);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 18,
-    }).addTo(_mapInstance);
+      maxZoom: 19,
+    });
+    const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles © Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP',
+      maxZoom: 19,
+    });
+    satLayer.addTo(_mapInstance);
+    L.control.layers({'🗺 Peta': osmLayer, '🛰 Satelit': satLayer}, {}, {position:'topright', collapsed:false}).addTo(_mapInstance);
   }
 
   function pinColor(o) {
