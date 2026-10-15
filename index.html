@@ -582,25 +582,25 @@ tr:hover td{background:var(--surface2);}
     <select class="filter-select" id="fSTO" onchange="applyFilter()">
       <option value="">Semua STO</option>
     </select>
-    <select class="filter-select" id="fKendalaJenis" onchange="applyFilter()" style="display:none">
-      <option value="">Semua Jenis</option>
+    <select class="filter-select" id="fKendalaJenis" onchange="applyFilter()">
+      <option value="">Semua Jenis Kendala</option>
     </select>
-    <!-- Date range (orders/peta pages) -->
-    <div class="filter-group" id="fDateGroup" style="display:none">
+    <!-- Date range -->
+    <div class="filter-group" id="fDateGroup">
       <span class="filter-group-label">Tgl IO</span>
       <input class="filter-date" type="date" id="fDateStart" onchange="applyFilter()">
       <span class="filter-date-sep">–</span>
       <input class="filter-date" type="date" id="fDateEnd" onchange="applyFilter()">
     </div>
     <!-- Produk filter -->
-    <select class="filter-select" id="fProduk" onchange="applyFilter()" style="display:none">
+    <select class="filter-select" id="fProduk" onchange="applyFilter()">
       <option value="">Semua Produk</option>
       <option value="Tsel One">Tsel One</option>
       <option value="Indihome Reguler">Indihome Reguler</option>
       <option value="Eznet">Eznet</option>
     </select>
     <!-- Channel filter -->
-    <select class="filter-select" id="fChannel" onchange="applyFilter()" style="display:none">
+    <select class="filter-select" id="fChannel" onchange="applyFilter()">
       <option value="">Semua Channel</option>
       <option value="agency">Agency</option>
       <option value="digital">Digital</option>
@@ -1055,10 +1055,10 @@ function navigate(pageId) {
 
   // show/hide contextual filters
   const isOrderPage = pageId === 'peta' || pageId === 'orders';
-  document.getElementById('fKendalaJenis').style.display = pageId === 'kendala' ? '' : 'none';
-  document.getElementById('fDateGroup').style.display    = isOrderPage ? '' : 'none';
-  document.getElementById('fProduk').style.display       = isOrderPage ? '' : 'none';
-  document.getElementById('fChannel').style.display      = isOrderPage ? '' : 'none';
+  document.getElementById('fKendalaJenis').style.display = '';
+  document.getElementById('fDateGroup').style.display    = '';
+  document.getElementById('fProduk').style.display       = '';
+  document.getElementById('fChannel').style.display      = '';
 
   closeSidebar();
   renderPage(pageId);
