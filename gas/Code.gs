@@ -197,10 +197,14 @@ function getPerformance(params) {
   const produkFilter  = (params.produk  || '').toString().trim().toLowerCase();
   const channelFilter = (params.channel || '').toString().trim().toLowerCase();
 
-  const stoFilter = (params.sto || '').toString().trim().toUpperCase();
+  const stoFilter     = (params.sto     || '').toString().trim().toUpperCase();
+  const clusterFilter = (params.cluster || '').toString().trim();
+  const kabFilter     = (clusterFilter && WILAYAH[clusterFilter])
+                          ? WILAYAH[clusterFilter].kabupaten
+                          : [];
 
-  const ini  = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter, stoFilter);
-  const lalu = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter);
+  const ini  = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter, stoFilter, kabFilter);
+  const lalu = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter, kabFilter);
 
   const hariKerja = calcHariKerja(now);
   const wsa       = calcWSATSA(sfMap);
@@ -264,24 +268,16 @@ function getPerformance(params) {
     wilayah:    WILAYAH,
     kendalaList: ini.kendalaList || [],
     updatedAt:  new Date().toISOString(),
-    _debugProduk: {
-      filter:        produkFilter || '(none)',
-      iniTotal:      ini.total,
-      laluTotal:     lalu.total,
-      iniProdukSample:  ini._produkSample,
-      laluProdukSample: lalu._produkSample,
-      iniColProduk:     ini._colProduk,
-      laluColProduk:    lalu._colProduk,
-    },
   };
 }
 
 // ── Parse Sheet dengan filter rentang tanggal (YYYYMMDD) ─────
 // startStr & endStr: "YYYYMMDD" – apple-to-apple MoM comparison
-function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFilter, stoFilter) {
+function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFilter, stoFilter, kabFilter) {
   produkFilter  = (produkFilter  || '').toLowerCase().trim();
   channelFilter = (channelFilter || '').toLowerCase().trim();
   stoFilter     = (stoFilter     || '').toUpperCase().trim();
+  kabFilter     = Array.isArray(kabFilter) ? kabFilter.map(k => k.toUpperCase().trim()) : [];
   const ws = ss().getSheetByName(sheetName);
   if (!ws) return {
     bySF:    {},
@@ -381,6 +377,9 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
 
     const kabRaw = C.kab !== -1 && r[C.kab] ? r[C.kab].toString().trim().toUpperCase() : '';
 
+    // Filter Cluster (berdasarkan kabupaten order, bukan STO SF)
+    if (kabFilter.length && !kabFilter.includes(kabRaw)) continue;
+
     const valIO = (C.io !== -1 ? r[C.io] : '').toString().toLowerCase();
     const valRE = (C.re !== -1 ? r[C.re] : '').toString().toLowerCase();
     const valPS = (C.ps !== -1 ? r[C.ps] : '').toString().toLowerCase();
@@ -444,16 +443,7 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     }
   }
 
-  // Sample nilai produk untuk debug (ambil 5 unique pertama)
-  const produkSample = new Set();
-  if (C.produk !== -1) {
-    for (let i = 1; i < rows.length && produkSample.size < 5; i++) {
-      const v = rows[i][C.produk];
-      if (v) produkSample.add(v.toString().trim());
-    }
-  }
-
-  return { bySF, total, agency, digital, kendalaList: [...kendalaSet].sort(), _produkSample: [...produkSample], _colProduk: C.produk };
+  return { bySF, total, agency, digital, kendalaList: [...kendalaSet].sort() };
 }
 
 // ── Rekap per Kabupaten (Full: all + agency, ini + lalu) ─────

@@ -1135,10 +1135,10 @@ async function loadPerformance() {
       end:     S.filter.dateEnd,
       produk:  S.filter.produk,
       channel: S.filter.channel,
-      sto:     S.filter.sto || '',
+      sto:     S.filter.sto     || '',
+      cluster: S.filter.cluster || '',
     });
     S.loaded = true;
-    S.perf._debugProduk && console.log('[DEBUG PRODUK]', JSON.stringify(S.perf._debugProduk, null, 2));
     document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     // Populate kendala dropdown dari data dinamis
     populateKendalaDropdown(S.perf.kendalaList || []);
@@ -1226,10 +1226,10 @@ function applyFilter() {
   });
   if (sto && allowed && !allowed.includes(sto)) stoSel.value = '';
 
-  // Reload data if date/produk/channel/STO changed (semua ini mempengaruhi data GAS)
-  const dateChanged = ds !== S.filter.dateStart || de !== S.filter.dateEnd
-                   || ch !== S.filter.channel   || pr !== S.filter.produk
-                   || sto !== S.filter.sto;
+  // Reload data if date/produk/channel/STO/cluster changed (semua ini mempengaruhi data GAS)
+  const dateChanged = ds  !== S.filter.dateStart || de !== S.filter.dateEnd
+                   || ch  !== S.filter.channel   || pr !== S.filter.produk
+                   || sto !== S.filter.sto        || cl !== S.filter.cluster;
   S.filter.cluster = cl; S.filter.sto = sto; S.filter.kendalaJenis = kj;
   S.filter.dateStart = ds; S.filter.dateEnd = de;
   S.filter.produk = pr; S.filter.channel = ch;
