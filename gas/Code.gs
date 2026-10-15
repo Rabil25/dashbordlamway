@@ -670,7 +670,6 @@ function getOrders(params) {
 
     const stoRaw = C.sto !== -1 && r[C.sto]
       ? r[C.sto].toString().trim().toUpperCase() : '';
-    const clusterBySTO = STO_TO_CLUSTER[stoRaw] || cluster;
 
     // Parse koordinat "lat,lng"
     let lat = null, lng = null;
@@ -688,7 +687,7 @@ function getOrders(params) {
       status:    (r[C.status]   || '').toString().trim(),
       wok:       (C.wok   !== -1 ? r[C.wok]   : '').toString().trim(),
       sto:       stoRaw,
-      cluster:   clusterBySTO,
+      cluster:   cluster,
       isIO, isRE, isPS,
       tglIO:     cleanDate(tglIO),
       tglRE:     cleanDate(C.tanggalRE !== -1 ? r[C.tanggalRE] : ''),
