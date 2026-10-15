@@ -1112,7 +1112,12 @@ async function fetchAPI(action, extra={}) {
 async function loadPerformance() {
   document.getElementById('lastUpdated').textContent = '…memuat';
   try {
-    S.perf = await fetchAPI('performance', { start: S.filter.dateStart, end: S.filter.dateEnd });
+    S.perf = await fetchAPI('performance', {
+      start:   S.filter.dateStart,
+      end:     S.filter.dateEnd,
+      produk:  S.filter.produk,
+      channel: S.filter.channel,
+    });
     S.loaded = true;
     document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
@@ -1190,8 +1195,9 @@ function applyFilter() {
   });
   if (sto && allowed && !allowed.includes(sto)) stoSel.value = '';
 
-  // Reload orders if date/channel changed
-  const dateChanged = ds !== S.filter.dateStart || de !== S.filter.dateEnd || ch !== S.filter.channel;
+  // Reload data if date/produk/channel changed
+  const dateChanged = ds !== S.filter.dateStart || de !== S.filter.dateEnd
+                   || ch !== S.filter.channel   || pr !== S.filter.produk;
   S.filter.cluster = cl; S.filter.sto = sto; S.filter.kendalaJenis = kj;
   S.filter.dateStart = ds; S.filter.dateEnd = de;
   S.filter.produk = pr; S.filter.channel = ch;
@@ -1229,7 +1235,8 @@ function resetFilter() {
   const deEl = document.getElementById('fDateEnd');   if (deEl) deEl.value = de;
   const prEl = document.getElementById('fProduk');    if (prEl) prEl.value = '';
   const chEl = document.getElementById('fChannel');   if (chEl) chEl.value = '';
-  const dateChanged = ds !== S.filter.dateStart || de !== S.filter.dateEnd || S.filter.channel !== '';
+  const dateChanged = ds !== S.filter.dateStart || de !== S.filter.dateEnd
+                   || S.filter.channel !== ''   || S.filter.produk !== '';
   S.filter = { cluster:'', sto:'', kendalaJenis:'', dateStart:ds, dateEnd:de, produk:'', channel:'' };
   document.getElementById('filterStatus').textContent = '';
   ['fCluster','fSTO','fKendalaJenis'].forEach(id => document.getElementById(id).classList.remove('filter-active'));

@@ -194,8 +194,11 @@ function getPerformance(params) {
   const rangeIni  = { start: startIni, end: endIni };
   const rangeLalu = { start: startLalu, end: endLalu };
 
-  const ini  = parseBulan('Bulan_Ini', sfMap, rangeIni.start,  rangeIni.end);
-  const lalu = parseBulan('Bulan_Ini', sfMap, rangeLalu.start, rangeLalu.end);
+  const produkFilter  = (params.produk  || '').toString().trim().toLowerCase();
+  const channelFilter = (params.channel || '').toString().trim().toLowerCase();
+
+  const ini  = parseBulan('Bulan_Ini', sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter);
+  const lalu = parseBulan('Bulan_Ini', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter);
 
   const hariKerja = calcHariKerja(now);
   const wsa       = calcWSATSA(sfMap);
@@ -263,7 +266,9 @@ function getPerformance(params) {
 
 // ── Parse Sheet dengan filter rentang tanggal (YYYYMMDD) ─────
 // startStr & endStr: "YYYYMMDD" – apple-to-apple MoM comparison
-function parseBulan(sheetName, sfMap, startStr, endStr) {
+function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFilter) {
+  produkFilter  = (produkFilter  || '').toLowerCase().trim();
+  channelFilter = (channelFilter || '').toLowerCase().trim();
   const ws = ss().getSheetByName(sheetName);
   if (!ws) return {
     bySF:    {},
@@ -320,6 +325,16 @@ function parseBulan(sheetName, sfMap, startStr, endStr) {
 
     const ch       = (C.channel2 !== -1 ? r[C.channel2] : '').toString().trim().toLowerCase();
     const isAgency = ch === 'agency';
+
+    // Filter channel (agency / digital)
+    if (channelFilter === 'agency'  && !isAgency) continue;
+    if (channelFilter === 'digital' && isAgency)  continue;
+
+    // Filter produk
+    if (produkFilter) {
+      const rowProduk = (C.produk !== -1 ? r[C.produk] : '').toString().trim().toLowerCase();
+      if (!rowProduk.includes(produkFilter)) continue;
+    }
     const kabRaw   = C.kab !== -1 && r[C.kab] ? r[C.kab].toString().trim().toUpperCase() : '';
 
     const valIO = (C.io !== -1 ? r[C.io] : '').toString().toLowerCase();
