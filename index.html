@@ -1303,22 +1303,8 @@ tr:hover td{background:var(--surface2);}
         </div>
       </div>
 
-      <!-- ADMIN ONLY: API + Target -->
+      <!-- ADMIN ONLY: Target -->
       <div class="g2" id="settings-admin-section">
-        <div class="sec">
-          <div class="sec-head"><div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Koneksi API</span></div></div>
-          <div class="sec-body config-card" style="max-width:100%">
-            <div class="field">
-              <label>URL Google Apps Script</label>
-              <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/…/exec">
-            </div>
-            <div class="field">
-              <label>Token Autentikasi</label>
-              <input type="password" id="cfgToken" placeholder="token rahasia">
-            </div>
-            <button class="btn-primary" onclick="saveConfig()">💾 Simpan & Muat Data</button>
-          </div>
-        </div>
         <div class="sec">
           <div class="sec-head"><div class="sec-head-left"><div class="sec-dot amber"></div><span class="sec-title">Target PS Bulanan</span></div></div>
           <div class="sec-body">
@@ -2562,15 +2548,6 @@ async function doChangePassword() {
   }
 }
 
-// ─── CONFIG ───────────────────────────────────────────────
-function saveConfig() {
-  const url   = document.getElementById('cfgUrl').value.trim();
-  const token = document.getElementById('cfgToken').value.trim();
-  if (!url || !token) return alert('URL dan token harus diisi.');
-  LS.set('apiUrl', url); LS.set('apiToken', token);
-  navigate('overview'); loadPerformance();
-}
-
 
 /* ════ AUTH SYSTEM ════ */
 const SESSION_KEY = 'wok_session';
@@ -2815,10 +2792,6 @@ function init() {
   const deEl = document.getElementById('fDateEnd');
   if (dsEl) dsEl.value = S.filter.dateStart;
   if (deEl) deEl.value = S.filter.dateEnd;
-  const url   = LS.get('apiUrl')   || DEFAULT_API_URL;
-  const token = LS.get('apiToken') || DEFAULT_API_TOKEN;
-  if (url)   document.getElementById('cfgUrl').value   = url;
-  if (token) document.getElementById('cfgToken').value = token;
   loadTargetInputs();
   // Simpan default ke LS kalau belum ada
   LS.set('apiUrl', DEFAULT_API_URL);
