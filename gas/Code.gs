@@ -264,6 +264,14 @@ function getPerformance(params) {
     wilayah:    WILAYAH,
     kendalaList: ini.kendalaList || [],
     updatedAt:  new Date().toISOString(),
+    _debug: {
+      rangeIni:  { start: startIni,  end: endIni  },
+      rangeLalu: { start: startLalu, end: endLalu },
+      totalIni:  ini.total,
+      totalLalu: lalu.total,
+      byKabIni:  ini.total.byKab,
+      byKabLalu: lalu.total.byKab,
+    },
   };
 }
 
