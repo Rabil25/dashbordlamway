@@ -951,7 +951,7 @@ async function fetchAPI(action) {
 async function loadPerformance() {
   document.getElementById('lastUpdated').textContent = '…memuat';
   try {
-    S.perf = await fetchAPI('getPerformance');
+    S.perf = await fetchAPI('performance');
     S.loaded = true;
     document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
@@ -965,7 +965,7 @@ async function loadPerformance() {
 async function loadKendala() {
   if (S.kendala) { renderKendala(); return; }
   try {
-    S.kendala = await fetchAPI('getKendala');
+    S.kendala = await fetchAPI('kendala');
     buildKendalaJenisFilter();
     renderKendala();
   } catch(e) { showError('tbl-kendala', e.message); }
@@ -974,7 +974,7 @@ async function loadKendala() {
 async function loadAbsen() {
   if (S.absen) { renderAbsen(); return; }
   try {
-    S.absen = await fetchAPI('getAbsen');
+    S.absen = await fetchAPI('absen');
     renderAbsen();
   } catch(e) { showError('ab-list', e.message); }
 }
