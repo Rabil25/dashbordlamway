@@ -2754,3 +2754,42 @@ function init() {
   loadPerformance();
 })();
 </script>
+
+<!-- ══ AUTH MODALS ══════════════════════════════════════════════════════ -->
+<div id="auth-overlay" class="auth-overlay" style="display:none">
+  <!-- LOGIN -->
+  <div id="login-modal" class="auth-card">
+    <div class="auth-logo"><div class="auth-logo-dot"></div><span>Dashboard WOK</span></div>
+    <h2 class="auth-title">Masuk ke Akun</h2>
+    <p class="auth-sub">Gunakan username dan password yang sudah didaftarkan</p>
+    <div class="auth-field"><label>Username</label><input id="li-user" type="text" placeholder="contoh: rabil25" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="auth-field"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div id="li-err" class="auth-err" style="display:none"></div>
+    <button class="auth-btn" onclick="doLogin()" id="li-btn">Masuk</button>
+    <p class="auth-switch">Belum punya akun? <a href="#" onclick="showRegister();return false">Daftar sekarang</a></p>
+  </div>
+  <!-- REGISTER -->
+  <div id="reg-modal" class="auth-card" style="display:none">
+    <div class="auth-logo"><div class="auth-logo-dot"></div><span>Dashboard WOK</span></div>
+    <h2 class="auth-title">Buat Akun Baru</h2>
+    <p class="auth-sub">Daftarkan diri untuk mengakses dashboard</p>
+    <div class="auth-field"><label>Nama Lengkap</label><input id="rg-nama" type="text" placeholder="contoh: Rabil Rezky"></div>
+    <div class="auth-field"><label>Username</label><input id="rg-user" type="text" placeholder="huruf kecil, tanpa spasi"></div>
+    <div class="auth-field"><label>Password</label><input id="rg-pass" type="password" placeholder="minimal 6 karakter"></div>
+    <div class="auth-field"><label>Konfirmasi Password</label><input id="rg-pass2" type="password" placeholder="ulangi password"></div>
+    <div id="rg-err" class="auth-err" style="display:none"></div>
+    <div id="rg-ok" class="auth-ok" style="display:none"></div>
+    <button class="auth-btn" onclick="doRegister()" id="rg-btn">Daftar</button>
+    <p class="auth-switch">Sudah punya akun? <a href="#" onclick="showLogin();return false">Masuk</a></p>
+  </div>
+</div>
+<!-- ══ LOGOUT CONFIRM ══════════════════════════════════════════════════ -->
+<div id="logout-confirm" class="logout-confirm" style="display:none">
+  <div class="logout-box">
+    <p>Keluar dari dashboard?</p>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn-sm" onclick="document.getElementById('logout-confirm').style.display='none'">Batal</button>
+      <button class="btn-sm" style="background:var(--p-primary);color:#fff" onclick="doLogout()">Keluar</button>
+    </div>
+  </div>
+</div>
