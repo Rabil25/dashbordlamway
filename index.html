@@ -1185,15 +1185,14 @@ function showError(containerId, msg) {
 }
 
 // ─── FILTER ───────────────────────────────────────────────
-const WILAYAH_MAP = {
-  'Lampung Barat': ['LIW','KRU','KOT','TGP'],
-  'Way Kanan':     ['BKM','KBI','BDU'],
-};
+// STO adalah entitas teknis, tidak mendefinisikan cluster.
+// Dropdown STO selalu tampilkan semua; cluster filter bekerja
+// via kabupaten order di GAS, bukan lewat STO.
+const ALL_STO = ['LIW','KRU','KOT','TGP','BKM','KBI','BDU'];
 function buildSTOFilter() {
   const sel = document.getElementById('fSTO');
-  const all = ['LIW','KRU','KOT','TGP','BKM','KBI','BDU'];
   sel.innerHTML = '<option value="">Semua STO</option>' +
-    all.map(s => `<option value="${s}">${s}</option>`).join('');
+    ALL_STO.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 function populateKendalaDropdown(list) {
   const sel = document.getElementById('fKendalaJenis');
@@ -1217,14 +1216,6 @@ function applyFilter() {
   const de  = document.getElementById('fDateEnd')?.value   || S.filter.dateEnd;
   const pr  = document.getElementById('fProduk')?.value    || '';
   const ch  = document.getElementById('fChannel')?.value   || '';
-
-  const stoSel = document.getElementById('fSTO');
-  const allowed = cl ? WILAYAH_MAP[cl] || [] : null;
-  stoSel.querySelectorAll('option').forEach(o => {
-    if (!o.value) return;
-    o.hidden = allowed ? !allowed.includes(o.value) : false;
-  });
-  if (sto && allowed && !allowed.includes(sto)) stoSel.value = '';
 
   // Reload data if date/produk/channel/STO/cluster changed (semua ini mempengaruhi data GAS)
   const dateChanged = ds  !== S.filter.dateStart || de !== S.filter.dateEnd

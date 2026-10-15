@@ -11,27 +11,25 @@ const CONFIG = {
 };
 
 // ── KONFIGURASI WILAYAH — single source of truth ─────────────
+// Cluster ditentukan oleh kabupaten order (VALIDASI KAB), bukan STO.
+// STO adalah entitas teknis jaringan, bisa lintas cluster.
 const WILAYAH = {
   'Lampung Barat': {
     tl:        'ANDRES WELSEN',
     kabupaten: ['LAMPUNG BARAT', 'TANGGAMUS', 'PESISIR BARAT'],
-    sto:       ['LIW', 'KRU', 'KOT', 'TGP'],
   },
   'Way Kanan': {
     tl:        'AGUS SETIAWAN',
     kabupaten: ['LAMPUNG UTARA', 'WAY KANAN'],
-    sto:       ['BKM', 'KBI', 'BDU'],
   },
 };
 
 // Auto-build reverse lookup
 const KAB_TO_CLUSTER = {};
-const STO_TO_CLUSTER = {};
 const TL_TO_CLUSTER  = {};
 Object.entries(WILAYAH).forEach(([cluster, cfg]) => {
   cfg.kabupaten.forEach(k => { KAB_TO_CLUSTER[k] = cluster; });
-  cfg.sto.forEach(s => { STO_TO_CLUSTER[s]       = cluster; });
-  TL_TO_CLUSTER[cfg.tl]                           = cluster;
+  TL_TO_CLUSTER[cfg.tl] = cluster;
 });
 
 // ── Entry Point ──────────────────────────────────────────────
@@ -143,7 +141,7 @@ function getSFList() {
       kode:    (r[C.kode] || '').toString().trim(),
       sto:     stoUpper,
       tl:      tlUpper,
-      cluster: TL_TO_CLUSTER[tlUpper] || STO_TO_CLUSTER[stoUpper] || '-',
+      cluster: TL_TO_CLUSTER[tlUpper] || '-',
       city:    r[C.city],
       status:  r[C.status],
       level:   r[C.level],
@@ -355,10 +353,9 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
       if (col === -1 || r[col] === null || r[col] === undefined || r[col] === '') return '';
       const v = r[col];
       if (v instanceof Date) {
-        const y = v.getFullYear();
-        const m = String(v.getMonth() + 1).padStart(2, '0');
-        const d = String(v.getDate()).padStart(2, '0');
-        return `${y}${m}${d}`;
+        // Pakai Utilities.formatDate agar timezone Asia/Jakarta dihormati.
+        // Raw getDate() di GAS V8 pakai UTC → tanggal bisa geser -1 hari.
+        return Utilities.formatDate(v, CONFIG.TIMEZONE, 'yyyyMMdd');
       }
       return v.toString().replace(/-/g, '').replace(/\//g, '').substring(0, 8);
     };
