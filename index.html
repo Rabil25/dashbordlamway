@@ -1143,8 +1143,9 @@ async function loadPerformance() {
       end:     S.filter.dateEnd,
       produk:  S.filter.produk,
       channel: S.filter.channel,
-      sto:     S.filter.sto     || '',
-      cluster: S.filter.cluster || '',
+      sto:     S.filter.sto      || '',
+      cluster: S.filter.cluster  || '',
+      kendala: S.filter.kendalaJenis || '',
     });
     S.loaded = true;
     document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
@@ -1225,10 +1226,11 @@ function applyFilter() {
   const pr  = document.getElementById('fProduk')?.value    || '';
   const ch  = document.getElementById('fChannel')?.value   || '';
 
-  // Reload data if date/produk/channel/STO/cluster changed (semua ini mempengaruhi data GAS)
-  const dateChanged = ds  !== S.filter.dateStart || de !== S.filter.dateEnd
-                   || ch  !== S.filter.channel   || pr !== S.filter.produk
-                   || sto !== S.filter.sto        || cl !== S.filter.cluster;
+  // Reload data if any server-side filter changed (date, produk, channel, STO, cluster, kendala)
+  const dateChanged = ds  !== S.filter.dateStart    || de !== S.filter.dateEnd
+                   || ch  !== S.filter.channel       || pr !== S.filter.produk
+                   || sto !== S.filter.sto            || cl !== S.filter.cluster
+                   || kj  !== S.filter.kendalaJenis;
   S.filter.cluster = cl; S.filter.sto = sto; S.filter.kendalaJenis = kj;
   S.filter.dateStart = ds; S.filter.dateEnd = de;
   S.filter.produk = pr; S.filter.channel = ch;

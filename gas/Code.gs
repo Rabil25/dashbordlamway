@@ -196,6 +196,7 @@ function getPerformance(params) {
 
   const produkFilter  = (params.produk  || '').toString().trim().toLowerCase();
   const channelFilter = (params.channel || '').toString().trim().toLowerCase();
+  const kendalaFilter = (params.kendala || '').toString().trim().toLowerCase();
 
   const stoFilter     = (params.sto     || '').toString().trim().toUpperCase();
   const clusterFilter = (params.cluster || '').toString().trim();
@@ -203,8 +204,8 @@ function getPerformance(params) {
                           ? WILAYAH[clusterFilter].kabupaten
                           : [];
 
-  const ini  = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter, stoFilter, kabFilter);
-  const lalu = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter, kabFilter);
+  const ini  = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter, stoFilter, kabFilter, kendalaFilter);
+  const lalu = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter, kabFilter, kendalaFilter);
 
   const hariKerja = calcHariRange(startIni, endIni);
   const wsa       = calcWSATSA(sfMap);
@@ -274,9 +275,10 @@ function getPerformance(params) {
 
 // ── Parse Sheet dengan filter rentang tanggal (YYYYMMDD) ─────
 // startStr & endStr: "YYYYMMDD" – apple-to-apple MoM comparison
-function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFilter, stoFilter, kabFilter) {
+function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFilter, stoFilter, kabFilter, kendalaFilter) {
   produkFilter  = (produkFilter  || '').toLowerCase().trim();
   channelFilter = (channelFilter || '').toLowerCase().trim();
+  kendalaFilter = (kendalaFilter || '').toLowerCase().trim();
   stoFilter     = (stoFilter     || '').toUpperCase().trim();
   kabFilter     = Array.isArray(kabFilter) ? kabFilter.map(k => k.toUpperCase().trim()) : [];
   const ws = ss().getSheetByName(sheetName);
@@ -354,6 +356,12 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     if (stoFilter) {
       const rowSTO = (C.sto !== -1 ? r[C.sto] : '').toString().trim().toUpperCase();
       if (rowSTO !== stoFilter) continue;
+    }
+
+    // Filter Kendala Teknis
+    if (kendalaFilter) {
+      const rowKT = (C.kendTekCol !== -1 ? r[C.kendTekCol] : '').toString().trim().toLowerCase();
+      if (!rowKT.includes(kendalaFilter)) continue;
     }
 
     // Tanggal masing-masing metric (format YYYYMMDD)
