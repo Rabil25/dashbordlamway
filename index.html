@@ -1595,7 +1595,14 @@ function renderWokPerf() {
   document.getElementById('wok-agency').innerHTML = buildSection('Agency / SF', 'agencyIni', 'agencyLalu', d.summary?.agencyIni, d.summary?.agencyLalu);
 
   // ── Rekap per STO (berdasarkan STO order) ──
-  const stoOrderData = (d.rekapOrderSTO || []);
+  const STO_ORDER = ['TGP','KOT','LIW','KRU','BKM','KBI','BDU'];
+  const stoOrderData = (d.rekapOrderSTO || []).slice().sort((a,b) => {
+    const ai = STO_ORDER.indexOf(a.sto), bi2 = STO_ORDER.indexOf(b.sto);
+    if (ai === -1 && bi2 === -1) return a.sto.localeCompare(b.sto);
+    if (ai === -1) return 1;
+    if (bi2 === -1) return -1;
+    return ai - bi2;
+  });
   const chF = S.filter.channel || '';
   const stoRows = stoOrderData.map(s => {
     const i = chF === 'agency' ? s.agencyIni  : s.allIni;
