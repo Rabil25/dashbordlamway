@@ -264,6 +264,15 @@ function getPerformance(params) {
     wilayah:    WILAYAH,
     kendalaList: ini.kendalaList || [],
     updatedAt:  new Date().toISOString(),
+    _debugProduk: {
+      filter:        produkFilter || '(none)',
+      iniTotal:      ini.total,
+      laluTotal:     lalu.total,
+      iniProdukSample:  ini._produkSample,
+      laluProdukSample: lalu._produkSample,
+      iniColProduk:     ini._colProduk,
+      laluColProduk:    lalu._colProduk,
+    },
   };
 }
 
@@ -286,7 +295,7 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
 
   const findCol = (names) => {
     for (const n of names) {
-      const idx = hdr.findIndex(h => h.toString().toLowerCase() === n.toLowerCase());
+      const idx = hdr.findIndex(h => h.toString().trim().toLowerCase() === n.trim().toLowerCase());
       if (idx !== -1) return idx;
     }
     return -1;
@@ -424,7 +433,16 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     }
   }
 
-  return { bySF, total, agency, digital, kendalaList: [...kendalaSet].sort() };
+  // Sample nilai produk untuk debug (ambil 5 unique pertama)
+  const produkSample = new Set();
+  if (C.produk !== -1) {
+    for (let i = 1; i < rows.length && produkSample.size < 5; i++) {
+      const v = rows[i][C.produk];
+      if (v) produkSample.add(v.toString().trim());
+    }
+  }
+
+  return { bySF, total, agency, digital, kendalaList: [...kendalaSet].sort(), _produkSample: [...produkSample], _colProduk: C.produk };
 }
 
 // ── Rekap per Kabupaten (Full: all + agency, ini + lalu) ─────
@@ -550,7 +568,7 @@ function getOrders(params) {
 
   const findCol = (names) => {
     for (const n of names) {
-      const idx = hdr.findIndex(h => h.toString().toLowerCase() === n.toLowerCase());
+      const idx = hdr.findIndex(h => h.toString().trim().toLowerCase() === n.trim().toLowerCase());
       if (idx !== -1) return idx;
     }
     return -1;

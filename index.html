@@ -1138,6 +1138,7 @@ async function loadPerformance() {
       sto:     S.filter.sto || '',
     });
     S.loaded = true;
+    S.perf._debugProduk && console.log('[DEBUG PRODUK]', JSON.stringify(S.perf._debugProduk, null, 2));
     document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     // Populate kendala dropdown dari data dinamis
     populateKendalaDropdown(S.perf.kendalaList || []);
