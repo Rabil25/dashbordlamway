@@ -249,10 +249,11 @@ function getPerformance(params) {
   sfPerf.sort((a, b) => b.bulanIni.ps - a.bulanIni.ps);
 
   return {
-    sfPerformance: sfPerf,
-    rekapSTO:      rekapBySTO(sfPerf),
-    rekapCluster:  rekapByCluster(sfPerf),
-    rekapKab:      rekapByKabFull(ini, lalu),
+    sfPerformance:  sfPerf,
+    rekapSTO:       rekapBySTO(sfPerf),
+    rekapOrderSTO:  rekapByOrderSTO(ini, lalu),
+    rekapCluster:   rekapByCluster(sfPerf),
+    rekapKab:       rekapByKabFull(ini, lalu),
     summary: {
       bulanIni:     ini.total,
       bulanLalu:    lalu.total,
@@ -312,11 +313,16 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     kendalaKat:findCol(['Kategori Kendala']),
   };
 
-  function mkStat() { return { io: 0, re: 0, ps: 0, byKab: {} }; }
+  function mkStat() { return { io: 0, re: 0, ps: 0, byKab: {}, bySTO: {} }; }
   function addKab(stat, kab, field) {
     if (!kab) return;
     if (!stat.byKab[kab]) stat.byKab[kab] = { io: 0, re: 0, ps: 0 };
     stat.byKab[kab][field]++;
+  }
+  function addSTO(stat, sto, field) {
+    if (!sto) return;
+    if (!stat.bySTO[sto]) stat.bySTO[sto] = { io: 0, re: 0, ps: 0 };
+    stat.bySTO[sto][field]++;
   }
 
   const bySF    = {};
@@ -373,6 +379,7 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     if (!countIO && !countRE && !countPS) continue;
 
     const kabRaw = C.kab !== -1 && r[C.kab] ? r[C.kab].toString().trim().toUpperCase() : '';
+    const stoRaw = (C.sto !== -1 ? r[C.sto] : '').toString().trim().toUpperCase();
 
     // Filter Cluster (berdasarkan kabupaten order, bukan STO SF)
     if (kabFilter.length && !kabFilter.includes(kabRaw)) continue;
@@ -385,24 +392,27 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     if (countIO && valIO.includes('valid io')) {
       total.io++;
       addKab(total, kabRaw, 'io');
+      addSTO(total, stoRaw, 'io');
       if (!isAgency) digital.io++;
     }
     if (countRE && valRE.includes('valid re')) {
       total.re++;
       addKab(total, kabRaw, 're');
+      addSTO(total, stoRaw, 're');
       if (!isAgency) digital.re++;
     }
     if (countPS && valPS.includes('put in service')) {
       total.ps++;
       addKab(total, kabRaw, 'ps');
+      addSTO(total, stoRaw, 'ps');
       if (!isAgency) digital.ps++;
     }
 
     // ── Agency only ──
     if (isAgency) {
-      if (countIO && valIO.includes('valid io')) { agency.io++; addKab(agency, kabRaw, 'io'); }
-      if (countRE && valRE.includes('valid re')) { agency.re++; addKab(agency, kabRaw, 're'); }
-      if (countPS && valPS.includes('put in service')) { agency.ps++; addKab(agency, kabRaw, 'ps'); }
+      if (countIO && valIO.includes('valid io')) { agency.io++; addKab(agency, kabRaw, 'io'); addSTO(agency, stoRaw, 'io'); }
+      if (countRE && valRE.includes('valid re')) { agency.re++; addKab(agency, kabRaw, 're'); addSTO(agency, stoRaw, 're'); }
+      if (countPS && valPS.includes('put in service')) { agency.ps++; addKab(agency, kabRaw, 'ps'); addSTO(agency, stoRaw, 'ps'); }
     }
 
     // ── Per-SF (agency only) ──
@@ -464,7 +474,27 @@ function rekapByKabFull(ini, lalu) {
   return result.sort((a, b) => b.allIni.ps - a.allIni.ps);
 }
 
-// ── Rekap per STO ────────────────────────────────────────────
+// ── Rekap per STO Order (berdasarkan Validasi STO di order) ──
+function rekapByOrderSTO(ini, lalu) {
+  const allSTOs = new Set([
+    ...Object.keys(ini.total.bySTO  || {}),
+    ...Object.keys(lalu.total.bySTO || {}),
+  ]);
+  const result = [];
+  allSTOs.forEach(sto => {
+    if (!sto) return;
+    result.push({
+      sto,
+      allIni:     ini.total.bySTO[sto]   || { io: 0, re: 0, ps: 0 },
+      allLalu:    lalu.total.bySTO[sto]  || { io: 0, re: 0, ps: 0 },
+      agencyIni:  ini.agency.bySTO[sto]  || { io: 0, re: 0, ps: 0 },
+      agencyLalu: lalu.agency.bySTO[sto] || { io: 0, re: 0, ps: 0 },
+    });
+  });
+  return result.sort((a, b) => b.allIni.ps - a.allIni.ps);
+}
+
+// ── Rekap per STO SF ─────────────────────────────────────────
 function rekapBySTO(sfPerf) {
   const map = {};
   sfPerf.forEach(sf => {

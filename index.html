@@ -679,6 +679,7 @@ tr:hover td{background:var(--surface2);}
       <div class="hk-pills" id="wok-hk-info"></div>
       <div id="wok-all"></div>
       <div id="wok-agency" style="margin-top:8px"></div>
+      <div id="wok-sto" style="margin-top:8px"></div>
     </div>
   </div>
 
@@ -1592,6 +1593,42 @@ function renderWokPerf() {
 
   document.getElementById('wok-all').innerHTML    = buildSection('All Channel', 'allIni',    'allLalu',    d.summary?.bulanIni,  d.summary?.bulanLalu);
   document.getElementById('wok-agency').innerHTML = buildSection('Agency / SF', 'agencyIni', 'agencyLalu', d.summary?.agencyIni, d.summary?.agencyLalu);
+
+  // ── Rekap per STO (berdasarkan STO order) ──
+  const stoOrderData = (d.rekapOrderSTO || []);
+  const chF = S.filter.channel || '';
+  const stoRows = stoOrderData.map(s => {
+    const i = chF === 'agency' ? s.agencyIni  : s.allIni;
+    const l = chF === 'agency' ? s.agencyLalu : s.allLalu;
+    return `<tr>
+      <td><strong>${s.sto || '—'}</strong></td>
+      <td class="td-r tnum">${i.io}</td><td class="td-r tnum">${l.io}</td><td class="td-r">${mom(i.io,l.io)}</td>
+      <td class="td-r tnum">${i.re}</td><td class="td-r tnum">${l.re}</td><td class="td-r">${mom(i.re,l.re)}</td>
+      <td class="td-r tnum">${i.ps}</td><td class="td-r tnum">${l.ps}</td><td class="td-r">${mom(i.ps,l.ps)}</td>
+      <td class="td-r">${ratio(i.re,i.io)}</td><td class="td-r">${ratio(i.ps,i.re)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('wok-sto').innerHTML = `
+    <div class="wok-section-title">◆ Rekap per STO</div>
+    <div class="wok-tbl-wrap">
+      <table class="wok-tbl">
+        <thead>
+          <tr>
+            <th class="th-l" rowspan="2">STO</th>
+            <th colspan="3">IO</th>
+            <th colspan="3">RE</th>
+            <th colspan="3">PS</th>
+            <th rowspan="2">RE/IO</th><th rowspan="2">PS/RE</th>
+          </tr>
+          <tr>
+            <th>MTD</th><th>LM</th><th>MoM%</th>
+            <th>MTD</th><th>LM</th><th>MoM%</th>
+            <th>MTD</th><th>LM</th><th>MoM%</th>
+          </tr>
+        </thead>
+        <tbody>${stoRows || '<tr><td colspan="13" style="text-align:center;opacity:.5">Tidak ada data</td></tr>'}</tbody>
+      </table>
+    </div>`;
 }
 
 // ─── PERFORMANCE ─────────────────────────────────────────
