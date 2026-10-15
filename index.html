@@ -1604,9 +1604,12 @@ function renderWokPerf() {
     return ai - bi2;
   });
   const chF = S.filter.channel || '';
+  const stoTotI = {io:0,re:0,ps:0}, stoTotL = {io:0,re:0,ps:0};
   const stoRows = stoOrderData.map(s => {
     const i = chF === 'agency' ? s.agencyIni  : s.allIni;
     const l = chF === 'agency' ? s.agencyLalu : s.allLalu;
+    stoTotI.io+=i.io; stoTotI.re+=i.re; stoTotI.ps+=i.ps;
+    stoTotL.io+=l.io; stoTotL.re+=l.re; stoTotL.ps+=l.ps;
     return `<tr>
       <td><strong>${s.sto || '—'}</strong></td>
       <td class="td-r tnum">${i.io}</td><td class="td-r tnum">${l.io}</td><td class="td-r">${mom(i.io,l.io)}</td>
@@ -1614,7 +1617,13 @@ function renderWokPerf() {
       <td class="td-r tnum">${i.ps}</td><td class="td-r tnum">${l.ps}</td><td class="td-r">${mom(i.ps,l.ps)}</td>
       <td class="td-r">${ratio(i.re,i.io)}</td><td class="td-r">${ratio(i.ps,i.re)}</td>
     </tr>`;
-  }).join('');
+  }).join('') + `<tr class="row-tot">
+    <td class="td-terr">WOK LAMWAY</td>
+    <td class="td-r tnum">${stoTotI.io}</td><td class="td-r tnum">${stoTotL.io}</td><td class="td-r">${mom(stoTotI.io,stoTotL.io)}</td>
+    <td class="td-r tnum">${stoTotI.re}</td><td class="td-r tnum">${stoTotL.re}</td><td class="td-r">${mom(stoTotI.re,stoTotL.re)}</td>
+    <td class="td-r tnum">${stoTotI.ps}</td><td class="td-r tnum">${stoTotL.ps}</td><td class="td-r">${mom(stoTotI.ps,stoTotL.ps)}</td>
+    <td class="td-r">${ratio(stoTotI.re,stoTotI.io)}</td><td class="td-r">${ratio(stoTotI.ps,stoTotI.re)}</td>
+  </tr>`;
   document.getElementById('wok-sto').innerHTML = `
     <div class="wok-section-title">◆ Rekap per STO</div>
     <div class="wok-tbl-wrap">
