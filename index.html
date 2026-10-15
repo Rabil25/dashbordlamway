@@ -1112,7 +1112,7 @@ async function fetchAPI(action, extra={}) {
 async function loadPerformance() {
   document.getElementById('lastUpdated').textContent = '…memuat';
   try {
-    S.perf = await fetchAPI('performance');
+    S.perf = await fetchAPI('performance', { start: S.filter.dateStart, end: S.filter.dateEnd });
     S.loaded = true;
     document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
@@ -1208,9 +1208,14 @@ function applyFilter() {
 
   const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
   const isOrderPage = activePage === 'peta' || activePage === 'orders';
-  if (isOrderPage && dateChanged) {
-    S.orders = null;
-    loadOrders(true).then(() => { if (activePage === 'peta') renderPeta(); else renderOrders(); });
+  if (dateChanged) {
+    // Re-fetch performance data with new date range
+    S.perf = null; S.orders = null;
+    loadPerformance().then(() => {
+      if (isOrderPage) {
+        loadOrders(true).then(() => { if (activePage === 'peta') renderPeta(); else renderOrders(); });
+      }
+    });
   } else {
     renderPage(activePage);
   }
@@ -1230,9 +1235,13 @@ function resetFilter() {
   ['fCluster','fSTO','fKendalaJenis'].forEach(id => document.getElementById(id).classList.remove('filter-active'));
   const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
   const isOrderPage = activePage === 'peta' || activePage === 'orders';
-  if (isOrderPage && dateChanged) {
-    S.orders = null;
-    loadOrders(true).then(() => { if (activePage === 'peta') renderPeta(); else renderOrders(); });
+  if (dateChanged) {
+    S.perf = null; S.orders = null;
+    loadPerformance().then(() => {
+      if (isOrderPage) {
+        loadOrders(true).then(() => { if (activePage === 'peta') renderPeta(); else renderOrders(); });
+      }
+    });
   } else {
     renderPage(activePage);
   }

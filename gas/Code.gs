@@ -44,7 +44,7 @@ function doGet(e) {
     const action = params.action || 'performance';
     let data;
     switch (action) {
-      case 'performance': data = getPerformance();          break;
+      case 'performance': data = getPerformance(params);     break;
       case 'sf':          data = getSFList();               break;
       case 'absen':       data = getAbsen();                break;
       case 'kendala':     data = getKendala();              break;
@@ -153,16 +153,46 @@ function getSFList() {
   return { sfList: list };
 }
 
+// ── Shift a YYYYMMDD string by N months ─────────────────────
+function shiftMonthStr(yyyymmdd, offsetMonths) {
+  if (!yyyymmdd || yyyymmdd.length < 8) return '';
+  const y = parseInt(yyyymmdd.substring(0, 4));
+  const m = parseInt(yyyymmdd.substring(4, 6));
+  const d = parseInt(yyyymmdd.substring(6, 8));
+  let yr = y, mo = m + offsetMonths;
+  while (mo <= 0)  { mo += 12; yr--; }
+  while (mo > 12)  { mo -= 12; yr++; }
+  const lastDay = new Date(yr, mo, 0).getDate();
+  const dd = Math.min(d, lastDay);
+  const pad = n => n.toString().padStart(2, '0');
+  return `${yr}${pad(mo)}${pad(dd)}`;
+}
+
 // ── Performance Utama ────────────────────────────────────────
-function getPerformance() {
+function getPerformance(params) {
+  params = params || {};
   const now = new Date();
   const { sfList } = getSFList();
   const sfMap = {};
   sfList.forEach(sf => { sfMap[sf.kode.toLowerCase()] = sf; });
 
-  // Apple-to-apple: bulan ini day 1–N vs bulan lalu day 1–N
-  const rangeIni  = getDateRange(now,  0);
-  const rangeLalu = getDateRange(now, -1);
+  // Normalize param dates (accept YYYY-MM-DD or YYYYMMDD)
+  let startIni = (params.start || '').toString().replace(/-/g, '').substring(0, 8);
+  let endIni   = (params.end   || '').toString().replace(/-/g, '').substring(0, 8);
+
+  // If no custom range → default: 1st of current month → today
+  if (!startIni || !endIni) {
+    const def = getDateRange(now, 0);
+    startIni = def.start;
+    endIni   = def.end;
+  }
+
+  // MoM: same day-range, previous month
+  const startLalu = shiftMonthStr(startIni, -1);
+  const endLalu   = shiftMonthStr(endIni,   -1);
+
+  const rangeIni  = { start: startIni, end: endIni };
+  const rangeLalu = { start: startLalu, end: endLalu };
 
   const ini  = parseBulan('Bulan_Ini', sfMap, rangeIni.start,  rangeIni.end);
   const lalu = parseBulan('Bulan_Ini', sfMap, rangeLalu.start, rangeLalu.end);
