@@ -59,6 +59,8 @@ function doGet(e) {
       case 'kendala':     data = getKendala();              break;
       case 'wilayah':     data = { wilayah: WILAYAH };      break;
       case 'orders':      data = getOrders(params);          break;
+      case 'login':       data = loginUser(params);          break;
+      case 'register':    data = registerUser(params);       break;
       default:            data = { error: 'Unknown action' };
     }
     return jsonOut({ ok: true, ...data });
@@ -112,6 +114,61 @@ function getDateRange(now, offsetMonths) {
     end:   `${yr}${pad(mo)}${pad(endDay)}`,
     ym:    `${yr}${pad(mo)}`,
   };
+}
+
+// ── Akun Web — Login & Registrasi ───────────────────────────
+// Sheet "Akun_Web" kolom: A=Timestamp, B=Username, C=Nama, D=PasswordHash, E=Role, F=Status
+
+function getAkunSheet() {
+  const ws = ss().getSheetByName('Akun_Web');
+  if (!ws) throw new Error('Sheet Akun_Web tidak ditemukan. Buat sheet dengan kolom: Timestamp | Username | Nama | PasswordHash | Role | Status');
+  return ws;
+}
+
+function loginUser(params) {
+  const username = (params.username || '').toString().trim().toLowerCase();
+  const passHash = (params.passHash || '').toString().trim();
+  if (!username || !passHash) return { ok: false, error: 'Username / password kosong' };
+
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+
+  for (let i = 1; i < rows.length; i++) {
+    const r        = rows[i];
+    const rowUser  = (r[1] || '').toString().trim().toLowerCase();
+    const rowHash  = (r[3] || '').toString().trim();
+    const rowStatus= (r[5] || '').toString().trim().toLowerCase();
+
+    if (rowUser !== username) continue;
+    if (rowStatus !== 'active') return { ok: false, error: 'Akun tidak aktif. Hubungi admin.' };
+    if (rowHash  !== passHash)  return { ok: false, error: 'Password salah.' };
+    return { ok: true, username: rowUser, nama: (r[2] || rowUser).toString().trim(), role: (r[4] || 'viewer').toString().trim() };
+  }
+  return { ok: false, error: 'Username tidak ditemukan.' };
+}
+
+function registerUser(params) {
+  const nama     = (params.nama     || '').toString().trim();
+  const username = (params.username || '').toString().trim().toLowerCase();
+  const passHash = (params.passHash || '').toString().trim();
+
+  if (!nama || !username || !passHash) return { ok: false, error: 'Data tidak lengkap.' };
+  if (!/^[a-z0-9._-]+$/.test(username)) return { ok: false, error: 'Username tidak valid.' };
+
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+
+  // Cek duplikat
+  for (let i = 1; i < rows.length; i++) {
+    if ((rows[i][1] || '').toString().trim().toLowerCase() === username) {
+      return { ok: false, error: 'Username sudah digunakan.' };
+    }
+  }
+
+  // Tentukan role: admin kalau belum ada user sama sekali, sisanya viewer
+  const isFirst = rows.length <= 1;
+  ws.appendRow([ new Date(), username, nama, passHash, isFirst ? 'admin' : 'viewer', 'active' ]);
+  return { ok: true, message: 'Akun berhasil dibuat.' };
 }
 
 // ── Master SF ────────────────────────────────────────────────

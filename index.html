@@ -659,6 +659,27 @@ tr:hover td{background:var(--surface2);}
 .data-table tbody tr:hover{background:var(--p-primary-lite)!important}
 .data-table tbody tr:hover td{color:var(--text)}
 
+
+/* ══ AUTH ══════════════════════════════════════════════════════════════ */
+.auth-overlay{position:fixed;inset:0;background:rgba(10,18,32,.85);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.auth-logo{display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:13px;font-weight:700;color:var(--muted)}
+.auth-logo-dot{width:20px;height:20px;border-radius:6px;background:var(--p-primary)}
+.auth-title{font-size:20px;font-weight:800;color:var(--text);margin:0 0 6px}
+.auth-sub{font-size:12px;color:var(--muted);margin:0 0 20px}
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.auth-field input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box;transition:border-color .15s}
+.auth-field input:focus{border-color:var(--p-primary)}
+.auth-err{font-size:12px;color:#ef4444;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:8px 12px;margin-bottom:12px}
+.auth-ok{font-size:12px;color:#059669;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:8px 12px;margin-bottom:12px}
+.auth-btn{width:100%;padding:10px;background:var(--p-primary);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.auth-btn:hover{opacity:.88}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-switch{font-size:12px;color:var(--muted);text-align:center;margin:14px 0 0}
+.auth-switch a{color:var(--p-primary);text-decoration:none;font-weight:600}
+.logout-confirm{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;display:flex;align-items:center;justify-content:center}
+.logout-box{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:24px 28px;text-align:center;font-size:14px;font-weight:600;color:var(--text)}
 </style>
 
 <!-- ═══════════════ SIDEBAR ═══════════════ -->
@@ -770,7 +791,13 @@ tr:hover td{background:var(--surface2);}
         <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M1 7A6 6 0 0112.5 4M13 7a6 6 0 01-11.5 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 1.5v3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,0)"/></svg>
       </button>
       <button class="btn-icon" onclick="toggleTheme()" title="Toggle tema" id="themeBtn">🌙</button>
-      <div class="tb-avatar" id="tb-avatar">SP</div>
+      <div class="tb-user" id="tb-user" style="display:none;align-items:center;gap:8px">
+        <div class="tb-user-info" id="tb-user-info" style="text-align:right">
+          <div style="font-size:11px;font-weight:700;color:var(--text)" id="tb-user-nama">—</div>
+          <div style="font-size:10px;color:var(--muted)" id="tb-user-role">—</div>
+        </div>
+        <div class="tb-avatar" id="tb-avatar" style="cursor:pointer" onclick="confirmLogout()" title="Logout">SP</div>
+      </div>
     </div>
   </header>
 
@@ -1422,9 +1449,12 @@ function toggleTheme() {
 (function initTheme(){ const t = LS.get('theme'); if(t){ document.documentElement.setAttribute('data-theme',t); document.getElementById('themeBtn').textContent = t==='dark'?'☀️':'🌙'; } })();
 
 // ─── API ──────────────────────────────────────────────────
+const DEFAULT_API_URL   = 'https://script.google.com/macros/s/AKfycbzfORGqyh9mRD-aKkCTb-s0cFDp2kDBNuT2nVhKHtdQAtVbN7n8bnhAIJ2Wc3bPCOK7/exec';
+const DEFAULT_API_TOKEN = 'lpgLampung2026';
+
 async function fetchAPI(action, extra={}) {
-  const url   = LS.get('apiUrl');
-  const token = LS.get('apiToken');
+  const url   = LS.get('apiUrl')   || DEFAULT_API_URL;
+  const token = LS.get('apiToken') || DEFAULT_API_TOKEN;
   if (!url || !token) throw new Error('Konfigurasi API belum diset.');
   let qs = `token=${encodeURIComponent(token)}&action=${action}`;
   Object.entries(extra).forEach(([k,v]) => { if (v !== undefined && v !== '') qs += `&${k}=${encodeURIComponent(v)}`; });
@@ -2472,6 +2502,111 @@ function saveConfig() {
   navigate('overview'); loadPerformance();
 }
 
+
+/* ════ AUTH SYSTEM ════ */
+const SESSION_KEY = 'wok_session';
+
+function getSession() {
+  try { return JSON.parse(LS.get(SESSION_KEY) || 'null'); } catch(e) { return null; }
+}
+function saveSession(sess) { LS.set(SESSION_KEY, JSON.stringify(sess)); }
+function clearSession()    { try{ localStorage.removeItem(SESSION_KEY); }catch(e){} }
+
+function showLoginModal() {
+  document.getElementById('auth-overlay').style.display = 'flex';
+  document.getElementById('login-modal').style.display  = '';
+  document.getElementById('reg-modal').style.display    = 'none';
+  document.getElementById('tb-user').style.display      = 'none';
+}
+function showLogin()    {
+  document.getElementById('login-modal').style.display = '';
+  document.getElementById('reg-modal').style.display   = 'none';
+}
+function showRegister() {
+  document.getElementById('login-modal').style.display = 'none';
+  document.getElementById('reg-modal').style.display   = '';
+}
+function hideAuthOverlay() {
+  document.getElementById('auth-overlay').style.display = 'none';
+}
+function updateAvatarUI(sess) {
+  const initials = (sess.nama || sess.username || 'U').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('tb-avatar').textContent    = initials;
+  document.getElementById('tb-user-nama').textContent = sess.nama || sess.username;
+  document.getElementById('tb-user-role').textContent = sess.role === 'admin' ? '⚙ Admin' : '👁 Viewer';
+  document.getElementById('tb-user').style.display    = 'flex';
+}
+
+async function hashPassword(pass) {
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
+  const user = document.getElementById('li-user').value.trim().toLowerCase();
+  const pass = document.getElementById('li-pass').value;
+  const err  = document.getElementById('li-err');
+  const btn  = document.getElementById('li-btn');
+  err.style.display = 'none';
+  if (!user || !pass) { err.textContent='Username dan password wajib diisi.'; err.style.display=''; return; }
+  btn.disabled = true; btn.textContent = 'Memverifikasi…';
+  try {
+    const hash = await hashPassword(pass);
+    const d = await fetchAPI('login', { username: user, passHash: hash });
+    if (!d.ok) throw new Error(d.error || 'Login gagal');
+    const sess = { username: d.username, nama: d.nama, role: d.role };
+    saveSession(sess);
+    hideAuthOverlay();
+    updateAvatarUI(sess);
+    loadPerformance();
+  } catch(e) {
+    err.textContent = e.message; err.style.display = '';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Masuk';
+  }
+}
+
+async function doRegister() {
+  const nama  = document.getElementById('rg-nama').value.trim();
+  const user  = document.getElementById('rg-user').value.trim().toLowerCase();
+  const pass  = document.getElementById('rg-pass').value;
+  const pass2 = document.getElementById('rg-pass2').value;
+  const err   = document.getElementById('rg-err');
+  const ok    = document.getElementById('rg-ok');
+  const btn   = document.getElementById('rg-btn');
+  err.style.display = 'none'; ok.style.display = 'none';
+  if (!nama || !user || !pass) { err.textContent='Semua field wajib diisi.'; err.style.display=''; return; }
+  if (pass.length < 6)         { err.textContent='Password minimal 6 karakter.'; err.style.display=''; return; }
+  if (pass !== pass2)          { err.textContent='Konfirmasi password tidak cocok.'; err.style.display=''; return; }
+  if (!/^[a-z0-9._-]+$/.test(user)) { err.textContent='Username hanya boleh huruf kecil, angka, titik, dash.'; err.style.display=''; return; }
+  btn.disabled = true; btn.textContent = 'Mendaftarkan…';
+  try {
+    const hash = await hashPassword(pass);
+    const d = await fetchAPI('register', { nama, username: user, passHash: hash });
+    if (!d.ok) throw new Error(d.error || 'Registrasi gagal');
+    ok.textContent = '✓ Akun berhasil dibuat! Silakan login.'; ok.style.display = '';
+    document.getElementById('rg-nama').value = '';
+    document.getElementById('rg-user').value = '';
+    document.getElementById('rg-pass').value = '';
+    document.getElementById('rg-pass2').value = '';
+    setTimeout(showLogin, 1800);
+  } catch(e) {
+    err.textContent = e.message; err.style.display = '';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Daftar';
+  }
+}
+
+function confirmLogout() { document.getElementById('logout-confirm').style.display = 'flex'; }
+function doLogout() {
+  clearSession();
+  document.getElementById('logout-confirm').style.display = 'none';
+  showLoginModal();
+  // Clear data
+  S.perf = null; S.loaded = false;
+}
+/* ════ END AUTH ════ */
+
 /* ════ APPEARANCE SYSTEM ════ */
 const PALETTES = {
   blue:    {primary:'#1D4ED8', primaryD:'#1e40af', primaryLite:'#DBEAFE', accent:'#6366f1'},
@@ -2604,12 +2739,18 @@ function init() {
   const deEl = document.getElementById('fDateEnd');
   if (dsEl) dsEl.value = S.filter.dateStart;
   if (deEl) deEl.value = S.filter.dateEnd;
-  const url   = LS.get('apiUrl');
-  const token = LS.get('apiToken');
+  const url   = LS.get('apiUrl')   || DEFAULT_API_URL;
+  const token = LS.get('apiToken') || DEFAULT_API_TOKEN;
   if (url)   document.getElementById('cfgUrl').value   = url;
   if (token) document.getElementById('cfgToken').value = token;
   loadTargetInputs();
-  if (!url || !token) { navigate('settings'); }
-  else { loadPerformance(); }
+  // Simpan default ke LS kalau belum ada
+  if (!LS.get('apiUrl'))   LS.set('apiUrl', DEFAULT_API_URL);
+  if (!LS.get('apiToken')) LS.set('apiToken', DEFAULT_API_TOKEN);
+  // Cek session login
+  const sess = getSession();
+  if (!sess) { showLoginModal(); return; }
+  updateAvatarUI(sess);
+  loadPerformance();
 })();
 </script>
