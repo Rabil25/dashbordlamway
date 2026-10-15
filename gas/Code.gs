@@ -43,7 +43,7 @@ Object.entries(WILAYAH).forEach(([cluster, cfg]) => {
   TL_TO_CLUSTER[cfg.tl] = cluster;
 });
 
-// ── Entry Point ──────────────────────────────────────────────
+// ── Entry Point (GET — data read-only) ───────────────────────
 function doGet(e) {
   const params = e.parameter || {};
   if (params.token !== CONFIG.TOKEN) {
@@ -53,16 +53,59 @@ function doGet(e) {
     const action = params.action || 'performance';
     let data;
     switch (action) {
-      case 'performance': data = getPerformance(params);     break;
-      case 'sf':          data = getSFList();               break;
-      case 'absen':       data = getAbsen();                break;
-      case 'kendala':     data = getKendala();              break;
-      case 'wilayah':     data = { wilayah: WILAYAH };      break;
-      case 'orders':      data = getOrders(params);          break;
-      case 'login':       data = loginUser(params);          break;
-      case 'register':    data = registerUser(params);       break;
-      case 'changepass':  data = changePassword(params);     break;
-      default:            data = { error: 'Unknown action' };
+      case 'performance':   data = getPerformance(params);           break;
+      case 'sf':            data = getSFList();                      break;
+      case 'absen':         data = getAbsen();                       break;
+      case 'kendala':       data = getKendala();                     break;
+      case 'wilayah':       data = { wilayah: WILAYAH };             break;
+      case 'orders':        data = getOrders(params);                break;
+      case 'getUserList':   data = getUserList(params);              break;
+      case 'getPendingCount': data = getPendingCount(params);        break;
+      case 'getTargets':    data = getTargetsGAS();                  break;
+      case 'getMultipliers':data = getMultipliers();                 break;
+      // Legacy GET support — migrasi ke POST disarankan
+      case 'login':         data = loginUser(params);                break;
+      case 'register':      data = registerUser(params);             break;
+      case 'changepass':    data = changePassword(params);           break;
+      default:              data = { error: 'Unknown action' };
+    }
+    return jsonOut({ ok: true, ...data });
+  } catch (err) {
+    return jsonOut({ ok: false, error: err.message });
+  }
+}
+
+// ── Entry Point (POST — auth & mutasi data) ───────────────────
+function doPost(e) {
+  let params = {};
+  try {
+    if (e.postData && e.postData.contents) {
+      params = JSON.parse(e.postData.contents);
+    } else {
+      params = e.parameter || {};
+    }
+  } catch(parseErr) {
+    params = e.parameter || {};
+  }
+
+  if (params.token !== CONFIG.TOKEN) {
+    return jsonOut({ ok: false, error: 'Unauthorized' });
+  }
+
+  try {
+    const action = params.action || '';
+    let data;
+    switch (action) {
+      case 'login':          data = loginUser(params);           break;
+      case 'register':       data = registerUser(params);        break;
+      case 'changepass':     data = changePassword(params);      break;
+      case 'approveUser':    data = approveUser(params);         break;
+      case 'rejectUser':     data = rejectUser(params);          break;
+      case 'updateRole':     data = updateUserRole(params);      break;
+      case 'deleteUser':     data = deleteUser(params);          break;
+      case 'saveTargets':    data = saveTargets(params);         break;
+      case 'saveMultipliers':data = saveMultipliers(params);     break;
+      default:               data = { error: 'Unknown action' };
     }
     return jsonOut({ ok: true, ...data });
   } catch (err) {
@@ -126,10 +169,70 @@ function getAkunSheet() {
   return ws;
 }
 
+// ── Rate Limiting (PropertiesService) ────────────────────────
+// key: 'rl_login_<username>'
+// value: JSON { attempts: N, firstAt: timestamp }
+const RATE_LIMIT_MAX  = 5;
+const RATE_LIMIT_SECS = 15 * 60; // 15 menit
+
+function checkRateLimit(key) {
+  const ps  = PropertiesService.getScriptProperties();
+  const raw = ps.getProperty(key);
+  if (!raw) return true; // belum ada → boleh
+  try {
+    const data = JSON.parse(raw);
+    const now  = Date.now();
+    if (now - data.firstAt > RATE_LIMIT_SECS * 1000) {
+      ps.deleteProperty(key);
+      return true; // window expired
+    }
+    return data.attempts < RATE_LIMIT_MAX;
+  } catch(e) { return true; }
+}
+
+function recordFailedAttempt(key) {
+  const ps  = PropertiesService.getScriptProperties();
+  const raw = ps.getProperty(key);
+  const now = Date.now();
+  let data  = { attempts: 0, firstAt: now };
+  try { if (raw) data = JSON.parse(raw); } catch(e) {}
+  if (now - data.firstAt > RATE_LIMIT_SECS * 1000) {
+    data = { attempts: 0, firstAt: now };
+  }
+  data.attempts++;
+  ps.setProperty(key, JSON.stringify(data));
+}
+
+function resetRateLimit(key) {
+  PropertiesService.getScriptProperties().deleteProperty(key);
+}
+
+// ── Verifikasi Admin ──────────────────────────────────────────
+function verifyAdmin(params) {
+  const username = (params.adminUsername || params.username || '').toString().trim().toLowerCase();
+  if (!username) return false;
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if ((r[1]||'').toString().trim().toLowerCase() !== username) continue;
+    const role   = (r[4] || '').toString().trim().toLowerCase();
+    const status = (r[5] || '').toString().trim().toLowerCase();
+    return role === 'admin' && status === 'active';
+  }
+  return false;
+}
+
 function loginUser(params) {
   const username = (params.username || '').toString().trim().toLowerCase();
   const passHash = (params.passHash || '').toString().trim();
   if (!username || !passHash) return { ok: false, error: 'Username / password kosong' };
+
+  // Rate limiting
+  const rlKey = 'rl_login_' + username;
+  if (!checkRateLimit(rlKey)) {
+    return { ok: false, error: 'Terlalu banyak percobaan login. Coba lagi setelah 15 menit.' };
+  }
 
   const ws   = getAkunSheet();
   const rows = ws.getDataRange().getValues();
@@ -141,11 +244,16 @@ function loginUser(params) {
     const rowStatus= (r[5] || '').toString().trim().toLowerCase();
 
     if (rowUser !== username) continue;
-    if (rowHash  !== passHash)  return { ok: false, error: 'Password salah.' };
+    if (rowHash  !== passHash) {
+      recordFailedAttempt(rlKey);
+      return { ok: false, error: 'Password salah.' };
+    }
     if (rowStatus === 'pending') return { ok: false, error: 'Akun sedang menunggu persetujuan admin. Hubungi supervisor.' };
     if (rowStatus !== 'active')  return { ok: false, error: 'Akun dinonaktifkan. Hubungi admin.' };
+    resetRateLimit(rlKey);
     return { ok: true, username: rowUser, nama: (r[2] || rowUser).toString().trim(), role: (r[4] || 'viewer').toString().trim() };
   }
+  recordFailedAttempt(rlKey);
   return { ok: false, error: 'Username tidak ditemukan.' };
 }
 
@@ -196,6 +304,130 @@ function changePassword(params) {
     return { ok: true, message: 'Password berhasil diubah.' };
   }
   return { ok: false, error: 'User tidak ditemukan.' };
+}
+
+// ── User Management (admin only) ─────────────────────────────
+function getUserList(params) {
+  if (!verifyAdmin(params)) return { ok: false, error: 'Akses ditolak.' };
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+  const users = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[1]) continue;
+    users.push({
+      row:      i + 1,
+      username: (r[1] || '').toString().trim(),
+      nama:     (r[2] || '').toString().trim(),
+      role:     (r[4] || 'viewer').toString().trim(),
+      status:   (r[5] || 'pending').toString().trim(),
+    });
+  }
+  return { users };
+}
+
+function getPendingCount(params) {
+  if (!verifyAdmin(params)) return { pendingCount: 0 };
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+  let count  = 0;
+  for (let i = 1; i < rows.length; i++) {
+    if ((rows[i][5] || '').toString().trim().toLowerCase() === 'pending') count++;
+  }
+  return { pendingCount: count };
+}
+
+function approveUser(params) {
+  if (!verifyAdmin(params)) return { ok: false, error: 'Akses ditolak.' };
+  return _setUserStatus(params.targetUsername, 'active');
+}
+
+function rejectUser(params) {
+  if (!verifyAdmin(params)) return { ok: false, error: 'Akses ditolak.' };
+  return _setUserStatus(params.targetUsername, 'rejected');
+}
+
+function updateUserRole(params) {
+  if (!verifyAdmin(params)) return { ok: false, error: 'Akses ditolak.' };
+  const target = (params.targetUsername || '').toString().trim().toLowerCase();
+  const role   = (params.newRole || 'viewer').toString().trim().toLowerCase();
+  if (!['admin','viewer'].includes(role)) return { ok: false, error: 'Role tidak valid.' };
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if ((rows[i][1]||'').toString().trim().toLowerCase() === target) {
+      ws.getRange(i + 1, 5).setValue(role); // kolom E
+      return { ok: true, message: `Role ${target} diubah ke ${role}.` };
+    }
+  }
+  return { ok: false, error: 'User tidak ditemukan.' };
+}
+
+function deleteUser(params) {
+  if (!verifyAdmin(params)) return { ok: false, error: 'Akses ditolak.' };
+  const target = (params.targetUsername || '').toString().trim().toLowerCase();
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if ((rows[i][1]||'').toString().trim().toLowerCase() === target) {
+      ws.deleteRow(i + 1);
+      return { ok: true, message: `User ${target} berhasil dihapus.` };
+    }
+  }
+  return { ok: false, error: 'User tidak ditemukan.' };
+}
+
+function _setUserStatus(targetUsername, newStatus) {
+  const target = (targetUsername || '').toString().trim().toLowerCase();
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if ((rows[i][1]||'').toString().trim().toLowerCase() === target) {
+      ws.getRange(i + 1, 6).setValue(newStatus); // kolom F
+      return { ok: true, message: `Status ${target} diubah ke ${newStatus}.` };
+    }
+  }
+  return { ok: false, error: 'User tidak ditemukan.' };
+}
+
+// ── Targets & Multipliers (PropertiesService) ─────────────────
+function getTargetsGAS() {
+  const ps  = PropertiesService.getScriptProperties();
+  const raw = ps.getProperty('wok_targets');
+  let targets = {};
+  try { if (raw) targets = JSON.parse(raw); } catch(e) {}
+  return { targets };
+}
+
+function saveTargets(params) {
+  if (!verifyAdmin(params)) return { ok: false, error: 'Akses ditolak.' };
+  const raw = params.targets;
+  if (!raw) return { ok: false, error: 'Data targets kosong.' };
+  let targets;
+  try { targets = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e) {
+    return { ok: false, error: 'Format targets tidak valid.' };
+  }
+  PropertiesService.getScriptProperties().setProperty('wok_targets', JSON.stringify(targets));
+  return { ok: true, message: 'Targets berhasil disimpan.' };
+}
+
+function getMultipliers() {
+  const ps  = PropertiesService.getScriptProperties();
+  const raw = ps.getProperty('wok_multipliers');
+  let mult  = { io: 1.5, re: 1.2 };
+  try { if (raw) mult = { ...mult, ...JSON.parse(raw) }; } catch(e) {}
+  return { multipliers: mult };
+}
+
+function saveMultipliers(params) {
+  if (!verifyAdmin(params)) return { ok: false, error: 'Akses ditolak.' };
+  const io = parseFloat(params.io);
+  const re = parseFloat(params.re);
+  if (isNaN(io) || isNaN(re) || io <= 0 || re <= 0) {
+    return { ok: false, error: 'Nilai multiplier tidak valid.' };
+  }
+  PropertiesService.getScriptProperties().setProperty('wok_multipliers', JSON.stringify({ io, re }));
+  return { ok: true, message: 'Multiplier berhasil disimpan.' };
 }
 
 // ── Master SF ────────────────────────────────────────────────
@@ -653,11 +885,14 @@ function calcWSATSA(sfMap) {
   const ws   = ss().getSheetByName('WSA_TSA');
   const rows = ws.getDataRange().getValues();
 
-  const now       = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear  = now.getFullYear();
-  const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-  const lastYear  = thisMonth === 0 ? thisYear - 1 : thisYear;
+  const now   = new Date();
+  const tz    = CONFIG.TIMEZONE;
+  const nowYM = Utilities.formatDate(now, tz, 'yyyy-MM');  // e.g. "2026-10"
+  const nowY  = parseInt(nowYM.split('-')[0]);
+  const nowM  = parseInt(nowYM.split('-')[1]);              // 1-based
+  const lastM = nowM === 1 ? 12 : nowM - 1;
+  const lastY = nowM === 1 ? nowY - 1 : nowY;
+  const lastYM = `${lastY}-${lastM.toString().padStart(2,'0')}`;
 
   const bySF  = {};
   const trend = {};
@@ -667,11 +902,14 @@ function calcWSATSA(sfMap) {
     if (!r[0]) continue;
 
     let d;
-    try { d = new Date(r[0]); } catch(e) { continue; }
+    if (r[0] instanceof Date) {
+      d = r[0];
+    } else {
+      try { d = new Date(r[0]); } catch(e) { continue; }
+    }
     if (isNaN(d)) continue;
 
-    const yr = d.getFullYear(), mo = d.getMonth();
-    const dateStr = fmtDate(d).slice(0, 7);
+    const dateStr = Utilities.formatDate(d, tz, 'yyyy-MM');  // timezone-aware
 
     const kode = (r[1] || '').toString().trim().toLowerCase();
     if (!kode) continue;
@@ -680,11 +918,12 @@ function calcWSATSA(sfMap) {
 
     if (!bySF[kode]) bySF[kode] = { bulanIni: 0, bulanLalu: 0 };
 
-    if (yr === thisYear  && mo === thisMonth) bySF[kode].bulanIni  += wsa;
-    if (yr === lastYear  && mo === lastMonth) bySF[kode].bulanLalu += wsa;
+    if (dateStr === nowYM)  bySF[kode].bulanIni  += wsa;
+    if (dateStr === lastYM) bySF[kode].bulanLalu += wsa;
 
-    if (!trend[dateStr]) trend[dateStr] = 0;
-    trend[dateStr] += wsa;
+    const trendKey = dateStr; // already "yyyy-MM" timezone-aware
+    if (!trend[trendKey]) trend[trendKey] = 0;
+    trend[trendKey] += wsa;
   }
 
   const trendArr = Object.entries(trend)
@@ -744,9 +983,12 @@ function getOrders(params) {
 
   function cleanDate(val) {
     if (!val) return '';
-    const s = val.toString().replace(/-/g, '').substring(0, 8);
+    if (val instanceof Date) {
+      return Utilities.formatDate(val, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+    }
+    const s = val.toString().replace(/-/g, '').replace(/\//g, '').substring(0, 8);
     if (s.length === 8) return s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8);
-    return s;
+    return '';
   }
 
   const orders = [];
@@ -757,7 +999,11 @@ function getOrders(params) {
 
     // Date filter on Tanggal IO
     const tglIO = C.tanggalIO !== -1 ? r[C.tanggalIO] : '';
-    const tglStr = tglIO ? tglIO.toString().replace(/-/g, '').substring(0, 8) : '';
+    const tglStr = tglIO
+      ? (tglIO instanceof Date
+          ? Utilities.formatDate(tglIO, CONFIG.TIMEZONE, 'yyyyMMdd')
+          : tglIO.toString().replace(/-/g, '').replace(/\//g, '').substring(0, 8))
+      : '';
     if (startStr && tglStr && tglStr < startStr) continue;
     if (endStr   && tglStr && tglStr > endStr)   continue;
     // Kalau tglStr kosong tapi ada filter tanggal, skip juga (order belum IO)
@@ -923,7 +1169,7 @@ function getAbsen() {
         nama:      (r[C.nama]      || '').toString(),
         username:  (r[C.username]  || '').toString(),
         kelurahan: (r[C.kelurahan] || '').toString(),
-        deal:      r[C.deal] ? 1 : 0,
+        deal:      ['ya','yes','1','true'].includes((r[C.deal]||'').toString().trim().toLowerCase()) ? 1 : 0,
       });
     }
   }

@@ -555,6 +555,13 @@ tr:hover td{background:var(--surface2);}
   margin-bottom:4px;grid-column:1/-1;
 }
 
+/* ─── USER MANAGEMENT TABLE ─────────────────────────────────── */
+.mgmt-tbl{width:100%;border-collapse:collapse;font-size:11.5px;}
+.mgmt-tbl th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--border);}
+.mgmt-tbl td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.mgmt-tbl tr:last-child td{border-bottom:none;}
+.mgmt-tbl tr:hover td{background:var(--surface2);}
+.mgmt-sel{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:10.5px;color:var(--fg);font-family:var(--font);}
 /* ─── SKELETON / STATES ──────────────────────────────────────── */
 .sk{border-radius:6px;background:var(--surface2);animation:shimmer 1.6s infinite;}
 @keyframes shimmer{0%,100%{opacity:.5}50%{opacity:.9}}
@@ -762,6 +769,7 @@ tr:hover td{background:var(--surface2);}
       <a class="nav-link" data-page="settings" onclick="navigate('settings');return false;" href="#">
         <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Pengaturan
+        <span class="nav-badge" id="nav-pending-badge" style="display:none"></span>
       </a>
     </li>
   </ul>
@@ -967,8 +975,9 @@ tr:hover td{background:var(--surface2);}
           <span class="count-badge" id="sf-count-label"></span>
         </div>
         <div class="sec-body">
-          <div class="search-row">
-            <input class="search-input" id="sfSearch" type="search" placeholder="Cari nama / kode / STO…" oninput="renderSF()">
+          <div class="search-row" style="display:flex;gap:8px;align-items:center;">
+            <input class="search-input" id="sfSearch" type="search" placeholder="Cari nama / kode / STO…" oninput="renderSF()" style="flex:1;">
+            <button class="btn-refresh" onclick="exportSFCSV()">⬇ CSV</button>
           </div>
           <div class="tbl-wrap" id="tbl-sf"></div>
           <div class="pager" id="sf-pager"></div>
@@ -1121,7 +1130,10 @@ tr:hover td{background:var(--surface2);}
         <span class="ph-lite-title">Data Orders</span>
         <span class="ph-lite-sub">Seluruh baris order dari sheet Bulan_Ini, dapat difilter</span>
       </div>
-      <div class="ph-lite-right"><button class="btn-refresh" onclick="refreshData()">↻ Muat Ulang</button></div>
+      <div class="ph-lite-right" style="display:flex;gap:8px;">
+        <button class="btn-refresh" onclick="exportOrdersCSV()">⬇ CSV</button>
+        <button class="btn-refresh" onclick="refreshData()">↻ Muat Ulang</button>
+      </div>
     </div>
   </div>
 
@@ -1303,22 +1315,49 @@ tr:hover td{background:var(--surface2);}
         </div>
       </div>
 
-      <!-- ADMIN ONLY: Target -->
-      <div class="g2" id="settings-admin-section">
-        <div class="sec">
-          <div class="sec-head"><div class="sec-head-left"><div class="sec-dot amber"></div><span class="sec-title">Target PS Bulanan</span></div></div>
-          <div class="sec-body">
-            <p style="font-size:11px;color:var(--muted);margin-bottom:10px">RE Target = PS × 1.2 &nbsp;·&nbsp; IO Target = PS × 1.5</p>
-            <div class="target-grid" id="tgt-grid">
-              <div class="tgt-cluster-hdr">📍 Cluster Lampung Barat</div>
-              <div class="tgt-field"><label>Tanggamus</label><input type="number" id="tgt-TANGGAMUS" min="0"></div>
-              <div class="tgt-field"><label>Lampung Barat</label><input type="number" id="tgt-LAMPUNG BARAT" min="0"></div>
-              <div class="tgt-field"><label>Pesisir Barat</label><input type="number" id="tgt-PESISIR BARAT" min="0"></div>
-              <div class="tgt-cluster-hdr">📍 Cluster Way Kanan</div>
-              <div class="tgt-field"><label>Lampung Utara</label><input type="number" id="tgt-LAMPUNG UTARA" min="0"></div>
-              <div class="tgt-field"><label>Way Kanan</label><input type="number" id="tgt-WAY KANAN" min="0"></div>
+      <!-- ADMIN ONLY: Target + Multiplier + User Management -->
+      <div id="settings-admin-section">
+        <div class="g2" style="margin-bottom:20px">
+          <!-- Target PS -->
+          <div class="sec">
+            <div class="sec-head"><div class="sec-head-left"><div class="sec-dot amber"></div><span class="sec-title">Target PS Bulanan</span></div></div>
+            <div class="sec-body">
+              <div class="target-grid" id="tgt-grid">
+                <div class="tgt-cluster-hdr">📍 Cluster Lampung Barat</div>
+                <div class="tgt-field"><label>Tanggamus</label><input type="number" id="tgt-TANGGAMUS" min="0"></div>
+                <div class="tgt-field"><label>Lampung Barat</label><input type="number" id="tgt-LAMPUNG BARAT" min="0"></div>
+                <div class="tgt-field"><label>Pesisir Barat</label><input type="number" id="tgt-PESISIR BARAT" min="0"></div>
+                <div class="tgt-cluster-hdr">📍 Cluster Way Kanan</div>
+                <div class="tgt-field"><label>Lampung Utara</label><input type="number" id="tgt-LAMPUNG UTARA" min="0"></div>
+                <div class="tgt-field"><label>Way Kanan</label><input type="number" id="tgt-WAY KANAN" min="0"></div>
+              </div>
+              <button class="btn-primary" onclick="saveTargets()" style="margin-top:14px">💾 Simpan Target</button>
             </div>
-            <button class="btn-primary" onclick="saveTargets()" style="margin-top:14px">💾 Simpan Target</button>
+          </div>
+          <!-- Multiplier Config -->
+          <div class="sec">
+            <div class="sec-head"><div class="sec-head-left"><div class="sec-dot teal"></div><span class="sec-title">Multiplier Target</span></div></div>
+            <div class="sec-body">
+              <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Kalkulasi otomatis: IO Target = PS × multiplier IO, RE Target = PS × multiplier RE</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:320px">
+                <div class="tgt-field"><label>Multiplier IO</label><input type="number" id="mult-io" step="0.1" min="0.5" max="5" value="1.5"></div>
+                <div class="tgt-field"><label>Multiplier RE</label><input type="number" id="mult-re" step="0.1" min="0.5" max="5" value="1.2"></div>
+              </div>
+              <button class="btn-primary" onclick="saveMultipliers()" style="margin-top:14px">💾 Simpan Multiplier</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Management -->
+        <div class="sec" style="margin-bottom:20px">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot red"></div><span class="sec-title">Manajemen User</span></div>
+            <button class="btn-refresh" onclick="loadUserList()" style="font-size:10.5px">↻ Refresh</button>
+          </div>
+          <div class="sec-body">
+            <div id="user-mgmt-list" style="min-height:40px">
+              <p style="color:var(--muted);font-size:11.5px">Klik ↻ Refresh untuk memuat daftar user.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1352,13 +1391,29 @@ const KAB_LIST = ['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT','LAMPUNG UTARA','W
 function getTargets() {
   try { return JSON.parse(LS.get('wokTargets') || '{}'); } catch(e) { return {}; }
 }
-function saveTargets() {
+async function saveTargets() {
   const t = {};
   KAB_LIST.forEach(k => {
     const el = document.getElementById('tgt-' + k);
     if (el) t[k] = Number(el.value) || 0;
   });
+  // Simpan ke localStorage dulu (offline-first)
   LS.set('wokTargets', JSON.stringify(t));
+  // Sinkron ke GAS (admin only)
+  const sess = getSession();
+  if (sess && sess.role === 'admin') {
+    try {
+      await fetchAPIPost('saveTargets', {
+        adminUsername: sess.username,
+        targets: JSON.stringify(t),
+      });
+      showToast('Target berhasil disimpan ke server ✓');
+    } catch(e) {
+      showToast('Disimpan lokal · Gagal sync ke server: ' + e.message, 'warn');
+    }
+  } else {
+    showToast('Target disimpan lokal ✓');
+  }
   if (S.loaded) renderWokPerf();
 }
 function loadTargetInputs() {
@@ -1367,6 +1422,136 @@ function loadTargetInputs() {
     const el = document.getElementById('tgt-' + k);
     if (el && t[k]) el.value = t[k];
   });
+}
+// Toast helper — simple, no library needed
+function showToast(msg, type='ok') {
+  let el = document.getElementById('wok-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'wok-toast';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:8px 18px;border-radius:8px;font-size:12.5px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = type === 'warn' ? '#D97706' : '#16A34A';
+  el.style.color = '#fff';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2800);
+}
+
+// ─── MULTIPLIER CONFIG ───────────────────────────────────
+async function saveMultipliers() {
+  const io = Number(document.getElementById('mult-io')?.value) || 1.5;
+  const re = Number(document.getElementById('mult-re')?.value) || 1.2;
+  S.multipliers = { io, re };
+  const sess = getSession();
+  if (sess && sess.role === 'admin') {
+    try {
+      await fetchAPIPost('saveMultipliers', {
+        adminUsername: sess.username,
+        io, re,
+      });
+      showToast('Multiplier disimpan ke server ✓');
+    } catch(e) {
+      showToast('Multiplier disimpan lokal · Gagal sync: ' + e.message, 'warn');
+    }
+  } else {
+    showToast('Multiplier diperbarui lokal ✓');
+  }
+  if (S.loaded) { renderWokPerf(); renderOverview(); }
+}
+
+function loadMultiplierInputs() {
+  const ioEl = document.getElementById('mult-io');
+  const reEl = document.getElementById('mult-re');
+  if (ioEl) ioEl.value = S.multipliers.io;
+  if (reEl) reEl.value = S.multipliers.re;
+}
+
+// ─── USER MANAGEMENT ─────────────────────────────────────
+async function loadUserList() {
+  const el = document.getElementById('user-mgmt-list');
+  if (!el) return;
+  el.innerHTML = '<p style="color:var(--muted);font-size:11.5px">Memuat...</p>';
+  const sess = getSession();
+  try {
+    const d = await fetchAPIPost('getUserList', { adminUsername: sess.username });
+    const users = d.users || [];
+    if (!users.length) { el.innerHTML = '<p style="color:var(--muted);font-size:11.5px">Tidak ada user.</p>'; return; }
+
+    // Update badge
+    S.pendingCount = users.filter(u => u.status === 'pending').length;
+    updatePendingBadge();
+
+    const statusColor = { active:'var(--green)', pending:'var(--amber)', rejected:'var(--red)' };
+    el.innerHTML = `<table class="mgmt-tbl">
+      <thead><tr>
+        <th>Username</th><th>Nama</th><th>Role</th><th>Status</th><th>Aksi</th>
+      </tr></thead>
+      <tbody>
+      ${users.map(u => `<tr>
+        <td>${u.username}</td>
+        <td>${u.nama||'-'}</td>
+        <td>
+          <select class="mgmt-sel" onchange="updateRole('${u.username}',this.value)" ${u.username===sess.username?'disabled':''}>
+            <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+            <option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer</option>
+          </select>
+        </td>
+        <td><span class="pill" style="background:${statusColor[u.status]||'var(--muted)'};color:#fff;border:none;font-size:10px">${u.status||'-'}</span></td>
+        <td style="white-space:nowrap;display:flex;gap:5px;flex-wrap:wrap">
+          ${u.status==='pending' ? `
+            <button class="btn-primary" style="padding:3px 8px;font-size:10.5px" onclick="approveUser('${u.username}')">✓ Approve</button>
+            <button class="btn-sm" style="padding:3px 8px;font-size:10.5px;background:var(--amber);border-color:var(--amber);color:#fff" onclick="rejectUser('${u.username}')">✕ Reject</button>
+          ` : ''}
+          ${u.username !== sess.username ? `
+            <button class="btn-sm" style="padding:3px 8px;font-size:10.5px;background:var(--red);border-color:var(--red);color:#fff" onclick="deleteUser('${u.username}')">🗑</button>
+          ` : '<span style="font-size:10px;color:var(--muted)">(kamu)</span>'}
+        </td>
+      </tr>`).join('')}
+      </tbody>
+    </table>`;
+  } catch(e) {
+    el.innerHTML = `<p style="color:var(--red);font-size:11.5px">Gagal: ${e.message}</p>`;
+  }
+}
+
+async function approveUser(username) {
+  const sess = getSession();
+  try {
+    await fetchAPIPost('approveUser', { adminUsername: sess.username, targetUsername: username });
+    showToast(`User ${username} diapprove ✓`);
+    loadUserList();
+  } catch(e) { showToast('Gagal approve: ' + e.message, 'warn'); }
+}
+
+async function rejectUser(username) {
+  if (!confirm(`Reject user "${username}"?`)) return;
+  const sess = getSession();
+  try {
+    await fetchAPIPost('rejectUser', { adminUsername: sess.username, targetUsername: username });
+    showToast(`User ${username} ditolak`);
+    loadUserList();
+  } catch(e) { showToast('Gagal reject: ' + e.message, 'warn'); }
+}
+
+async function updateRole(username, role) {
+  const sess = getSession();
+  try {
+    await fetchAPIPost('updateRole', { adminUsername: sess.username, targetUsername: username, role });
+    showToast(`Role ${username} → ${role} ✓`);
+  } catch(e) { showToast('Gagal ubah role: ' + e.message, 'warn'); loadUserList(); }
+}
+
+async function deleteUser(username) {
+  if (!confirm(`Hapus user "${username}" secara permanen?`)) return;
+  const sess = getSession();
+  try {
+    await fetchAPIPost('deleteUser', { adminUsername: sess.username, targetUsername: username });
+    showToast(`User ${username} dihapus`);
+    loadUserList();
+  } catch(e) { showToast('Gagal hapus: ' + e.message, 'warn'); }
 }
 
 // ─── DEFAULT DATE RANGE (1st of current month → today) ───
@@ -1386,6 +1571,8 @@ function firstOfMonthStr() {
 const S = {
   perf: null, kendala: null, absen: null, orders: null,
   loaded: false, sfPage: 0, ordersPage: 0,
+  multipliers: { io: 1.5, re: 1.2 },
+  pendingCount: 0,
   filter: {
     cluster: '', sto: '', kendalaJenis: '',
     dateStart: firstOfMonthStr(), dateEnd: todayStr(),
@@ -1435,6 +1622,7 @@ function renderPage(pageId) {
   if (pageId === 'absensi')     loadAbsen();
   if (pageId === 'peta')        loadOrders().then(() => { renderPeta(); setTimeout(() => _mapInstance && _mapInstance.invalidateSize(), 50); });
   if (pageId === 'orders')      loadOrders().then(renderOrders);
+  if (pageId === 'settings')    { loadMultiplierInputs(); }
 }
 
 // ─── SIDEBAR ─────────────────────────────────────────────
@@ -1469,6 +1657,23 @@ async function fetchAPI(action, extra={}) {
   let qs = `token=${encodeURIComponent(token)}&action=${action}`;
   Object.entries(extra).forEach(([k,v]) => { if (v !== undefined && v !== '') qs += `&${k}=${encodeURIComponent(v)}`; });
   const r = await fetch(`${url}?${qs}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+  return d;
+}
+
+// POST-based API — digunakan untuk auth & mutasi data (lebih aman dari GET)
+async function fetchAPIPost(action, data={}) {
+  const url   = LS.get('apiUrl')   || DEFAULT_API_URL;
+  const token = LS.get('apiToken') || DEFAULT_API_TOKEN;
+  if (!url || !token) throw new Error('Konfigurasi API belum diset.');
+  const body  = JSON.stringify({ token, action, ...data });
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const d = await r.json();
   if (d.error) throw new Error(d.error);
@@ -1789,8 +1994,8 @@ function renderOverview() {
     ? (S.filter.cluster === 'Lampung Barat' ? ['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT'] : ['LAMPUNG UTARA','WAY KANAN'])
     : KAB_LIST;
   filterKabs.forEach(k => { totalTgt += (tgts[k] || 0); });
-  const ioTgt = Math.round(totalTgt * 1.5);
-  const reTgt = Math.round(totalTgt * 1.2);
+  const ioTgt = Math.round(totalTgt * S.multipliers.io);
+  const reTgt = Math.round(totalTgt * S.multipliers.re);
   const psPct = totalTgt ? Math.min(Math.round(bi.ps / totalTgt * 100), 100) : 0;
   const ioPct = ioTgt    ? Math.min(Math.round(bi.io / ioTgt * 100), 100) : 0;
   const rePct = reTgt    ? Math.min(Math.round(bi.re / reTgt * 100), 100) : 0;
@@ -1824,7 +2029,17 @@ function renderOverview() {
     <div class="kpi-card blue">
       <div class="kpi-top"><div><div class="kpi-label">Konversi IO→PS</div><div class="kpi-value">${konv}%</div></div><div class="kpi-icon blue">🎯</div></div>
       <div class="kpi-footer">${delta(konv,konvL)}<span class="kpi-vs">vs bln lalu</span></div>
-    </div>`;
+    </div>
+    ${(hk.elapsed && hk.total && hk.elapsed < hk.total) ? (() => {
+      const psProj  = Math.round(bi.ps  / hk.elapsed * hk.total);
+      const ioProj  = Math.round(bi.io  / hk.elapsed * hk.total);
+      const gapPS   = totalTgt ? psProj - totalTgt : null;
+      const gapLbl  = gapPS !== null ? (gapPS >= 0 ? `<span style="color:var(--green)">+${fmt(gapPS)} vs target</span>` : `<span style="color:var(--red)">${fmt(gapPS)} vs target</span>`) : '';
+      return `<div class="kpi-card teal">
+        <div class="kpi-top"><div><div class="kpi-label">Proyeksi EoM (PS)</div><div class="kpi-value">${fmt(psProj)}</div></div><div class="kpi-icon teal">📈</div></div>
+        <div class="kpi-footer">${gapLbl || `IO ~${fmt(ioProj)}`}<span class="kpi-vs">HK ${hk.elapsed}/${hk.total}</span></div>
+      </div>`;
+    })() : ''}`;
 
   // Cluster cards
   const clDef = {
@@ -2003,7 +2218,7 @@ function renderWokPerf() {
       wI.io+=cI.io;wI.re+=cI.re;wI.ps+=cI.ps;
       wL.io+=cL.io;wL.re+=cL.re;wL.ps+=cL.ps;
       wT+=cT;
-      const rT=Math.round(cT*1.2), ioT=Math.round(cT*1.5);
+      const rT=Math.round(cT*S.multipliers.re), ioT=Math.round(cT*S.multipliers.io);
       rows += `<tr class="row-cl ${clCfg.cls}">
         <td class="td-terr">CLUS ${clName.toUpperCase()}</td>
         <td class="td-r">${ioT||'—'}</td><td class="td-r">${cI.io}</td><td class="td-r">${drr(cI.io)}</td><td class="td-r">${cL.io}</td><td class="td-r">${mom(cI.io,cL.io)}</td>
@@ -2016,7 +2231,7 @@ function renderWokPerf() {
         const r=kabMap[kab];
         const kI=r?(r[iniF]||{io:0,re:0,ps:0}):{io:0,re:0,ps:0};
         const kL=r?(r[laluF]||{io:0,re:0,ps:0}):{io:0,re:0,ps:0};
-        const kT=targets[kab]||0, kRT=Math.round(kT*1.2), kIT=Math.round(kT*1.5);
+        const kT=targets[kab]||0, kRT=Math.round(kT*S.multipliers.re), kIT=Math.round(kT*S.multipliers.io);
         rows += `<tr class="row-kab">
           <td class="td-terr">${kab.charAt(0)+kab.slice(1).toLowerCase()}</td>
           <td class="td-r">${kIT||'—'}</td><td class="td-r">${kI.io}</td><td class="td-r">${drr(kI.io)}</td><td class="td-r">${kL.io}</td><td class="td-r">${mom(kI.io,kL.io)}</td>
@@ -2030,7 +2245,7 @@ function renderWokPerf() {
     // Jika ada filter cluster, pakai hasil sumK (hanya kab di cluster tersebut).
     const totI = wI;
     const totL = wL;
-    const wRT=Math.round(wT*1.2),wIT=Math.round(wT*1.5);
+    const wRT=Math.round(wT*S.multipliers.re),wIT=Math.round(wT*S.multipliers.io);
     rows += `<tr class="row-tot">
       <td class="td-terr">WOK LAMWAY</td>
       <td class="td-r">${wIT||'—'}</td><td class="td-r">${totI.io}</td><td class="td-r">${drr(totI.io)}</td><td class="td-r">${totL.io}</td><td class="td-r">${mom(totI.io,totL.io)}</td>
@@ -2199,6 +2414,58 @@ function renderSF() {
     <button class="pg-btn" onclick="sfNav(1)" ${S.sfPage>=maxPage?'disabled':''}>Next ›</button>`;
 }
 function sfNav(d){ S.sfPage+=d; renderSF(); }
+
+// ─── EXPORT CSV ──────────────────────────────────────────
+function exportCSV(rows, filename) {
+  // BOM untuk kompatibilitas Excel (UTF-8 with BOM)
+  const BOM = '﻿';
+  const csv = BOM + rows.map(row =>
+    row.map(cell => {
+      const s = (cell === null || cell === undefined) ? '' : String(cell);
+      // Escape double-quote, wrap jika ada koma/newline/double-quote
+      if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }).join(',')
+  ).join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+}
+
+function exportSFCSV() {
+  const sfs = filteredSF();
+  if (!sfs.length) { showToast('Tidak ada data SF', 'warn'); return; }
+  const header = ['Rank','Kode SF','Nama SF','STO','Kabupaten','IO Bln Ini','RE Bln Ini','PS Bln Ini','IO Bln Lalu','RE Bln Lalu','PS Bln Lalu','WSA Bln Ini'];
+  const rows = sfs.map((sf, i) => {
+    const bi = sf.bulanIni  || {};
+    const bl = sf.bulanLalu || {};
+    return [i+1, sf.kode||'', sf.nama||'', sf.sto||'', sf.kabupaten||'',
+      bi.io||0, bi.re||0, bi.ps||0, bl.io||0, bl.re||0, bl.ps||0, bi.wsa||0];
+  });
+  const now = new Date().toISOString().slice(0,10);
+  exportCSV([header, ...rows], `sf-performance-${now}.csv`);
+  showToast(`Mengunduh ${sfs.length} data SF ✓`);
+}
+
+function exportOrdersCSV() {
+  const orders = S.orders || [];
+  if (!orders.length) { showToast('Belum ada data orders', 'warn'); return; }
+  const header = ['No','Tanggal IO','No Order','Nama Pelanggan','Alamat','Kab/Kota','STO','Kode SF','Nama SF','Produk','Channel','Status','Tanggal PS'];
+  const rows = orders.map((o, i) => [
+    i+1, o.tglIO||'', o.noOrder||'', o.nama||'', o.alamat||'', o.kabupaten||'',
+    o.sto||'', o.kodeSF||'', o.namaSF||'', o.produk||'', o.channel||'',
+    o.status||'', o.tglPS||''
+  ]);
+  const now = new Date().toISOString().slice(0,10);
+  exportCSV([header, ...rows], `orders-${now}.csv`);
+  showToast(`Mengunduh ${orders.length} baris orders ✓`);
+}
 
 // ─── ORDERS / PETA ───────────────────────────────────────
 let _mapInstance = null;
@@ -2535,7 +2802,7 @@ async function doChangePassword() {
   try {
     const oldHash = await hashPassword(oldP);
     const newHash = await hashPassword(newP);
-    const d = await fetchAPI('changepass', { username: sess.username, oldHash, newHash });
+    const d = await fetchAPIPost('changepass', { username: sess.username, oldHash, newHash });
     if (!d.ok) throw new Error(d.error || 'Gagal mengubah password');
     ok.textContent = '✓ Password berhasil diubah!'; ok.style.display = '';
     document.getElementById('cp-old').value = '';
@@ -2598,7 +2865,7 @@ async function doLogin() {
   btn.disabled = true; btn.textContent = 'Memverifikasi…';
   try {
     const hash = await hashPassword(pass);
-    const d = await fetchAPI('login', { username: user, passHash: hash });
+    const d = await fetchAPIPost('login', { username: user, passHash: hash });
     if (!d.ok) throw new Error(d.error || 'Login gagal');
     const sess = { username: d.username, nama: d.nama, role: d.role };
     saveSession(sess);
@@ -2629,7 +2896,7 @@ async function doRegister() {
   btn.disabled = true; btn.textContent = 'Mendaftarkan…';
   try {
     const hash = await hashPassword(pass);
-    const d = await fetchAPI('register', { nama, username: user, passHash: hash });
+    const d = await fetchAPIPost('register', { nama, username: user, passHash: hash });
     if (!d.ok) throw new Error(d.error || 'Registrasi gagal');
     ok.textContent = d.message || '✓ Pendaftaran berhasil! Hubungi admin untuk approval.'; ok.style.display = '';
     document.getElementById('rg-nama').value = '';
@@ -2801,7 +3068,48 @@ function init() {
   if (!sess) { showLoginModal(); return; }
   updateAvatarUI(sess);
   applyRoleUI(sess.role);
+  // Sync targets + multipliers dari GAS (background, non-blocking)
+  syncGASConfig(sess);
   loadPerformance();
+}
+
+async function syncGASConfig(sess) {
+  try {
+    // Fetch multipliers dari GAS
+    const mData = await fetchAPI('getMultipliers');
+    if (mData && mData.io && mData.re) {
+      S.multipliers = { io: Number(mData.io) || 1.5, re: Number(mData.re) || 1.2 };
+    }
+  } catch(e) { /* gunakan default S.multipliers */ }
+
+  try {
+    // Fetch targets dari GAS lalu simpan ke LS (sinkron antar device)
+    const tData = await fetchAPI('getTargets');
+    if (tData && tData.targets) {
+      LS.set('wokTargets', JSON.stringify(tData.targets));
+      loadTargetInputs();
+    }
+  } catch(e) { /* gunakan targets dari LS */ }
+
+  // Badge pending users — admin only
+  if (sess && sess.role === 'admin') {
+    try {
+      const pData = await fetchAPIPost('getPendingCount', { adminUsername: sess.username });
+      S.pendingCount = pData.count || 0;
+      updatePendingBadge();
+    } catch(e) { /* badge tetap tersembunyi */ }
+  }
+}
+
+function updatePendingBadge() {
+  const badge = document.getElementById('nav-pending-badge');
+  if (!badge) return;
+  if (S.pendingCount > 0) {
+    badge.textContent = S.pendingCount > 9 ? '9+' : S.pendingCount;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 // Tunggu seluruh DOM selesai diparse (termasuk modal HTML di bawah script)
 if (document.readyState === 'loading') {
@@ -2816,8 +3124,12 @@ if (document.readyState === 'loading') {
   <!-- LOGIN -->
   <div id="login-modal" class="auth-card">
     <div class="auth-brand">
-      <div class="auth-brand-logo">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      <!-- IndiHome Logo: stilisasi wifi + rumah -->
+      <div class="auth-brand-logo" style="background:linear-gradient(135deg,#e8001c 0%,#ff4444 100%)">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <path d="M12 21L5 14.5C3.1 12.6 3.1 9.5 5 7.6 6.9 5.7 10 5.7 12 7.6 14 5.7 17.1 5.7 19 7.6 20.9 9.5 20.9 12.6 19 14.5L12 21z" fill="#fff" opacity=".9"/>
+          <path d="M12 13a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="#e8001c"/>
+        </svg>
       </div>
       <div class="auth-brand-text">
         <span class="auth-brand-name">IndiHome LPG</span>
@@ -2835,8 +3147,11 @@ if (document.readyState === 'loading') {
   <!-- REGISTER -->
   <div id="reg-modal" class="auth-card" style="display:none">
     <div class="auth-brand">
-      <div class="auth-brand-logo">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      <div class="auth-brand-logo" style="background:linear-gradient(135deg,#e8001c 0%,#ff4444 100%)">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <path d="M12 21L5 14.5C3.1 12.6 3.1 9.5 5 7.6 6.9 5.7 10 5.7 12 7.6 14 5.7 17.1 5.7 19 7.6 20.9 9.5 20.9 12.6 19 14.5L12 21z" fill="#fff" opacity=".9"/>
+          <path d="M12 13a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="#e8001c"/>
+        </svg>
       </div>
       <div class="auth-brand-text">
         <span class="auth-brand-name">IndiHome LPG</span>
