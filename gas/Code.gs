@@ -200,7 +200,7 @@ function getPerformance(params) {
   const stoFilter = (params.sto || '').toString().trim().toUpperCase();
 
   const ini  = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter, stoFilter);
-  const lalu = parseBulan('Bulan_Ini',  sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter);
+  const lalu = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter);
 
   const hariKerja = calcHariKerja(now);
   const wsa       = calcWSATSA(sfMap);
