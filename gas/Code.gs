@@ -99,6 +99,7 @@ function doPost(e) {
       case 'login':          data = loginUser(params);           break;
       case 'register':       data = registerUser(params);        break;
       case 'changepass':     data = changePassword(params);      break;
+      case 'getUserList':    data = getUserList(params);         break;
       case 'approveUser':    data = approveUser(params);         break;
       case 'rejectUser':     data = rejectUser(params);          break;
       case 'updateRole':     data = updateUserRole(params);      break;
