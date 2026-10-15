@@ -1135,9 +1135,12 @@ async function loadPerformance() {
       end:     S.filter.dateEnd,
       produk:  S.filter.produk,
       channel: S.filter.channel,
+      sto:     S.filter.sto || '',
     });
     S.loaded = true;
     document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    // Populate kendala dropdown dari data dinamis
+    populateKendalaDropdown(S.perf.kendalaList || []);
     const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
     renderPage(activePage);
   } catch(e) {
@@ -1191,6 +1194,13 @@ function buildSTOFilter() {
   sel.innerHTML = '<option value="">Semua STO</option>' +
     all.map(s => `<option value="${s}">${s}</option>`).join('');
 }
+function populateKendalaDropdown(list) {
+  const sel = document.getElementById('fKendalaJenis');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Semua Jenis Kendala</option>' +
+    (list || []).map(k => `<option value="${k}"${k===cur?' selected':''}>${k}</option>`).join('');
+}
 function buildKendalaJenisFilter() {
   if (!S.kendala) return;
   const sel = document.getElementById('fKendalaJenis');
@@ -1215,9 +1225,10 @@ function applyFilter() {
   });
   if (sto && allowed && !allowed.includes(sto)) stoSel.value = '';
 
-  // Reload data if date/produk/channel changed
+  // Reload data if date/produk/channel/STO changed (semua ini mempengaruhi data GAS)
   const dateChanged = ds !== S.filter.dateStart || de !== S.filter.dateEnd
-                   || ch !== S.filter.channel   || pr !== S.filter.produk;
+                   || ch !== S.filter.channel   || pr !== S.filter.produk
+                   || sto !== S.filter.sto;
   S.filter.cluster = cl; S.filter.sto = sto; S.filter.kendalaJenis = kj;
   S.filter.dateStart = ds; S.filter.dateEnd = de;
   S.filter.produk = pr; S.filter.channel = ch;
@@ -1345,14 +1356,22 @@ function renderOverview() {
   const sfs = filteredSF();
   const targets = getTargets();
 
-  const bi = sfs.reduce((a, sf) => {
-    const x = sf.bulanIni || {};
-    return {io:a.io+(x.io||0), ps:a.ps+(x.ps||0), wsa:a.wsa+(x.wsa||0), re:a.re+(x.re||0)};
-  }, {io:0,ps:0,wsa:0,re:0});
-  const bl = sfs.reduce((a, sf) => {
-    const x = sf.bulanLalu || {};
-    return {io:a.io+(x.io||0), ps:a.ps+(x.ps||0), wsa:a.wsa+(x.wsa||0), re:a.re+(x.re||0)};
-  }, {io:0,ps:0,wsa:0,re:0});
+  // Pilih sumber data KPI berdasarkan channel filter
+  // total = semua channel, agencyIni = agency only, digitalIni = digital only
+  const ch = S.filter.channel || '';
+  let bi, bl;
+  if (ch === 'agency') {
+    bi = { ...(d.summary?.agencyIni  || {}), wsa: sfs.reduce((a,sf)=>a+(sf.bulanIni||{}).wsa||0,0) };
+    bl = { ...(d.summary?.agencyLalu || {}), wsa: sfs.reduce((a,sf)=>a+(sf.bulanLalu||{}).wsa||0,0) };
+  } else if (ch === 'digital') {
+    bi = { ...(d.summary?.digitalIni  || {}), wsa: 0 };
+    bl = { ...(d.summary?.digitalLalu || {}), wsa: 0 };
+  } else {
+    bi = { ...(d.summary?.bulanIni  || {}), wsa: sfs.reduce((a,sf)=>a+(sf.bulanIni||{}).wsa||0,0) };
+    bl = { ...(d.summary?.bulanLalu || {}), wsa: sfs.reduce((a,sf)=>a+(sf.bulanLalu||{}).wsa||0,0) };
+  }
+  bi = { io:bi.io||0, re:bi.re||0, ps:bi.ps||0, wsa:bi.wsa||0 };
+  bl = { io:bl.io||0, re:bl.re||0, ps:bl.ps||0, wsa:bl.wsa||0 };
 
   // Compute targets
   const hk = d.hariKerja || {};
@@ -1410,9 +1429,14 @@ function renderOverview() {
   document.getElementById('ov-clusters').innerHTML = Object.entries(clDef)
     .filter(([n]) => !S.filter.cluster || n === S.filter.cluster)
     .map(([clName, cfg]) => {
-      const clSF = sfs.filter(sf => sf.cluster === clName);
-      const cBi = clSF.reduce((a,sf) => { const x=sf.bulanIni||{}; return {io:a.io+(x.io||0),ps:a.ps+(x.ps||0),wsa:a.wsa+(x.wsa||0),re:a.re+(x.re||0)}; },{io:0,ps:0,wsa:0,re:0});
-      const cBl = clSF.reduce((a,sf) => { const x=sf.bulanLalu||{}; return {io:a.io+(x.io||0),ps:a.ps+(x.ps||0),wsa:a.wsa+(x.wsa||0)}; },{io:0,ps:0,wsa:0});
+      // Sum per cluster dari rekapKab (channel-aware)
+      const clKabs = (d.rekapKab||[]).filter(k => k.cluster === clName);
+      const pickKab = (row) => ch === 'agency' ? (row.agencyIni||{}) : (row.allIni||{});
+      const pickKabL = (row) => ch === 'agency' ? (row.agencyLalu||{}) : (row.allLalu||{});
+      const cBi = clKabs.reduce((a,k)=>{ const x=pickKab(k); return {io:a.io+(x.io||0),re:a.re+(x.re||0),ps:a.ps+(x.ps||0)}; },{io:0,re:0,ps:0});
+      const cBiWsa = sfs.filter(sf=>sf.cluster===clName).reduce((a,sf)=>a+(sf.bulanIni||{}).wsa||0, 0);
+      Object.assign(cBi, {wsa: cBiWsa});
+      const cBl = clKabs.reduce((a,k)=>{ const x=pickKabL(k); return {io:a.io+(x.io||0),re:a.re+(x.re||0),ps:a.ps+(x.ps||0),wsa:0}; },{io:0,re:0,ps:0,wsa:0});
       const ck = cBi.io ? Math.round(cBi.ps/cBi.io*100) : 0;
       const cTgt = cfg.kabs.reduce((a,k)=>a+(tgts[k]||0),0);
       const cPct = cTgt ? Math.min(Math.round(cBi.ps/cTgt*100),100) : 0;
@@ -1429,12 +1453,13 @@ function renderOverview() {
 
   // Charts
   const kabData = (d.rekapKab||[]).filter(k => !S.filter.cluster || k.cluster === S.filter.cluster);
+  const kabPS = kabData.map(k => ch==='agency' ? (k.agencyIni||{}).ps||0 : (k.allIni||{}).ps||0);
   mkChart('chartKab', {
     type:'bar',
     data:{
       labels:kabData.map(k=>k.kabupaten.charAt(0)+k.kabupaten.slice(1).toLowerCase()),
       datasets:[{
-        label:'PS',data:kabData.map(k=>(k.bulanIni||{}).ps||0),
+        label:'PS',data:kabPS,
         backgroundColor:kabData.map(k=>k.cluster==='Lampung Barat'?CC.blue:CC.amber),
         borderRadius:4,
       }],
@@ -1519,10 +1544,6 @@ function renderWokPerf() {
       </tr>`;
 
       clCfg.kabs.forEach(kab => {
-        if (S.filter.sto) {
-          const stoMap = {'TANGGAMUS':['TGP'],'LAMPUNG BARAT':['LIW','KRU'],'PESISIR BARAT':['KOT'],'LAMPUNG UTARA':['BKM','KBI'],'WAY KANAN':['BDU']};
-          if (stoMap[kab] && !stoMap[kab].includes(S.filter.sto)) return;
-        }
         const r=kabMap[kab];
         const kI=r?(r[iniF]||{io:0,re:0,ps:0}):{io:0,re:0,ps:0};
         const kL=r?(r[laluF]||{io:0,re:0,ps:0}):{io:0,re:0,ps:0};

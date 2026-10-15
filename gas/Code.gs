@@ -197,8 +197,10 @@ function getPerformance(params) {
   const produkFilter  = (params.produk  || '').toString().trim().toLowerCase();
   const channelFilter = (params.channel || '').toString().trim().toLowerCase();
 
-  const ini  = parseBulan('Bulan_Ini', sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter);
-  const lalu = parseBulan('Bulan_Ini', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter);
+  const stoFilter = (params.sto || '').toString().trim().toUpperCase();
+
+  const ini  = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter, stoFilter);
+  const lalu = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter);
 
   const hariKerja = calcHariKerja(now);
   const wsa       = calcWSATSA(sfMap);
@@ -258,17 +260,19 @@ function getPerformance(params) {
       agencyLalu:   lalu.agency,
     },
     hariKerja,
-    wsaTrend:  wsa.trend,
-    wilayah:   WILAYAH,
-    updatedAt: new Date().toISOString(),
+    wsaTrend:   wsa.trend,
+    wilayah:    WILAYAH,
+    kendalaList: ini.kendalaList || [],
+    updatedAt:  new Date().toISOString(),
   };
 }
 
 // ── Parse Sheet dengan filter rentang tanggal (YYYYMMDD) ─────
 // startStr & endStr: "YYYYMMDD" – apple-to-apple MoM comparison
-function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFilter) {
+function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFilter, stoFilter) {
   produkFilter  = (produkFilter  || '').toLowerCase().trim();
   channelFilter = (channelFilter || '').toLowerCase().trim();
+  stoFilter     = (stoFilter     || '').toUpperCase().trim();
   const ws = ss().getSheetByName(sheetName);
   if (!ws) return {
     bySF:    {},
@@ -300,7 +304,9 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     kendala:   findCol(['Kategori Kendala']),
     produk:    findCol(['Validasi Produk']),
     kab:       findCol(['VALIDASI KAB']),
+    sto:       findCol(['Validasi STO']),
     channel2:  findCol(['Channel 2']),
+    kendalaKat:findCol(['Kategori Kendala']),
   };
 
   function mkStat() { return { io: 0, re: 0, ps: 0, byKab: {} }; }
@@ -330,6 +336,12 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     if (produkFilter) {
       const rowProduk = (C.produk !== -1 ? r[C.produk] : '').toString().trim().toLowerCase();
       if (!rowProduk.includes(produkFilter)) continue;
+    }
+
+    // Filter STO
+    if (stoFilter) {
+      const rowSTO = (C.sto !== -1 ? r[C.sto] : '').toString().trim().toUpperCase();
+      if (rowSTO !== stoFilter) continue;
     }
 
     // Tanggal masing-masing metric (format YYYYMMDD)
@@ -396,9 +408,23 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
       const p = r[C.produk].toString().trim();
       if (p) bySF[kode].produk[p] = (bySF[kode].produk[p] || 0) + 1;
     }
+    if (C.kendalaKat !== -1 && r[C.kendalaKat]) {
+      const k = r[C.kendalaKat].toString().trim();
+      if (k) bySF[kode].kendalaList = bySF[kode].kendalaList || {};
+      if (k) bySF[kode].kendalaList[k] = (bySF[kode].kendalaList[k] || 0) + 1;
+    }
   }
 
-  return { bySF, total, agency, digital };
+  // Kumpulkan unique kendala dari semua rows
+  const kendalaSet = new Set();
+  if (C.kendalaKat !== -1) {
+    for (let i = 1; i < rows.length; i++) {
+      const v = rows[i][C.kendalaKat];
+      if (v) { const s = v.toString().trim(); if (s) kendalaSet.add(s); }
+    }
+  }
+
+  return { bySF, total, agency, digital, kendalaList: [...kendalaSet].sort() };
 }
 
 // ── Rekap per Kabupaten (Full: all + agency, ini + lalu) ─────
