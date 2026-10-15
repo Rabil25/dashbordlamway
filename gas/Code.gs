@@ -24,6 +24,17 @@ const WILAYAH = {
   },
 };
 
+// Mapping STO → Cluster (untuk fallback saat KAB tidak tersedia)
+const STO_TO_CLUSTER = {
+  'TGP': 'Lampung Barat',
+  'KOT': 'Lampung Barat',
+  'LIW': 'Lampung Barat',
+  'KRU': 'Lampung Barat',
+  'BKM': 'Way Kanan',
+  'KBI': 'Way Kanan',
+  'BDU': 'Way Kanan',
+};
+
 // Auto-build reverse lookup
 const KAB_TO_CLUSTER = {};
 const TL_TO_CLUSTER  = {};
