@@ -1,0 +1,860 @@
+<title>WOK Dashboard — IndiHome LPG</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+/* ── Tokens ── */
+:root {
+  --red:#C8102E; --red-d:#a00d24; --red-lite:#FEE2E6;
+  --green:#15803D; --green-lite:#DCFCE7;
+  --amber:#B45309; --amber-lite:#FEF3C7;
+  --blue:#1D4ED8; --blue-lite:#DBEAFE;
+  --purple:#6D28D9; --purple-lite:#EDE9FE;
+  --bg:#F2F1EF; --surface:#FFFFFF; --surface2:#ECEAE8;
+  --fg:#1C1917; --fg2:#57534E; --muted:#A8A29E; --border:#E7E5E4;
+  --sidebar-bg:#1A1614; --sidebar-fg:#D6D3D1; --sidebar-active:#FFFFFF;
+  --sidebar-w:224px;
+  --font:'Plus Jakarta Sans',system-ui,sans-serif;
+  --r:10px; --r-sm:6px; --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1C1917; --surface:#292524; --surface2:#3C3837;
+  --fg:#FAFAF9; --fg2:#A8A29E; --muted:#78716C; --border:#44403C;
+  --red-lite:#4C0519; --green-lite:#14532D; --amber-lite:#451A03; --blue-lite:#1E3A5F; --purple-lite:#2E1065;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#1C1917; --surface:#292524; --surface2:#3C3837;
+  --fg:#FAFAF9; --fg2:#A8A29E; --muted:#78716C; --border:#44403C;
+  --red-lite:#4C0519; --green-lite:#14532D; --amber-lite:#451A03; --blue-lite:#1E3A5F; --purple-lite:#2E1065;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--fg);font-size:14px;line-height:1.5;display:flex;min-height:100vh;overflow-x:hidden;}
+
+/* ── Sidebar ── */
+.sidebar{
+  position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);
+  background:var(--sidebar-bg);color:var(--sidebar-fg);
+  display:flex;flex-direction:column;z-index:200;
+  transform:translateX(0);transition:transform .25s ease;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-left:max(0px,env(safe-area-inset-left,0px));
+}
+.sidebar-brand{padding:20px 18px 16px;border-bottom:1px solid #2D2B29;}
+.sidebar-brand .brand-name{font-size:13px;font-weight:700;color:#fff;letter-spacing:.02em;}
+.sidebar-brand .brand-sub{font-size:11px;color:#78716C;margin-top:2px;}
+.nav-list{list-style:none;padding:10px 0;flex:1;overflow-y:auto;}
+.nav-item{display:block;}
+.nav-link{
+  display:flex;align-items:center;gap:10px;padding:9px 18px;
+  color:var(--sidebar-fg);text-decoration:none;font-size:13px;font-weight:500;
+  border-left:3px solid transparent;transition:all .15s;cursor:pointer;
+}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,.06);}
+.nav-link.active{color:var(--sidebar-active);border-left-color:var(--red);background:rgba(200,16,46,.15);}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7;}
+.nav-link.active .nav-icon,.nav-link:hover .nav-icon{opacity:1;}
+.nav-section{padding:14px 18px 4px;font-size:10px;font-weight:700;color:#57534E;letter-spacing:.08em;text-transform:uppercase;}
+.sidebar-footer{padding:14px 18px;border-top:1px solid #2D2B29;font-size:11px;color:#57534E;}
+#lastUpdated{font-size:10px;color:#57534E;margin-top:2px;}
+
+/* ── Overlay (mobile) ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;}
+.overlay.show{display:block;}
+
+/* ── Main shell ── */
+.shell{
+  margin-left:var(--sidebar-w);flex:1;min-width:0;
+  display:flex;flex-direction:column;
+}
+
+/* ── Topbar ── */
+.topbar{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:100;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  padding:11px max(16px,env(safe-area-inset-right,0px)) 11px 16px;
+  min-height:52px;
+}
+.menu-btn{display:none;background:none;border:none;color:var(--fg2);padding:4px;cursor:pointer;}
+.page-title{font-size:15px;font-weight:700;flex:1;min-width:0;}
+.topbar-actions{display:flex;gap:6px;align-items:center;}
+.btn-icon{
+  background:none;border:1px solid var(--border);border-radius:var(--r-sm);
+  color:var(--fg2);width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:14px;transition:all .15s;
+}
+.btn-icon:hover{background:var(--surface2);color:var(--fg);}
+
+/* ── Filter bar ── */
+.filter-bar{
+  display:flex;gap:8px;padding:10px 16px;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-wrap:wrap;
+}
+.filter-bar select{
+  font-family:var(--font);font-size:12px;padding:5px 8px;border-radius:var(--r-sm);
+  border:1px solid var(--border);background:var(--surface2);color:var(--fg);cursor:pointer;
+}
+.filter-label{font-size:11px;color:var(--muted);align-self:center;}
+.filter-reset{font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:4px 6px;font-family:var(--font);}
+.filter-reset:hover{text-decoration:underline;}
+
+/* ── Pages ── */
+.content{flex:1;padding:20px max(16px,env(safe-area-inset-right,0px)) 32px 16px;overflow-x:hidden;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── Config card ── */
+.config-wrap{
+  max-width:480px;margin:40px auto;background:var(--surface);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:28px;
+}
+.config-wrap h2{font-size:16px;font-weight:700;margin-bottom:4px;}
+.config-wrap p{font-size:13px;color:var(--fg2);margin-bottom:20px;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.field label{font-size:12px;font-weight:600;color:var(--fg2);}
+.field input{
+  font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--border);background:var(--surface2);color:var(--fg);
+}
+.field input:focus{outline:none;border-color:var(--red);}
+.btn-primary{
+  background:var(--red);color:#fff;border:none;border-radius:var(--r-sm);
+  font-family:var(--font);font-size:13px;font-weight:600;padding:9px 18px;cursor:pointer;width:100%;
+}
+.btn-primary:hover{background:var(--red-d);}
+
+/* ── KPI Grid ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);}
+.kpi-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.kpi-value{font-size:26px;font-weight:700;margin:4px 0;line-height:1.1;}
+.kpi-delta{font-size:11px;display:flex;align-items:center;gap:3px;}
+.delta-up{color:var(--green);}
+.delta-dn{color:var(--red);}
+.delta-neu{color:var(--muted);}
+
+/* ── Section header ── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;}
+.sec-title{font-size:13px;font-weight:700;}
+.sec-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ── 2-col grid ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.card{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);}
+.card-title{font-size:12px;font-weight:700;color:var(--fg2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+.chart-wrap{position:relative;height:220px;}
+
+/* ── Cluster cards ── */
+.cluster-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.cluster-card{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);border-top:3px solid var(--border);}
+.cluster-card.lb{border-top-color:#1D4ED8;}
+.cluster-card.wk{border-top-color:#B45309;}
+.cluster-card h3{font-size:13px;font-weight:700;margin-bottom:10px;}
+.cluster-stat{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);}
+.cluster-stat:last-child{border-bottom:none;}
+.cluster-stat .lbl{font-size:12px;color:var(--fg2);}
+.cluster-stat .val{font-size:13px;font-weight:700;}
+
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:var(--surface2);color:var(--fg2);font-weight:600;text-align:left;padding:8px 10px;white-space:nowrap;font-size:11px;letter-spacing:.03em;text-transform:uppercase;}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.03em;}
+.badge-lb{background:var(--blue-lite);color:var(--blue);}
+.badge-wk{background:var(--amber-lite);color:var(--amber);}
+.badge-uk{background:var(--surface2);color:var(--muted);}
+.rank-num{font-size:11px;color:var(--muted);font-weight:600;width:24px;text-align:right;}
+.sf-name{font-weight:600;}
+.sf-kode{font-size:10px;color:var(--muted);}
+.conv-bar{display:flex;align-items:center;gap:6px;}
+.conv-track{flex:1;min-width:40px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.conv-fill{height:100%;background:var(--red);border-radius:2px;}
+.text-right{text-align:right;}
+.text-num{font-variant-numeric:tabular-nums;}
+
+/* ── Search ── */
+.search-bar{display:flex;gap:8px;margin-bottom:12px;}
+.search-input{
+  flex:1;font-family:var(--font);font-size:13px;padding:7px 10px;
+  border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface2);color:var(--fg);
+}
+.search-input:focus{outline:none;border-color:var(--red);}
+
+/* ── Pagination ── */
+.pagination{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:12px;font-size:12px;}
+.page-btn{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:4px 10px;cursor:pointer;font-size:12px;color:var(--fg2);font-family:var(--font);
+}
+.page-btn:hover:not(:disabled){background:var(--border);}
+.page-btn:disabled{opacity:.4;cursor:default;}
+.page-info{color:var(--fg2);}
+
+/* ── Summary pills ── */
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.pill{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;}
+.pill span{color:var(--muted);font-weight:400;margin-right:4px;}
+
+/* ── Skeleton ── */
+.sk{border-radius:6px;background:var(--surface2);animation:shimmer 1.4s infinite;}
+@keyframes shimmer{0%,100%{opacity:.6}50%{opacity:1}}
+.sk-h{height:20px;} .sk-kpi{height:80px;} .sk-row{height:36px;margin-bottom:6px;}
+
+/* ── Error / Empty ── */
+.state-msg{text-align:center;padding:40px 20px;color:var(--muted);}
+.state-msg .icon{font-size:32px;margin-bottom:8px;}
+.state-msg p{font-size:13px;}
+
+/* ── Absen list ── */
+.absen-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.absen-item:last-child{border-bottom:none;}
+.absen-nama{font-weight:600;font-size:13px;}
+.absen-detail{font-size:11px;color:var(--muted);}
+.absen-time{font-size:11px;color:var(--fg2);text-align:right;}
+.deal-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;}
+.deal-yes{background:var(--green-lite);color:var(--green);}
+.deal-no{background:var(--surface2);color:var(--muted);}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .sidebar{transform:translateX(calc(-1 * var(--sidebar-w)));}
+  .sidebar.open{transform:translateX(0);}
+  .shell{margin-left:0;}
+  .menu-btn{display:flex;}
+  .grid-2,.cluster-grid,.kpi-grid{grid-template-columns:1fr;}
+  .filter-bar{padding:8px 12px;}
+}
+</style>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-name">⬡ WOK Dashboard</div>
+    <div class="brand-sub">IndiHome LPG · Lampung</div>
+  </div>
+  <ul class="nav-list">
+    <li class="nav-item"><a class="nav-link active" data-page="overview" onclick="navigate('overview');return false;">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 1116 0A8 8 0 012 10zm3.5-1h9a.5.5 0 000-1h-9a.5.5 0 000 1zm0 3h9a.5.5 0 000-1h-9a.5.5 0 000 1zm0 3h5a.5.5 0 000-1h-5a.5.5 0 000 1z"/></svg>
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor" style="display:none"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/></svg>
+      Overview
+    </a></li>
+    <li class="nav-item"><a class="nav-link" data-page="performance" onclick="navigate('performance');return false;">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/></svg>
+      Performance SF
+    </a></li>
+    <li class="nav-item"><a class="nav-link" data-page="kendala" onclick="navigate('kendala');return false;">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      Kendala
+    </a></li>
+    <li class="nav-item"><a class="nav-link" data-page="absensi" onclick="navigate('absensi');return false;">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+      Absensi
+    </a></li>
+    <li class="nav-item" style="margin-top:auto"><a class="nav-link" data-page="settings" onclick="navigate('settings');return false;">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Pengaturan
+    </a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <div>Data dari Google Sheets</div>
+    <div id="lastUpdated">—</div>
+  </div>
+</nav>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- Main shell -->
+<div class="shell">
+  <header class="topbar">
+    <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+    </button>
+    <span class="page-title" id="pageTitle">Overview</span>
+    <div class="topbar-actions">
+      <button class="btn-icon" id="refreshBtn" onclick="refreshData()" title="Refresh">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="filter-bar" id="filterBar">
+    <span class="filter-label">Filter:</span>
+    <select id="fCluster" onchange="applyFilter()">
+      <option value="">Semua Cluster</option>
+      <option value="Lampung Barat">Lampung Barat</option>
+      <option value="Way Kanan">Way Kanan</option>
+    </select>
+    <select id="fSTO" onchange="applyFilter()">
+      <option value="">Semua STO</option>
+    </select>
+    <button class="filter-reset" onclick="resetFilter()">✕ Reset</button>
+  </div>
+
+  <div class="content">
+    <!-- ░░ OVERVIEW ░░ -->
+    <section class="page active" id="page-overview">
+      <div id="ov-kpi" class="kpi-grid">
+        <div class="kpi-card sk sk-kpi"></div><div class="kpi-card sk sk-kpi"></div>
+        <div class="kpi-card sk sk-kpi"></div><div class="kpi-card sk sk-kpi"></div>
+      </div>
+      <div class="cluster-grid" id="ov-clusters"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">PS per Kabupaten — Bulan Ini</div>
+          <div class="chart-wrap"><canvas id="chartKab"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Tren WSA/TSA — 14 Hari</div>
+          <div class="chart-wrap"><canvas id="chartWsa"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ░░ PERFORMANCE ░░ -->
+    <section class="page" id="page-performance">
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="card-title">PS per STO — Bulan Ini vs Lalu</div>
+          <div class="chart-wrap"><canvas id="chartSTO"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Rekap STO</div>
+          <div class="tbl-wrap" id="tbl-sto"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr">
+          <div><div class="sec-title">Ranking SF</div><div class="sec-sub" id="sf-count-label"></div></div>
+        </div>
+        <div class="search-bar">
+          <input class="search-input" id="sfSearch" type="search" placeholder="Cari nama / kode / STO…" oninput="renderSF()">
+        </div>
+        <div class="tbl-wrap" id="tbl-sf"></div>
+        <div class="pagination" id="sf-pager"></div>
+      </div>
+    </section>
+
+    <!-- ░░ KENDALA ░░ -->
+    <section class="page" id="page-kendala">
+      <div class="pill-row" id="kendala-pills"></div>
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="card-title">Follow-Up Kendala Terbaru</div>
+          <div class="tbl-wrap" id="tbl-fu"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Distribusi Jenis Kendala</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="chartKendala"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-hdr"><div class="sec-title">Riwayat Kendala</div></div>
+        <div class="tbl-wrap" id="tbl-kendala"></div>
+      </div>
+    </section>
+
+    <!-- ░░ ABSENSI ░░ -->
+    <section class="page" id="page-absensi">
+      <div class="kpi-grid" style="margin-bottom:16px;">
+        <div class="kpi-card" id="ab-count-card">
+          <div class="kpi-label">Hadir Hari Ini</div>
+          <div class="kpi-value" id="ab-count">—</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Tren Kehadiran — 14 Hari</div>
+          <div class="chart-wrap"><canvas id="chartAbsen"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title" id="ab-today-title">Daftar Hadir Hari Ini</div>
+          <div id="ab-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ░░ SETTINGS ░░ -->
+    <section class="page" id="page-settings">
+      <div class="config-wrap">
+        <h2>⚙ Pengaturan API</h2>
+        <p>Masukkan URL deployment Google Apps Script dan token autentikasi.</p>
+        <div class="field"><label>API URL</label><input id="cfgUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+        <div class="field"><label>Token</label><input id="cfgToken" type="password" placeholder="lpgLampung2026"></div>
+        <button class="btn-primary" onclick="saveConfig()">Simpan &amp; Muat Data</button>
+      </div>
+    </section>
+  </div><!-- /content -->
+</div><!-- /shell -->
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const LS = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+};
+
+// ── State ─────────────────────────────────────────────────────
+const S = {
+  perf: null,      // performance API response
+  kendala: null,   // kendala API response
+  absen: null,     // absen API response
+  loaded: {},      // which pages have been loaded
+  filter: { cluster: '', sto: '' },
+  sfPage: 0,
+  sfSearch: '',
+  charts: {},
+};
+
+const PAGE_TITLES = {
+  overview: 'Overview', performance: 'Performance SF',
+  kendala: 'Kendala', absensi: 'Absensi', settings: 'Pengaturan',
+};
+
+// ── Navigation ────────────────────────────────────────────────
+function navigate(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  document.querySelectorAll('[data-page="' + pageId + '"]').forEach(a => a.classList.add('active'));
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[pageId] || pageId;
+  closeSidebar();
+  if (!S.loaded[pageId] && S.perf) renderPage(pageId);
+}
+
+function renderPage(pageId) {
+  if (pageId === 'overview')     renderOverview();
+  if (pageId === 'performance')  renderPerformance();
+  if (pageId === 'kendala')      { loadKendala(); }
+  if (pageId === 'absensi')      { loadAbsen(); }
+  S.loaded[pageId] = true;
+}
+
+// ── Sidebar ───────────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ── API ───────────────────────────────────────────────────────
+async function fetchAPI(action) {
+  const url   = LS.get('apiUrl');
+  const token = LS.get('apiToken');
+  if (!url || !token) throw new Error('API belum dikonfigurasi');
+  const r = await fetch(`${url}?token=${encodeURIComponent(token)}&action=${action}`);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || 'API error');
+  return d;
+}
+
+async function loadPerformance() {
+  try {
+    S.perf = await fetchAPI('performance');
+    buildSTOFilter();
+    // Render current active page
+    const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
+    renderPage(activePage);
+    document.getElementById('lastUpdated').textContent =
+      'Update: ' + new Date(S.perf.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    document.getElementById('ov-kpi').innerHTML =
+      `<div class="state-msg" style="grid-column:1/-1"><div class="icon">⚠️</div><p>${e.message}</p></div>`;
+  }
+}
+
+async function loadKendala() {
+  if (S.kendala) { renderKendala(); return; }
+  document.getElementById('tbl-kendala').innerHTML = '<div class="sk sk-row"></div>'.repeat(5);
+  try {
+    S.kendala = await fetchAPI('kendala');
+    renderKendala();
+  } catch (e) {
+    document.getElementById('tbl-kendala').innerHTML =
+      `<div class="state-msg"><p>${e.message}</p></div>`;
+  }
+}
+
+async function loadAbsen() {
+  if (S.absen) { renderAbsen(); return; }
+  try {
+    S.absen = await fetchAPI('absen');
+    renderAbsen();
+  } catch (e) {
+    document.getElementById('ab-list').innerHTML = `<div class="state-msg"><p>${e.message}</p></div>`;
+  }
+}
+
+async function refreshData() {
+  S.perf = null; S.kendala = null; S.absen = null;
+  S.loaded = {};
+  document.getElementById('refreshBtn').style.opacity = '.4';
+  await loadPerformance();
+  document.getElementById('refreshBtn').style.opacity = '1';
+}
+
+// ── Filter ────────────────────────────────────────────────────
+const WILAYAH_MAP = {
+  'Lampung Barat': ['LIW','KRU','KOT','TGP'],
+  'Way Kanan':     ['BKM','KBI','BDU'],
+};
+function buildSTOFilter() {
+  const sel = document.getElementById('fSTO');
+  const all = ['LIW','KRU','KOT','TGP','BKM','KBI','BDU'];
+  sel.innerHTML = '<option value="">Semua STO</option>' +
+    all.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+function applyFilter() {
+  S.filter.cluster = document.getElementById('fCluster').value;
+  S.filter.sto     = document.getElementById('fSTO').value;
+  // Cascade: if cluster selected, limit STO
+  const stoSel = document.getElementById('fSTO');
+  const allowed = S.filter.cluster ? WILAYAH_MAP[S.filter.cluster] || [] : null;
+  [...stoSel.options].forEach(opt => {
+    if (!opt.value) return;
+    opt.hidden = allowed ? !allowed.includes(opt.value) : false;
+  });
+  if (allowed && !allowed.includes(S.filter.sto)) {
+    S.filter.sto = '';
+    stoSel.value = '';
+  }
+  S.loaded = {};
+  const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
+  renderPage(activePage);
+}
+function resetFilter() {
+  document.getElementById('fCluster').value = '';
+  document.getElementById('fSTO').value = '';
+  S.filter = { cluster: '', sto: '' };
+  applyFilter();
+}
+
+function filteredSF() {
+  if (!S.perf) return [];
+  return S.perf.sfPerformance.filter(sf => {
+    if (S.filter.cluster && sf.cluster !== S.filter.cluster) return false;
+    if (S.filter.sto && sf.sto !== S.filter.sto) return false;
+    return true;
+  });
+}
+function filteredSTO() {
+  if (!S.perf) return [];
+  return S.perf.rekapSTO.filter(s => {
+    if (S.filter.cluster && s.cluster !== S.filter.cluster) return false;
+    if (S.filter.sto && s.sto !== S.filter.sto) return false;
+    return true;
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+const fmtN = n => (n||0).toLocaleString('id-ID');
+function delta(now, prev) {
+  if (!prev) return '<span class="delta-neu">—</span>';
+  const d = now - prev;
+  if (d > 0) return `<span class="delta-up">▲ ${d}</span>`;
+  if (d < 0) return `<span class="delta-dn">▼ ${Math.abs(d)}</span>`;
+  return `<span class="delta-neu">= ${prev}</span>`;
+}
+function clusterBadge(c) {
+  if (c === 'Lampung Barat') return `<span class="badge badge-lb">LB</span>`;
+  if (c === 'Way Kanan')     return `<span class="badge badge-wk">WK</span>`;
+  return `<span class="badge badge-uk">?</span>`;
+}
+function mkChart(id, cfg) {
+  if (S.charts[id]) S.charts[id].destroy();
+  const ctx = document.getElementById(id)?.getContext('2d');
+  if (!ctx) return;
+  S.charts[id] = new Chart(ctx, cfg);
+}
+const CHART_COLORS = {
+  red:  'rgba(200,16,46,.85)', redFade: 'rgba(200,16,46,.35)',
+  blue: 'rgba(29,78,216,.8)', amber: 'rgba(180,83,9,.8)',
+  green:'rgba(21,128,61,.8)',
+};
+
+// ── Overview ─────────────────────────────────────────────────
+function renderOverview() {
+  const d = S.perf;
+  const sfs = filteredSF();
+  const sto = filteredSTO();
+
+  // Aggregate totals from filtered SF
+  const bi = sfs.reduce((a, sf) => ({
+    io: a.io + sf.bulanIni.io, ps: a.ps + sf.bulanIni.ps,
+    wsa: a.wsa + sf.bulanIni.wsa, re: a.re + sf.bulanIni.re,
+  }), { io:0, ps:0, wsa:0, re:0 });
+  const bl = sfs.reduce((a, sf) => ({
+    io: a.io + sf.bulanLalu.io, ps: a.ps + sf.bulanLalu.ps,
+    wsa: a.wsa + sf.bulanLalu.wsa,
+  }), { io:0, ps:0, wsa:0 });
+  const konv = bi.io ? Math.round(bi.ps / bi.io * 100) : 0;
+  const konvL = bl.io ? Math.round(bl.ps / bl.io * 100) : 0;
+
+  document.getElementById('ov-kpi').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">Total IO</div>
+      <div class="kpi-value">${fmtN(bi.io)}</div>
+      <div class="kpi-delta">${delta(bi.io, bl.io)} vs bln lalu</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total PS</div>
+      <div class="kpi-value">${fmtN(bi.ps)}</div>
+      <div class="kpi-delta">${delta(bi.ps, bl.ps)} vs bln lalu</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">WSA / TSA</div>
+      <div class="kpi-value">${fmtN(bi.wsa)}</div>
+      <div class="kpi-delta">${delta(bi.wsa, bl.wsa)} vs bln lalu</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Konversi IO→PS</div>
+      <div class="kpi-value">${konv}%</div>
+      <div class="kpi-delta">${delta(konv, konvL)} vs bln lalu</div>
+    </div>`;
+
+  // Cluster cards
+  const clusters = ['Lampung Barat','Way Kanan'];
+  const clCls = { 'Lampung Barat': 'lb', 'Way Kanan': 'wk' };
+  document.getElementById('ov-clusters').innerHTML = clusters.map(cl => {
+    const clSF = sfs.filter(sf => sf.cluster === cl);
+    const cBi = clSF.reduce((a,sf) => ({ io:a.io+sf.bulanIni.io, ps:a.ps+sf.bulanIni.ps, wsa:a.wsa+sf.bulanIni.wsa }), {io:0,ps:0,wsa:0});
+    const cBl = clSF.reduce((a,sf) => ({ io:a.io+sf.bulanLalu.io, ps:a.ps+sf.bulanLalu.ps, wsa:a.wsa+sf.bulanLalu.wsa }), {io:0,ps:0,wsa:0});
+    const ck = cBi.io ? Math.round(cBi.ps/cBi.io*100) : 0;
+    return `<div class="cluster-card ${clCls[cl]}">
+      <h3>${cl}</h3>
+      <div class="cluster-stat"><span class="lbl">IO Bulan Ini</span><span class="val">${fmtN(cBi.io)}</span></div>
+      <div class="cluster-stat"><span class="lbl">PS Bulan Ini</span><span class="val">${fmtN(cBi.ps)}</span></div>
+      <div class="cluster-stat"><span class="lbl">WSA/TSA</span><span class="val">${fmtN(cBi.wsa)}</span></div>
+      <div class="cluster-stat"><span class="lbl">Konversi</span><span class="val">${ck}%</span></div>
+      <div class="cluster-stat"><span class="lbl">vs Bln Lalu PS</span><span class="val">${delta(cBi.ps, cBl.ps)}</span></div>
+    </div>`;
+  }).join('');
+
+  // Kabupaten chart
+  const kabData = d.rekapKab.filter(k => {
+    if (S.filter.cluster && k.cluster !== S.filter.cluster) return false;
+    return true;
+  });
+  mkChart('chartKab', {
+    type: 'bar',
+    data: {
+      labels: kabData.map(k => k.kabupaten),
+      datasets: [{
+        label: 'PS',
+        data: kabData.map(k => k.bulanIni.ps),
+        backgroundColor: kabData.map(k =>
+          k.cluster === 'Lampung Barat' ? CHART_COLORS.blue :
+          k.cluster === 'Way Kanan' ? CHART_COLORS.amber : CHART_COLORS.redFade),
+        borderRadius: 4,
+      }],
+    },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } },
+  });
+
+  // WSA trend chart
+  const wt = d.wsaTrend;
+  mkChart('chartWsa', {
+    type: 'line',
+    data: {
+      labels: wt.map(p => p.date.slice(5)),
+      datasets: [{
+        label: 'WSA/TSA',
+        data: wt.map(p => p.count),
+        borderColor: CHART_COLORS.red, backgroundColor: CHART_COLORS.redFade,
+        tension: .3, fill: true, pointRadius: 2,
+      }],
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+  });
+}
+
+// ── Performance ───────────────────────────────────────────────
+function renderPerformance() {
+  const sto = filteredSTO();
+
+  // STO chart
+  mkChart('chartSTO', {
+    type: 'bar',
+    data: {
+      labels: sto.map(s => s.sto),
+      datasets: [
+        { label: 'PS Bln Ini',  data: sto.map(s => s.bulanIni.ps),  backgroundColor: CHART_COLORS.red,    borderRadius: 4 },
+        { label: 'PS Bln Lalu', data: sto.map(s => s.bulanLalu.ps), backgroundColor: CHART_COLORS.redFade, borderRadius: 4 },
+      ],
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } }, scales: { y: { beginAtZero: true } } },
+  });
+
+  // STO table
+  document.getElementById('tbl-sto').innerHTML = `
+    <table>
+      <thead><tr><th>STO</th><th>Cluster</th><th class="text-right">IO</th><th class="text-right">PS</th><th class="text-right">WSA</th><th class="text-right">Δ PS</th><th class="text-right">SF</th></tr></thead>
+      <tbody>${sto.map(s => `<tr>
+        <td><strong>${s.sto}</strong></td>
+        <td>${clusterBadge(s.cluster)}</td>
+        <td class="text-right text-num">${fmtN(s.bulanIni.io)}</td>
+        <td class="text-right text-num">${fmtN(s.bulanIni.ps)}</td>
+        <td class="text-right text-num">${fmtN(s.bulanIni.wsa)}</td>
+        <td class="text-right">${delta(s.bulanIni.ps, s.bulanLalu.ps)}</td>
+        <td class="text-right text-num">${s.sfAktif}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+
+  S.sfPage = 0;
+  renderSF();
+}
+
+function renderSF() {
+  const q = (document.getElementById('sfSearch')?.value || '').toLowerCase();
+  let sfs = filteredSF().filter(sf => {
+    if (!q) return true;
+    return sf.nama.toLowerCase().includes(q) || sf.kode.toLowerCase().includes(q) || sf.sto.toLowerCase().includes(q);
+  });
+  const total = sfs.length;
+  document.getElementById('sf-count-label').textContent = `${total} SF`;
+  const PAGE = 20;
+  const maxPage = Math.max(0, Math.ceil(total / PAGE) - 1);
+  if (S.sfPage > maxPage) S.sfPage = maxPage;
+  const slice = sfs.slice(S.sfPage * PAGE, (S.sfPage + 1) * PAGE);
+
+  document.getElementById('tbl-sf').innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>Nama SF</th><th>STO</th><th class="text-right">IO</th><th class="text-right">PS</th><th class="text-right">WSA</th><th class="text-right">Konv.</th><th class="text-right">Δ PS</th></tr></thead>
+      <tbody>${slice.map((sf, i) => {
+        const konv = sf.bulanIni.io ? Math.round(sf.bulanIni.ps / sf.bulanIni.io * 100) : 0;
+        return `<tr>
+          <td class="rank-num">${S.sfPage * PAGE + i + 1}</td>
+          <td><div class="sf-name">${sf.nama}</div><div class="sf-kode">${sf.kode}</div></td>
+          <td>${clusterBadge(sf.cluster)} ${sf.sto}</td>
+          <td class="text-right text-num">${fmtN(sf.bulanIni.io)}</td>
+          <td class="text-right text-num">${fmtN(sf.bulanIni.ps)}</td>
+          <td class="text-right text-num">${fmtN(sf.bulanIni.wsa)}</td>
+          <td><div class="conv-bar"><div class="conv-track"><div class="conv-fill" style="width:${konv}%"></div></div><span style="font-size:11px;white-space:nowrap">${konv}%</span></div></td>
+          <td class="text-right">${delta(sf.bulanIni.ps, sf.bulanLalu.ps)}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+
+  document.getElementById('sf-pager').innerHTML = `
+    <button class="page-btn" onclick="sfNav(-1)" ${S.sfPage === 0 ? 'disabled' : ''}>‹ Prev</button>
+    <span class="page-info">Hal ${S.sfPage + 1} / ${maxPage + 1}</span>
+    <button class="page-btn" onclick="sfNav(1)" ${S.sfPage >= maxPage ? 'disabled' : ''}>Next ›</button>`;
+}
+function sfNav(dir) { S.sfPage += dir; renderSF(); }
+
+// ── Kendala ───────────────────────────────────────────────────
+function renderKendala() {
+  const d = S.kendala;
+
+  // Pills
+  document.getElementById('kendala-pills').innerHTML =
+    `<div class="pill"><span>Total Kendala</span>${d.total}</div>
+     <div class="pill"><span>FU Aktif</span>${d.totalFU}</div>
+     ${Object.entries(d.byJenis).map(([j,n]) =>
+       `<div class="pill"><span>${j}</span>${n}</div>`).join('')}`;
+
+  // FU table (recent 20)
+  const fu = d.fuKendala.slice(0, 20);
+  document.getElementById('tbl-fu').innerHTML = fu.length ? `
+    <table>
+      <thead><tr><th>Tanggal</th><th>STO</th><th>Kendala</th><th>Solusi</th></tr></thead>
+      <tbody>${fu.map(r => `<tr>
+        <td style="white-space:nowrap">${r.tanggal}</td>
+        <td>${clusterBadge(r.cluster)} ${r.sto}</td>
+        <td style="max-width:180px">${r.kendala}</td>
+        <td style="max-width:180px;color:var(--fg2)">${r.solusi}</td>
+      </tr>`).join('')}</tbody>
+    </table>` : '<div class="state-msg"><p>Belum ada data FU kendala.</p></div>';
+
+  // Jenis chart
+  const jenisList = Object.entries(d.byJenis);
+  mkChart('chartKendala', {
+    type: 'bar',
+    data: {
+      labels: jenisList.map(([j]) => j),
+      datasets: [{ data: jenisList.map(([,n]) => n), backgroundColor: CHART_COLORS.red, borderRadius: 4 }],
+    },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } },
+  });
+
+  // Kendala table (recent 50)
+  const kl = d.kendala.slice(0, 50);
+  document.getElementById('tbl-kendala').innerHTML = kl.length ? `
+    <table>
+      <thead><tr><th>Tanggal</th><th>Teknisi</th><th>Order ID</th><th>Jenis</th><th>Detail / Keterangan</th></tr></thead>
+      <tbody>${kl.map(r => `<tr>
+        <td style="white-space:nowrap">${r.tanggal}</td>
+        <td>${r.teknisi}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.orderId}</td>
+        <td><span class="badge badge-uk" style="white-space:nowrap">${r.jenis}</span></td>
+        <td style="color:var(--fg2);max-width:240px">${r.keterangan || r.detail}</td>
+      </tr>`).join('')}</tbody>
+    </table>` : '<div class="state-msg"><p>Belum ada data kendala.</p></div>';
+}
+
+// ── Absensi ───────────────────────────────────────────────────
+function renderAbsen() {
+  const d = S.absen;
+  document.getElementById('ab-count').textContent = d.count;
+  document.getElementById('ab-today-title').textContent = `Hadir Hari Ini (${d.count} orang)`;
+
+  mkChart('chartAbsen', {
+    type: 'bar',
+    data: {
+      labels: d.trend.map(p => p.date.slice(5)),
+      datasets: [{ label: 'Hadir', data: d.trend.map(p => p.count), backgroundColor: CHART_COLORS.red, borderRadius: 4 }],
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+  });
+
+  document.getElementById('ab-list').innerHTML = d.today.length ?
+    d.today.map(a => {
+      const waktu = a.waktu ? new Date(a.waktu).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '—';
+      return `<div class="absen-item">
+        <div>
+          <div class="absen-nama">${a.nama || '—'}</div>
+          <div class="absen-detail">@${a.username || '—'} · ${a.kelurahan || '—'}</div>
+        </div>
+        <div class="absen-time">
+          <div>${waktu}</div>
+          <div class="deal-badge ${Number(a.deal) ? 'deal-yes' : 'deal-no'}">${Number(a.deal) ? 'Deal' : '-'}</div>
+        </div>
+      </div>`;
+    }).join('') :
+    '<div class="state-msg"><div class="icon">📋</div><p>Belum ada yang absen hari ini.</p></div>';
+}
+
+// ── Config ────────────────────────────────────────────────────
+function saveConfig() {
+  const url   = document.getElementById('cfgUrl').value.trim();
+  const token = document.getElementById('cfgToken').value.trim();
+  if (!url || !token) return alert('URL dan token harus diisi.');
+  LS.set('apiUrl', url);
+  LS.set('apiToken', token);
+  navigate('overview');
+  loadPerformance();
+}
+
+// ── Init ──────────────────────────────────────────────────────
+(function init() {
+  const url   = LS.get('apiUrl');
+  const token = LS.get('apiToken');
+  // Pre-fill settings
+  if (url)   document.getElementById('cfgUrl').value   = url;
+  if (token) document.getElementById('cfgToken').value = token;
+
+  if (!url || !token) {
+    navigate('settings');
+  } else {
+    loadPerformance();
+  }
+})();
+</script>
