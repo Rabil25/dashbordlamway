@@ -1135,6 +1135,17 @@ tr:hover td{background:var(--surface2);}
         <button class="btn-refresh" onclick="refreshData()">↻ Muat Ulang</button>
       </div>
     </div>
+    <div class="content">
+      <div class="sec">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Data Orders</span></div>
+          <span class="count-badge" id="orders-count-label"></span>
+        </div>
+        <div id="orders-loading" style="display:none;padding:16px;text-align:center;color:var(--muted)">Memuat data…</div>
+        <div class="sec-body-0 tbl-wrap" id="tbl-orders"></div>
+        <div class="pager" id="orders-pager"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ─── PANDUAN ─── -->
@@ -1671,7 +1682,9 @@ async function fetchAPIPost(action, data={}) {
   const body  = JSON.stringify({ token, action, ...data });
   const r = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    // GAS tidak support CORS preflight (OPTIONS) untuk application/json.
+    // text/plain adalah "simple request" — tidak trigger preflight, body tetap JSON string.
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body,
   });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -3124,11 +3137,16 @@ if (document.readyState === 'loading') {
   <!-- LOGIN -->
   <div id="login-modal" class="auth-card">
     <div class="auth-brand">
-      <!-- IndiHome Logo: stilisasi wifi + rumah -->
-      <div class="auth-brand-logo" style="background:linear-gradient(135deg,#e8001c 0%,#ff4444 100%)">
+      <!-- IndiHome Logo: wifi arc + rumah (stilisasi brand IndiHome) -->
+      <div class="auth-brand-logo" style="background:linear-gradient(135deg,#e8001c 0%,#c10016 100%)">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
-          <path d="M12 21L5 14.5C3.1 12.6 3.1 9.5 5 7.6 6.9 5.7 10 5.7 12 7.6 14 5.7 17.1 5.7 19 7.6 20.9 9.5 20.9 12.6 19 14.5L12 21z" fill="#fff" opacity=".9"/>
-          <path d="M12 13a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="#e8001c"/>
+          <!-- Sinyal wifi 3 arc -->
+          <path d="M5 12.5C6.9 10.2 9.3 9 12 9s5.1 1.2 7 3.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/>
+          <path d="M7.5 15C8.9 13.4 10.4 12.5 12 12.5s3.1.9 4.5 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".85"/>
+          <!-- Dot bawah (titik koneksi) -->
+          <circle cx="12" cy="18.5" r="1.5" fill="#fff"/>
+          <!-- Atap rumah kecil di tengah atas dot -->
+          <path d="M9.5 7.5L12 5l2.5 2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
         </svg>
       </div>
       <div class="auth-brand-text">
@@ -3147,10 +3165,12 @@ if (document.readyState === 'loading') {
   <!-- REGISTER -->
   <div id="reg-modal" class="auth-card" style="display:none">
     <div class="auth-brand">
-      <div class="auth-brand-logo" style="background:linear-gradient(135deg,#e8001c 0%,#ff4444 100%)">
+      <div class="auth-brand-logo" style="background:linear-gradient(135deg,#e8001c 0%,#c10016 100%)">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
-          <path d="M12 21L5 14.5C3.1 12.6 3.1 9.5 5 7.6 6.9 5.7 10 5.7 12 7.6 14 5.7 17.1 5.7 19 7.6 20.9 9.5 20.9 12.6 19 14.5L12 21z" fill="#fff" opacity=".9"/>
-          <path d="M12 13a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="#e8001c"/>
+          <path d="M5 12.5C6.9 10.2 9.3 9 12 9s5.1 1.2 7 3.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/>
+          <path d="M7.5 15C8.9 13.4 10.4 12.5 12 12.5s3.1.9 4.5 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".85"/>
+          <circle cx="12" cy="18.5" r="1.5" fill="#fff"/>
+          <path d="M9.5 7.5L12 5l2.5 2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
         </svg>
       </div>
       <div class="auth-brand-text">
