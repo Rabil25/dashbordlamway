@@ -210,6 +210,12 @@ function getPerformance(params) {
   const hariKerja = calcHariRange(startIni, endIni);
   const wsa       = calcWSATSA(sfMap);
 
+  // Daily trend helper: map {YYYY-MM-DD: count} → sorted array
+  const toTrendArr = (byDate) =>
+    Object.entries(byDate || {})
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, count]) => ({ date, count }));
+
   const allKodes = new Set([
     ...Object.keys(ini.bySF),
     ...Object.keys(lalu.bySF),
@@ -267,6 +273,9 @@ function getPerformance(params) {
     },
     hariKerja,
     wsaTrend:   wsa.trend,
+    ioTrend:    toTrendArr(ini.ioByDate),
+    reTrend:    toTrendArr(ini.reByDate),
+    psTrend:    toTrendArr(ini.psByDate),
     wilayah:    WILAYAH,
     kendalaList: ini.kendalaList || [],
     updatedAt:  new Date().toISOString(),
@@ -334,6 +343,9 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
   const total   = mkStat();
   const agency  = mkStat();
   const digital = { io: 0, re: 0, ps: 0 };
+  const ioByDate = {};
+  const reByDate = {};
+  const psByDate = {};
 
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
@@ -399,24 +411,30 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     const valRE = (C.re !== -1 ? r[C.re] : '').toString().toLowerCase();
     const valPS = (C.ps !== -1 ? r[C.ps] : '').toString().toLowerCase();
 
+    // Helper: YYYYMMDD → YYYY-MM-DD
+    const toDash = (s) => s ? s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8) : '';
+
     // ── Total semua channel ──
     if (countIO && valIO.includes('valid io')) {
       total.io++;
       addKab(total, kabRaw, 'io');
       addSTO(total, stoRaw, 'io');
       if (!isAgency) digital.io++;
+      const d = toDash(tglIO); if (d) ioByDate[d] = (ioByDate[d]||0)+1;
     }
     if (countRE && valRE.includes('valid re')) {
       total.re++;
       addKab(total, kabRaw, 're');
       addSTO(total, stoRaw, 're');
       if (!isAgency) digital.re++;
+      const d = toDash(tglRE); if (d) reByDate[d] = (reByDate[d]||0)+1;
     }
     if (countPS && valPS.includes('put in service')) {
       total.ps++;
       addKab(total, kabRaw, 'ps');
       addSTO(total, stoRaw, 'ps');
       if (!isAgency) digital.ps++;
+      const d = toDash(tglPS); if (d) psByDate[d] = (psByDate[d]||0)+1;
     }
 
     // ── Agency only ──
@@ -462,7 +480,7 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     }
   }
 
-  return { bySF, total, agency, digital, kendalaList: [...kendalaSet].sort() };
+  return { bySF, total, agency, digital, kendalaList: [...kendalaSet].sort(), ioByDate, reByDate, psByDate };
 }
 
 // ── Rekap per Kabupaten (Full: all + agency, ini + lalu) ─────
