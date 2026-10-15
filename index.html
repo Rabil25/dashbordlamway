@@ -1852,25 +1852,56 @@ function renderOverview() {
 function renderTrendChart() {
   const d = S.perf;
   if (!d) return;
+  // wsaTrend = [{date:'YYYY-MM-DD', count:N}] dari API
   const wt = d.wsaTrend || [];
-  // Build cumulative PS/IO line if available, fallback to wsaTrend
-  const psArr = d.psTrend || wt;
-  if (!psArr.length) return;
+  // ioTrend / reTrend / psTrend jika API sudah menyediakan
+  const iot = d.ioTrend || [];
+  const ret = d.reTrend || [];
+  const pst = d.psTrend || [];
+
+  // Pilih label dari data yang paling lengkap
+  const labels = (iot.length ? iot : pst.length ? pst : wt).map(p=>(p.date||'').slice(5));
+  if (!labels.length) {
+    document.getElementById('ov-trend-title').textContent = 'Tren Harian MTD · Data belum tersedia';
+    return;
+  }
+
+  const datasets = [];
+  if (iot.length) datasets.push({
+    label:'IO', data:iot.map(p=>p.count||0),
+    borderColor:CC.red,  backgroundColor:CC.redF,
+    tension:.4, fill:false, pointRadius:2, borderWidth:2,
+  });
+  if (ret.length) datasets.push({
+    label:'RE', data:ret.map(p=>p.count||0),
+    borderColor:CC.amber, backgroundColor:CC.amberF||'rgba(217,119,6,.12)',
+    tension:.4, fill:false, pointRadius:2, borderWidth:2,
+  });
+  if (pst.length) datasets.push({
+    label:'PS', data:pst.map(p=>p.count||0),
+    borderColor:CC.green, backgroundColor:CC.greenF,
+    tension:.4, fill:false, pointRadius:2, borderWidth:2,
+  });
+  // Fallback: tampilkan wsaTrend sebagai WSA/TSA
+  if (!datasets.length && wt.length) {
+    datasets.push({
+      label:'WSA/TSA', data:wt.map(p=>p.count||0),
+      borderColor:CC.blue, backgroundColor:CC.blueF,
+      tension:.4, fill:true, pointRadius:2, borderWidth:2,
+    });
+    document.getElementById('ov-trend-title').textContent = 'Tren Harian MTD · WSA/TSA';
+  } else {
+    document.getElementById('ov-trend-title').textContent = 'Tren Harian MTD · IO / RE / PS';
+  }
+
   mkChart('chartTrendMTD', {
     type:'line',
-    data:{
-      labels: psArr.map(p=>p.date?p.date.slice(5):p.label||''),
-      datasets:[{
-        label:'WSA/TSA', data:psArr.map(p=>p.count),
-        borderColor:CC.blue, backgroundColor:CC.blueF,
-        tension:.4, fill:true, pointRadius:2, borderWidth:2,
-      }],
-    },
+    data:{ labels, datasets },
     options:{
-      plugins:{legend:{display:false}},
+      plugins:{ legend:{ display: datasets.length > 1 } },
       scales:{
         y:{beginAtZero:true, ticks:{font:{size:10}}},
-        x:{ticks:{font:{size:10}, maxTicksLimit:10}},
+        x:{ticks:{font:{size:10}, maxTicksLimit:12}},
       },
     },
   });
