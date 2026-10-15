@@ -2752,7 +2752,13 @@ function init() {
   if (!sess) { showLoginModal(); return; }
   updateAvatarUI(sess);
   loadPerformance();
-})();
+}
+// Tunggu seluruh DOM selesai diparse (termasuk modal HTML di bawah script)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 </script>
 
 <!-- ══ AUTH MODALS ══════════════════════════════════════════════════════ -->
