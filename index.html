@@ -1164,7 +1164,7 @@ async function loadKendala() {
   if (S.kendala) { renderKendala(); return; }
   try {
     S.kendala = await fetchAPI('kendala');
-    buildKendalaJenisFilter();
+    // Tidak override dropdown — biarkan dropdown dari Kendala Teknis Bulan_Ini
     renderKendala();
   } catch(e) { showError('tbl-kendala', e.message); }
 }
