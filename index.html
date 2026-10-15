@@ -1838,6 +1838,15 @@ function renderPeta() {
 }
 
 function renderOrders() {
+  if (S.orders === null) {
+    // Data belum dimuat — trigger load dan tampilkan skeleton
+    const tbl = document.getElementById('tbl-orders');
+    if (tbl) tbl.innerHTML = '';
+    const ld = document.getElementById('orders-loading');
+    if (ld) ld.style.display = 'block';
+    loadOrders().then(() => { if (document.getElementById('orders-loading')) document.getElementById('orders-loading').style.display='none'; renderOrders(); });
+    return;
+  }
   const orders = filteredOrders();
   const total = orders.length;
   const PAGE = 30;

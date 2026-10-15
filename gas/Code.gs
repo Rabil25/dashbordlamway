@@ -313,6 +313,7 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     sto:       findCol(['Validasi STO']),
     channel2:  findCol(['Channel 2']),
     kendalaKat:findCol(['Kategori Kendala']),
+    kendTekCol:findCol(['Kendala Teknis']),
   };
 
   function mkStat() { return { io: 0, re: 0, ps: 0, byKab: {}, bySTO: {} }; }
@@ -443,11 +444,12 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     }
   }
 
-  // Kumpulkan unique kendala dari semua rows
+  // Kumpulkan unique Kendala Teknis dari Bulan_Ini (bukan Kategori Kendala)
   const kendalaSet = new Set();
-  if (C.kendalaKat !== -1) {
+  const colKT = C.kendTekCol !== -1 ? C.kendTekCol : C.kendalaKat; // fallback ke Kategori Kendala
+  if (colKT !== -1) {
     for (let i = 1; i < rows.length; i++) {
-      const v = rows[i][C.kendalaKat];
+      const v = rows[i][colKT];
       if (v) { const s = v.toString().trim(); if (s) kendalaSet.add(s); }
     }
   }
