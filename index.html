@@ -1518,7 +1518,7 @@ function renderWokPerf() {
   }
   function ratio(a,b){ return b>0?(a/b*100).toFixed(1)+'%':'—'; }
 
-  function buildSection(title, iniF, laluF) {
+  function buildSection(title, iniF, laluF, summaryIni, summaryLalu) {
     let wI={io:0,re:0,ps:0}, wL={io:0,re:0,ps:0}, wT=0, rows='';
     Object.entries(CLUSTERS).forEach(([clName,clCfg]) => {
       if (S.filter.cluster && clName !== S.filter.cluster) return;
@@ -1549,13 +1549,21 @@ function renderWokPerf() {
         </tr>`;
       });
     });
+    // Jika tidak ada filter cluster, pakai summary total dari GAS (konsisten dengan Overview KPI).
+    // Jika ada filter cluster, pakai hasil sumK (hanya kab di cluster tersebut).
+    const totI = (!S.filter.cluster && summaryIni)
+      ? {io: summaryIni.io||0, re: summaryIni.re||0, ps: summaryIni.ps||0}
+      : wI;
+    const totL = (!S.filter.cluster && summaryLalu)
+      ? {io: summaryLalu.io||0, re: summaryLalu.re||0, ps: summaryLalu.ps||0}
+      : wL;
     const wRT=Math.round(wT*1.2),wIT=Math.round(wT*1.5);
     rows += `<tr class="row-tot">
       <td class="td-terr">WOK LAMWAY</td>
-      <td class="td-r">${wIT||'—'}</td><td class="td-r">${wI.io}</td><td class="td-r">${drr(wI.io)}</td><td class="td-r">${wL.io}</td><td class="td-r">${mom(wI.io,wL.io)}</td>
-      <td class="td-r">${wRT||'—'}</td><td class="td-r">${wI.re}</td><td class="td-r">${drr(wI.re)}</td><td class="td-r">${wL.re}</td><td class="td-r">${mom(wI.re,wL.re)}</td>
-      <td class="td-r">${wT||'—'}</td><td class="td-r">${wI.ps}</td><td class="td-r">${drr(wI.ps)}</td><td class="td-r">${wL.ps}</td><td class="td-r">${mom(wI.ps,wL.ps)}</td>
-      <td class="td-r">${ratio(wI.re,wI.io)}</td><td class="td-r">${ratio(wI.ps,wI.re)}</td>
+      <td class="td-r">${wIT||'—'}</td><td class="td-r">${totI.io}</td><td class="td-r">${drr(totI.io)}</td><td class="td-r">${totL.io}</td><td class="td-r">${mom(totI.io,totL.io)}</td>
+      <td class="td-r">${wRT||'—'}</td><td class="td-r">${totI.re}</td><td class="td-r">${drr(totI.re)}</td><td class="td-r">${totL.re}</td><td class="td-r">${mom(totI.re,totL.re)}</td>
+      <td class="td-r">${wT||'—'}</td><td class="td-r">${totI.ps}</td><td class="td-r">${drr(totI.ps)}</td><td class="td-r">${totL.ps}</td><td class="td-r">${mom(totI.ps,totL.ps)}</td>
+      <td class="td-r">${ratio(totI.re,totI.io)}</td><td class="td-r">${ratio(totI.ps,totI.re)}</td>
     </tr>`;
     return `<div class="wok-section-title">◆ ${title}</div>
       <div class="wok-tbl-wrap">
@@ -1579,8 +1587,8 @@ function renderWokPerf() {
       </div>`;
   }
 
-  document.getElementById('wok-all').innerHTML    = buildSection('All Channel', 'allIni', 'allLalu');
-  document.getElementById('wok-agency').innerHTML = buildSection('Agency / SF', 'agencyIni', 'agencyLalu');
+  document.getElementById('wok-all').innerHTML    = buildSection('All Channel', 'allIni',    'allLalu',    d.summary?.bulanIni,  d.summary?.bulanLalu);
+  document.getElementById('wok-agency').innerHTML = buildSection('Agency / SF', 'agencyIni', 'agencyLalu', d.summary?.agencyIni, d.summary?.agencyLalu);
 }
 
 // ─── PERFORMANCE ─────────────────────────────────────────
