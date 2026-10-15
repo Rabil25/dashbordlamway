@@ -49,6 +49,7 @@ function doGet(e) {
       case 'absen':       data = getAbsen();                break;
       case 'kendala':     data = getKendala();              break;
       case 'wilayah':     data = { wilayah: WILAYAH };      break;
+      case 'orders':      data = getOrders(params);          break;
       default:            data = { error: 'Unknown action' };
     }
     return jsonOut({ ok: true, ...data });
@@ -449,6 +450,136 @@ function calcWSATSA(sfMap) {
     .map(([date, count]) => ({ date, count }));
 
   return { bySF, trend: trendArr };
+}
+
+// ── Orders (raw per-row data dari Bulan_Ini) ─────────────────
+// Params: start (YYYYMMDD), end (YYYYMMDD), channel (agency|digital|all)
+function getOrders(params) {
+  const ws = ss().getSheetByName('Bulan_Ini');
+  if (!ws) return { orders: [] };
+
+  const startStr = (params.start || '').toString().replace(/-/g, '').substring(0, 8);
+  const endStr   = (params.end   || '').toString().replace(/-/g, '').substring(0, 8);
+  const chFilter = (params.channel || '').toString().toLowerCase().trim();
+
+  const rows = ws.getDataRange().getValues();
+  const hdr  = rows[0];
+
+  const findCol = (names) => {
+    for (const n of names) {
+      const idx = hdr.findIndex(h => h.toString().toLowerCase() === n.toLowerCase());
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const C = {
+    status:    findCol(['Status Order']),
+    wok:       findCol(['Validasi WOK']),
+    sto:       findCol(['Validasi STO']),
+    valIO:     findCol(['Validasi IO']),
+    tanggalIO: findCol(['Tanggal IO']),
+    valRE:     findCol(['Validasi RE']),
+    tanggalRE: findCol(['Tanggal RE']),
+    valPS:     findCol(['Validasi PS']),
+    tanggalPS: findCol(['Tanggal PS']),
+    codeSF:    findCol(['CODE SF', 'Validasi SF']),
+    namaSF:    findCol(['Nama SF']),
+    channel:   findCol(['Validasi Channel']),
+    channel2:  findCol(['Channel 2']),
+    reasonK:   findCol(['Reason Kendala']),
+    kendTek:   findCol(['Kendala Teknis']),
+    ioTimes:   findCol(['IO Times']),
+    timeRange: findCol(['Time_Range']),
+    odp:       findCol(['ODP2']),
+    orderId:   findCol(['ID Order']),
+    tglKend:   findCol(['Tanggal Kendala']),
+    produk:    findCol(['Validasi Produk']),
+    kabupaten: findCol(['VALIDASI KAB']),
+    koordinat: findCol(['Koordinat']),
+  };
+
+  function cleanDate(val) {
+    if (!val) return '';
+    const s = val.toString().replace(/-/g, '').substring(0, 8);
+    if (s.length === 8) return s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8);
+    return s;
+  }
+
+  const orders = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[C.status]) continue;
+
+    // Date filter on Tanggal IO
+    const tglIO = C.tanggalIO !== -1 ? r[C.tanggalIO] : '';
+    const tglStr = tglIO ? tglIO.toString().replace(/-/g, '').substring(0, 8) : '';
+    if (startStr && tglStr && tglStr < startStr) continue;
+    if (endStr   && tglStr && tglStr > endStr)   continue;
+
+    const ch2  = (C.channel2 !== -1 ? r[C.channel2] : '').toString().trim().toLowerCase();
+    const isAg = ch2 === 'agency';
+
+    // Channel filter
+    if (chFilter === 'agency'  && !isAg) continue;
+    if (chFilter === 'digital' && isAg)  continue;
+
+    const valIO = (C.valIO !== -1 ? r[C.valIO] : '').toString().toLowerCase();
+    const valRE = (C.valRE !== -1 ? r[C.valRE] : '').toString().toLowerCase();
+    const valPS = (C.valPS !== -1 ? r[C.valPS] : '').toString().toLowerCase();
+
+    const isIO = valIO.includes('valid io');
+    const isRE = valRE.includes('valid re');
+    const isPS = valPS.includes('put in service');
+
+    const kabRaw = C.kabupaten !== -1 && r[C.kabupaten]
+      ? r[C.kabupaten].toString().trim().toUpperCase() : '';
+    const cluster = KAB_TO_CLUSTER[kabRaw] || '-';
+
+    const stoRaw = C.sto !== -1 && r[C.sto]
+      ? r[C.sto].toString().trim().toUpperCase() : '';
+    const clusterBySTO = STO_TO_CLUSTER[stoRaw] || cluster;
+
+    // Parse koordinat "lat,lng"
+    let lat = null, lng = null;
+    if (C.koordinat !== -1 && r[C.koordinat]) {
+      const raw = r[C.koordinat].toString().trim();
+      const parts = raw.split(/[\s,]+/);
+      if (parts.length >= 2) {
+        lat = parseFloat(parts[0]);
+        lng = parseFloat(parts[1]);
+        if (isNaN(lat) || isNaN(lng)) { lat = null; lng = null; }
+      }
+    }
+
+    orders.push({
+      status:    (r[C.status]   || '').toString().trim(),
+      wok:       (C.wok   !== -1 ? r[C.wok]   : '').toString().trim(),
+      sto:       stoRaw,
+      cluster:   clusterBySTO,
+      isIO, isRE, isPS,
+      tglIO:     cleanDate(tglIO),
+      tglRE:     cleanDate(C.tanggalRE !== -1 ? r[C.tanggalRE] : ''),
+      tglPS:     cleanDate(C.tanggalPS !== -1 ? r[C.tanggalPS] : ''),
+      codeSF:    (C.codeSF !== -1 ? r[C.codeSF] : '').toString().trim(),
+      namaSF:    (C.namaSF !== -1 ? r[C.namaSF] : '').toString().trim(),
+      channel:   (C.channel  !== -1 ? r[C.channel]  : '').toString().trim(),
+      channel2:  (C.channel2 !== -1 ? r[C.channel2] : '').toString().trim(),
+      reasonK:   (C.reasonK  !== -1 ? r[C.reasonK]  : '').toString().trim(),
+      kendTek:   (C.kendTek  !== -1 ? r[C.kendTek]  : '').toString().trim(),
+      ioTimes:   (C.ioTimes  !== -1 ? r[C.ioTimes]  : '').toString().trim(),
+      timeRange: (C.timeRange !== -1 ? r[C.timeRange] : '').toString().trim(),
+      odp:       (C.odp       !== -1 ? r[C.odp]       : '').toString().trim(),
+      orderId:   (C.orderId   !== -1 ? r[C.orderId]   : '').toString().trim(),
+      tglKend:   cleanDate(C.tglKend !== -1 ? r[C.tglKend] : ''),
+      produk:    (C.produk    !== -1 ? r[C.produk]    : '').toString().trim(),
+      kabupaten: kabRaw,
+      lat, lng,
+    });
+  }
+
+  return { orders };
 }
 
 // ── Kendala ──────────────────────────────────────────────────

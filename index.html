@@ -2,6 +2,8 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 /* ─── TOKENS ─────────────────────────────────────────────── */
 :root {
@@ -415,6 +417,46 @@ tr:hover td{background:var(--surface2);}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
 .mb12{margin-bottom:12px;} .mb16{margin-bottom:16px;} .mb4{margin-bottom:4px;}
 
+/* ─── DATE RANGE FILTER ──────────────────────────────────────── */
+.filter-date{
+  font-family:var(--font);font-size:12px;font-weight:500;padding:5px 8px;
+  border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface2);color:var(--fg);
+  cursor:pointer;outline:none;transition:border-color .15s;
+}
+.filter-date:focus{border-color:var(--blue-2);}
+.filter-date-sep{font-size:11px;color:var(--muted);align-self:center;}
+.filter-group{display:flex;align-items:center;gap:5px;}
+.filter-group-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
+
+/* ─── MAP ─────────────────────────────────────────────────────── */
+#map-container{height:460px;border-radius:0 0 var(--r) var(--r);overflow:hidden;position:relative;}
+.map-legend{
+  position:absolute;bottom:20px;right:12px;z-index:800;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:8px 12px;font-size:11px;box-shadow:var(--sh-md);
+}
+.map-legend-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.map-legend-row:last-child{margin-bottom:0;}
+.map-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;border:2px solid rgba(0,0,0,.15);}
+.map-stats{display:flex;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.map-stat{font-size:11px;color:var(--fg2);}
+.map-stat strong{font-weight:700;color:var(--fg);}
+
+/* ─── ORDERS TABLE ───────────────────────────────────────────── */
+.orders-tbl{width:100%;border-collapse:collapse;font-size:11.5px;min-width:900px;}
+.orders-tbl th{
+  background:var(--surface2);color:var(--fg2);font-weight:600;text-align:left;
+  padding:7px 9px;white-space:nowrap;font-size:10px;letter-spacing:.04em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1;
+}
+.orders-tbl td{padding:6px 9px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;}
+.orders-tbl tr:last-child td{border-bottom:none;}
+.orders-tbl tr:hover td{background:var(--surface2);}
+.status-ps{background:var(--green-lite);color:var(--green);}
+.status-re{background:var(--blue-lite);color:var(--blue);}
+.status-io{background:var(--amber-lite);color:var(--amber);}
+.orders-page-info{font-size:11px;color:var(--muted);padding:8px 16px;border-top:1px solid var(--border);}
+
 /* ─── RESPONSIVE ─────────────────────────────────────────────── */
 @media(max-width:768px){
   .sidebar{transform:translateX(calc(-1 * var(--sidebar-w)));}
@@ -425,6 +467,7 @@ tr:hover td{background:var(--surface2);}
   .target-grid{grid-template-columns:1fr;}
   .tb-search-wrap{display:none;}
   .ph-sub{display:none;}
+  #map-container{height:320px;}
 }
 </style>
 
@@ -468,6 +511,18 @@ tr:hover td{background:var(--surface2);}
       <a class="nav-link" data-page="absensi" onclick="navigate('absensi');return false;" href="#">
         <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Absensi
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-page="peta" onclick="navigate('peta');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6c0 3.5 4.5 8.5 4.5 8.5s4.5-5 4.5-8.5c0-2.5-2-4.5-4.5-4.5z" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="6" r="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+        Peta Orders
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-page="orders" onclick="navigate('orders');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 6h13M5 2.5v11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Data Orders
       </a>
     </li>
   </ul>
@@ -529,6 +584,26 @@ tr:hover td{background:var(--surface2);}
     </select>
     <select class="filter-select" id="fKendalaJenis" onchange="applyFilter()" style="display:none">
       <option value="">Semua Jenis</option>
+    </select>
+    <!-- Date range (orders/peta pages) -->
+    <div class="filter-group" id="fDateGroup" style="display:none">
+      <span class="filter-group-label">Tgl IO</span>
+      <input class="filter-date" type="date" id="fDateStart" onchange="applyFilter()">
+      <span class="filter-date-sep">–</span>
+      <input class="filter-date" type="date" id="fDateEnd" onchange="applyFilter()">
+    </div>
+    <!-- Produk filter -->
+    <select class="filter-select" id="fProduk" onchange="applyFilter()" style="display:none">
+      <option value="">Semua Produk</option>
+      <option value="Tsel One">Tsel One</option>
+      <option value="Indihome Reguler">Indihome Reguler</option>
+      <option value="Eznet">Eznet</option>
+    </select>
+    <!-- Channel filter -->
+    <select class="filter-select" id="fChannel" onchange="applyFilter()" style="display:none">
+      <option value="">Semua Channel</option>
+      <option value="agency">Agency</option>
+      <option value="digital">Digital</option>
     </select>
     <button class="filter-reset" onclick="resetFilter()">✕ Reset</button>
     <span style="margin-left:auto;font-size:10.5px;color:var(--muted)" id="filterStatus"></span>
@@ -724,6 +799,74 @@ tr:hover td{background:var(--surface2);}
     </div>
   </div>
 
+  <!-- ─── PETA ORDERS ─── -->
+  <div class="page" data-page="peta" id="page-peta">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">Visualisasi Lokasi</div>
+        <div class="ph-title">Peta Orders</div>
+        <div class="ph-sub">Lokasi pelanggan berdasarkan koordinat GPS per order</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn-ph btn-ph-outline" onclick="S.orders=null;loadOrders(true).then(renderPeta)">↻ Muat Data</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="sec" id="peta-loading-sec" style="display:none">
+        <div class="sec-body"><div class="sk sk-row"></div><div class="sk sk-row"></div></div>
+      </div>
+      <div class="sec" id="peta-sec">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot green"></div><span class="sec-title" id="peta-title">Peta Lokasi Orders</span></div>
+          <div class="map-stats" id="peta-stats" style="padding:0;border:none;font-size:11px;gap:10px;"></div>
+        </div>
+        <div id="map-container"></div>
+        <div class="map-legend">
+          <div class="map-legend-row"><div class="map-dot" style="background:#16A34A"></div>PS (Put In Service)</div>
+          <div class="map-legend-row"><div class="map-dot" style="background:#1D4ED8"></div>RE (Register)</div>
+          <div class="map-legend-row"><div class="map-dot" style="background:#D97706"></div>IO saja</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── DATA ORDERS ─── -->
+  <div class="page" data-page="orders" id="page-orders">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">Raw Data</div>
+        <div class="ph-title">Data Orders</div>
+        <div class="ph-sub">Seluruh baris order dari sheet Bulan_Ini, dapat difilter</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn-ph btn-ph-outline" onclick="S.orders=null;loadOrders(true).then(renderOrders)">↻ Muat Ulang</button>
+      </div>
+    </div>
+    <div class="content">
+      <div id="orders-loading" style="display:none">
+        <div class="sk sk-row mb4"></div><div class="sk sk-row mb4"></div><div class="sk sk-row mb4"></div>
+      </div>
+      <div class="sec">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Tabel Orders</span></div>
+          <span class="count-badge" id="orders-count-label"></span>
+        </div>
+        <div class="sec-body" style="padding:8px 16px">
+          <div class="search-row">
+            <input class="search-input" id="ordersSearch" type="search" placeholder="Cari ID Order, SF, STO, Kabupaten…" oninput="renderOrders()">
+          </div>
+        </div>
+        <div class="tbl-wrap" style="max-height:520px;overflow-y:auto;">
+          <div id="tbl-orders"></div>
+        </div>
+        <div class="orders-page-info" id="orders-pager-info"></div>
+        <div class="pager" id="orders-pager"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── PANDUAN ─── -->
   <div class="page" data-page="panduan" id="page-panduan">
     <div class="page-header">
@@ -885,10 +1028,21 @@ function loadTargetInputs() {
   });
 }
 
+// ─── DEFAULT DATE RANGE (1st of current month → today) ───
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function firstOfMonthStr() {
+  const d = new Date(); d.setDate(1); return d.toISOString().slice(0,10);
+}
+
 // ─── STATE ───────────────────────────────────────────────
 const S = {
-  perf: null, kendala: null, absen: null, loaded: false, sfPage: 0,
-  filter: { cluster: '', sto: '', kendalaJenis: '' },
+  perf: null, kendala: null, absen: null, orders: null,
+  loaded: false, sfPage: 0, ordersPage: 0,
+  filter: {
+    cluster: '', sto: '', kendalaJenis: '',
+    dateStart: firstOfMonthStr(), dateEnd: todayStr(),
+    produk: '', channel: '',
+  },
 };
 
 // ─── NAVIGATION ──────────────────────────────────────────
@@ -899,9 +1053,12 @@ function navigate(pageId) {
   if (pg) pg.classList.add('active');
   document.querySelectorAll(`[data-page="${pageId}"]`).forEach(a => a.classList.add('active'));
 
-  // show/hide jenis filter
-  const jenisEl = document.getElementById('fKendalaJenis');
-  jenisEl.style.display = pageId === 'kendala' ? '' : 'none';
+  // show/hide contextual filters
+  const isOrderPage = pageId === 'peta' || pageId === 'orders';
+  document.getElementById('fKendalaJenis').style.display = pageId === 'kendala' ? '' : 'none';
+  document.getElementById('fDateGroup').style.display    = isOrderPage ? '' : 'none';
+  document.getElementById('fProduk').style.display       = isOrderPage ? '' : 'none';
+  document.getElementById('fChannel').style.display      = isOrderPage ? '' : 'none';
 
   closeSidebar();
   renderPage(pageId);
@@ -913,6 +1070,8 @@ function renderPage(pageId) {
   if (pageId === 'performance') renderPerformance();
   if (pageId === 'kendala')     loadKendala();
   if (pageId === 'absensi')     loadAbsen();
+  if (pageId === 'peta')        loadOrders().then(renderPeta);
+  if (pageId === 'orders')      loadOrders().then(renderOrders);
 }
 
 // ─── SIDEBAR ─────────────────────────────────────────────
@@ -937,11 +1096,13 @@ function toggleTheme() {
 (function initTheme(){ const t = LS.get('theme'); if(t){ document.documentElement.setAttribute('data-theme',t); document.getElementById('themeBtn').textContent = t==='dark'?'☀️':'🌙'; } })();
 
 // ─── API ──────────────────────────────────────────────────
-async function fetchAPI(action) {
+async function fetchAPI(action, extra={}) {
   const url   = LS.get('apiUrl');
   const token = LS.get('apiToken');
   if (!url || !token) throw new Error('Konfigurasi API belum diset.');
-  const r = await fetch(`${url}?token=${encodeURIComponent(token)}&action=${action}`);
+  let qs = `token=${encodeURIComponent(token)}&action=${action}`;
+  Object.entries(extra).forEach(([k,v]) => { if (v !== undefined && v !== '') qs += `&${k}=${encodeURIComponent(v)}`; });
+  const r = await fetch(`${url}?${qs}`);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const d = await r.json();
   if (d.error) throw new Error(d.error);
@@ -980,11 +1141,13 @@ async function loadAbsen() {
 }
 
 async function refreshData() {
-  S.perf = null; S.kendala = null; S.absen = null; S.loaded = false;
+  S.perf = null; S.kendala = null; S.absen = null; S.orders = null; S.loaded = false;
   await loadPerformance();
   const pg = document.querySelector('.nav-link.active')?.dataset?.page;
   if (pg === 'kendala') { S.kendala = null; loadKendala(); }
   if (pg === 'absensi') { S.absen = null; loadAbsen(); }
+  if (pg === 'peta')    { loadOrders(true).then(renderPeta); }
+  if (pg === 'orders')  { loadOrders(true).then(renderOrders); }
 }
 
 function showError(containerId, msg) {
@@ -1014,6 +1177,10 @@ function applyFilter() {
   const cl  = document.getElementById('fCluster').value;
   const sto = document.getElementById('fSTO').value;
   const kj  = document.getElementById('fKendalaJenis').value;
+  const ds  = document.getElementById('fDateStart')?.value || S.filter.dateStart;
+  const de  = document.getElementById('fDateEnd')?.value   || S.filter.dateEnd;
+  const pr  = document.getElementById('fProduk')?.value    || '';
+  const ch  = document.getElementById('fChannel')?.value   || '';
 
   const stoSel = document.getElementById('fSTO');
   const allowed = cl ? WILAYAH_MAP[cl] || [] : null;
@@ -1021,11 +1188,13 @@ function applyFilter() {
     if (!o.value) return;
     o.hidden = allowed ? !allowed.includes(o.value) : false;
   });
-  if (sto && allowed && !allowed.includes(sto)) {
-    stoSel.value = '';
-  }
+  if (sto && allowed && !allowed.includes(sto)) stoSel.value = '';
 
+  // Reload orders if date/channel changed
+  const dateChanged = ds !== S.filter.dateStart || de !== S.filter.dateEnd || ch !== S.filter.channel;
   S.filter.cluster = cl; S.filter.sto = sto; S.filter.kendalaJenis = kj;
+  S.filter.dateStart = ds; S.filter.dateEnd = de;
+  S.filter.produk = pr; S.filter.channel = ch;
 
   // style active filters
   document.getElementById('fCluster').classList.toggle('filter-active', !!cl);
@@ -1033,23 +1202,40 @@ function applyFilter() {
   document.getElementById('fKendalaJenis').classList.toggle('filter-active', !!kj);
 
   const parts = [];
-  if (cl) parts.push(cl);
-  if (sto) parts.push(sto);
-  if (kj) parts.push(kj);
+  if (cl) parts.push(cl); if (sto) parts.push(sto); if (kj) parts.push(kj);
+  if (pr) parts.push(pr); if (ch) parts.push(ch);
   document.getElementById('filterStatus').textContent = parts.length ? `Aktif: ${parts.join(' · ')}` : '';
 
   const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
-  renderPage(activePage);
+  const isOrderPage = activePage === 'peta' || activePage === 'orders';
+  if (isOrderPage && dateChanged) {
+    S.orders = null;
+    loadOrders(true).then(() => { if (activePage === 'peta') renderPeta(); else renderOrders(); });
+  } else {
+    renderPage(activePage);
+  }
 }
 function resetFilter() {
   document.getElementById('fCluster').value = '';
   document.getElementById('fSTO').value = '';
   document.getElementById('fKendalaJenis').value = '';
-  S.filter = { cluster:'', sto:'', kendalaJenis:'' };
+  const ds = firstOfMonthStr(), de = todayStr();
+  const dsEl = document.getElementById('fDateStart'); if (dsEl) dsEl.value = ds;
+  const deEl = document.getElementById('fDateEnd');   if (deEl) deEl.value = de;
+  const prEl = document.getElementById('fProduk');    if (prEl) prEl.value = '';
+  const chEl = document.getElementById('fChannel');   if (chEl) chEl.value = '';
+  const dateChanged = ds !== S.filter.dateStart || de !== S.filter.dateEnd || S.filter.channel !== '';
+  S.filter = { cluster:'', sto:'', kendalaJenis:'', dateStart:ds, dateEnd:de, produk:'', channel:'' };
   document.getElementById('filterStatus').textContent = '';
   ['fCluster','fSTO','fKendalaJenis'].forEach(id => document.getElementById(id).classList.remove('filter-active'));
   const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
-  renderPage(activePage);
+  const isOrderPage = activePage === 'peta' || activePage === 'orders';
+  if (isOrderPage && dateChanged) {
+    S.orders = null;
+    loadOrders(true).then(() => { if (activePage === 'peta') renderPeta(); else renderOrders(); });
+  } else {
+    renderPage(activePage);
+  }
 }
 function handleTopSearch(val) {
   const sfEl = document.getElementById('sfSearch');
@@ -1432,6 +1618,166 @@ function renderSF() {
 }
 function sfNav(d){ S.sfPage+=d; renderSF(); }
 
+// ─── ORDERS / PETA ───────────────────────────────────────
+let _mapInstance = null;
+
+async function loadOrders(force=false) {
+  if (S.orders && !force) return;
+  const loadSec = document.getElementById('peta-loading-sec');
+  if (loadSec) loadSec.style.display = 'block';
+  try {
+    const d = await fetchAPI('orders', {
+      start: S.filter.dateStart,
+      end:   S.filter.dateEnd,
+      channel: S.filter.channel,
+    });
+    S.orders = d.orders || [];
+  } catch(e) {
+    S.orders = [];
+    showError('tbl-orders', e.message);
+    showError('map-container', e.message);
+  } finally {
+    if (loadSec) loadSec.style.display = 'none';
+  }
+}
+
+function filteredOrders() {
+  if (!S.orders) return [];
+  const q = (document.getElementById('ordersSearch')?.value || '').toLowerCase();
+  return S.orders.filter(o => {
+    if (S.filter.cluster) {
+      const clMap = { 'Lampung Barat':['LIW','KRU','KOT','TGP'], 'Way Kanan':['BKM','KBI','BDU'] };
+      const stos = clMap[S.filter.cluster] || [];
+      if (!stos.includes(o.sto)) return false;
+    }
+    if (S.filter.sto && o.sto !== S.filter.sto) return false;
+    if (S.filter.produk && o.produk !== S.filter.produk) return false;
+    if (S.filter.kendalaJenis) {
+      const kj = S.filter.kendalaJenis.toLowerCase();
+      if (!(o.reasonK||'').toLowerCase().includes(kj) && !(o.kendTek||'').toLowerCase().includes(kj)) return false;
+    }
+    if (q) {
+      const hay = [o.orderId,o.namaSF,o.codeSF,o.sto,o.wok,o.produk,o.channel,o.kabupaten,o.reasonK,o.kendTek].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderPeta() {
+  const orders = filteredOrders();
+  const withCoords = orders.filter(o => o.lat && o.lng);
+
+  // Update stats
+  const mapStats = document.getElementById('peta-stats');
+  if (mapStats) mapStats.innerHTML =
+    `<span>📦 Total: <b>${orders.length}</b></span>` +
+    `<span>📍 Berkoordinat: <b>${withCoords.length}</b></span>` +
+    `<span style="color:var(--green)">✅ PS: <b>${orders.filter(o=>o.isPS).length}</b></span>` +
+    `<span style="color:var(--blue)">🔵 RE: <b>${orders.filter(o=>o.isRE&&!o.isPS).length}</b></span>` +
+    `<span style="color:var(--amber)">🟡 IO: <b>${orders.filter(o=>o.isIO&&!o.isRE&&!o.isPS).length}</b></span>`;
+
+  const mapEl = document.getElementById('map-container');
+  if (!mapEl || typeof L === 'undefined') return;
+
+  // Init or reset map
+  if (_mapInstance) { _mapInstance.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.LayerGroup) _mapInstance.removeLayer(l); }); }
+  else {
+    _mapInstance = L.map('map-container').setView([-4.85, 104.5], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }).addTo(_mapInstance);
+  }
+
+  function pinColor(o) {
+    if (o.isPS) return '#22c55e';
+    if (o.isRE) return '#3b82f6';
+    if (o.isIO) return '#f59e0b';
+    return '#94a3b8';
+  }
+  function mkIcon(color) {
+    return L.divIcon({ className:'', iconAnchor:[8,8], html:
+      `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>` });
+  }
+
+  const bounds = [];
+  withCoords.forEach(o => {
+    const color = pinColor(o);
+    const statusLabel = o.isPS ? '✅ PS' : o.isRE ? '🔵 RE' : o.isIO ? '🟡 IO' : '⬜';
+    const popup = `<div style="font-size:12px;line-height:1.6;min-width:180px">
+      <b>${o.orderId || '—'}</b><br>
+      ${statusLabel} · ${o.produk || '—'}<br>
+      STO: ${o.sto || '—'} · ${o.wok || '—'}<br>
+      SF: ${o.namaSF || o.codeSF || '—'}<br>
+      Channel: ${o.channel || '—'}<br>
+      ${o.reasonK ? `⚠️ ${o.reasonK}` : ''}
+    </div>`;
+    const m = L.marker([o.lat, o.lng], { icon: mkIcon(color) }).bindPopup(popup);
+    m.addTo(_mapInstance);
+    bounds.push([o.lat, o.lng]);
+  });
+
+  if (bounds.length) {
+    try { _mapInstance.fitBounds(bounds, { padding: [24, 24], maxZoom: 13 }); } catch(e) {}
+  }
+  setTimeout(() => _mapInstance && _mapInstance.invalidateSize(), 200);
+}
+
+function renderOrders() {
+  const orders = filteredOrders();
+  const total = orders.length;
+  const PAGE = 30;
+  const maxPage = Math.max(0, Math.ceil(total/PAGE)-1);
+  if (S.ordersPage > maxPage) S.ordersPage = maxPage;
+  const slice = orders.slice(S.ordersPage*PAGE, (S.ordersPage+1)*PAGE);
+
+  function statusBadge(o) {
+    if (o.isPS) return `<span class="status-ps">PS</span>`;
+    if (o.isRE) return `<span class="status-re">RE</span>`;
+    if (o.isIO) return `<span class="status-io">IO</span>`;
+    return `<span class="status-io" style="background:#94a3b8">—</span>`;
+  }
+
+  const countEl = document.getElementById('orders-count-label');
+  if (countEl) countEl.textContent = `${total} order`;
+
+  const tbl = document.getElementById('tbl-orders');
+  if (!tbl) return;
+  tbl.innerHTML = `
+    <table class="orders-tbl">
+      <thead><tr>
+        <th>#</th><th>ID Order</th><th>Status</th><th>Produk</th>
+        <th>STO</th><th>Cluster</th><th>SF</th><th>Channel</th>
+        <th>Tgl IO</th><th>Tgl RE</th><th>Tgl PS</th>
+        <th>Kendala</th><th>Kabupaten</th>
+      </tr></thead>
+      <tbody>${slice.map((o,i) => `<tr>
+        <td class="rank">${S.ordersPage*PAGE+i+1}</td>
+        <td style="font-size:10.5px;font-family:monospace">${o.orderId||'—'}</td>
+        <td>${statusBadge(o)}</td>
+        <td style="white-space:nowrap">${o.produk||'—'}</td>
+        <td><b>${o.sto||'—'}</b></td>
+        <td>${clusterBadge(o.wok)}</td>
+        <td style="font-size:11px">${o.namaSF||o.codeSF||'—'}</td>
+        <td style="font-size:11px">${o.channel||'—'}</td>
+        <td style="font-size:11px;white-space:nowrap">${o.tglIO||'—'}</td>
+        <td style="font-size:11px;white-space:nowrap">${o.tglRE||'—'}</td>
+        <td style="font-size:11px;white-space:nowrap">${o.tglPS||'—'}</td>
+        <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.reasonK||o.kendTek||''}">${o.reasonK||o.kendTek||'—'}</td>
+        <td style="font-size:11px">${o.kabupaten||'—'}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>`;
+
+  const pager = document.getElementById('orders-pager');
+  if (pager) pager.innerHTML = total > PAGE ? `
+    <button class="pg-btn" onclick="ordersNav(-1)" ${S.ordersPage===0?'disabled':''}>‹ Prev</button>
+    <span>${S.ordersPage+1} / ${maxPage+1}</span>
+    <button class="pg-btn" onclick="ordersNav(1)" ${S.ordersPage>=maxPage?'disabled':''}>Next ›</button>` : '';
+}
+function ordersNav(d){ S.ordersPage+=d; renderOrders(); }
+
 // ─── KENDALA ─────────────────────────────────────────────
 function renderKendala() {
   const d = S.kendala;
@@ -1538,6 +1884,10 @@ function saveConfig() {
 // ─── INIT ─────────────────────────────────────────────────
 (function init() {
   buildSTOFilter();
+  const dsEl = document.getElementById('fDateStart');
+  const deEl = document.getElementById('fDateEnd');
+  if (dsEl) dsEl.value = S.filter.dateStart;
+  if (deEl) deEl.value = S.filter.dateEnd;
   const url   = LS.get('apiUrl');
   const token = LS.get('apiToken');
   if (url)   document.getElementById('cfgUrl').value   = url;
