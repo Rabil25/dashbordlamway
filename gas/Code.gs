@@ -140,8 +140,9 @@ function loginUser(params) {
     const rowStatus= (r[5] || '').toString().trim().toLowerCase();
 
     if (rowUser !== username) continue;
-    if (rowStatus !== 'active') return { ok: false, error: 'Akun tidak aktif. Hubungi admin.' };
     if (rowHash  !== passHash)  return { ok: false, error: 'Password salah.' };
+    if (rowStatus === 'pending') return { ok: false, error: 'Akun sedang menunggu persetujuan admin. Hubungi supervisor.' };
+    if (rowStatus !== 'active')  return { ok: false, error: 'Akun dinonaktifkan. Hubungi admin.' };
     return { ok: true, username: rowUser, nama: (r[2] || rowUser).toString().trim(), role: (r[4] || 'viewer').toString().trim() };
   }
   return { ok: false, error: 'Username tidak ditemukan.' };
@@ -166,9 +167,14 @@ function registerUser(params) {
   }
 
   // Tentukan role: admin kalau belum ada user sama sekali, sisanya viewer
+  // Status: admin langsung active, user biasa perlu approval (pending)
   const isFirst = rows.length <= 1;
-  ws.appendRow([ new Date(), username, nama, passHash, isFirst ? 'admin' : 'viewer', 'active' ]);
-  return { ok: true, message: 'Akun berhasil dibuat.' };
+  const role   = isFirst ? 'admin' : 'viewer';
+  const status = isFirst ? 'active' : 'pending';
+  ws.appendRow([ new Date(), username, nama, passHash, role, status ]);
+  return { ok: true, message: isFirst
+    ? 'Akun admin berhasil dibuat.'
+    : 'Pendaftaran berhasil! Menunggu persetujuan admin sebelum bisa login.' };
 }
 
 // ── Master SF ────────────────────────────────────────────────
