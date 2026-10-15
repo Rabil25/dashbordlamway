@@ -673,7 +673,7 @@ tr:hover td{background:var(--surface2);}
 /* IndiHome brand header */
 .auth-brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;padding-bottom:18px;border-bottom:1.5px solid var(--border)}
 .auth-brand-logo{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#e8001c 0%,#c10016 100%);flex-shrink:0}
-.auth-brand-logo svg{width:22px;height:22px;fill:#fff}
+.auth-brand-logo svg{width:22px;height:22px}
 .auth-brand-text{display:flex;flex-direction:column;gap:1px}
 .auth-brand-name{font-size:14px;font-weight:800;color:var(--text);letter-spacing:-.2px}
 .auth-brand-sub{font-size:10.5px;color:var(--muted);font-weight:500}
@@ -2786,15 +2786,10 @@ function renderAbsen() {
 // ─── ROLE-BASED UI ────────────────────────────────────────
 function applyRoleUI(role) {
   const isAdmin = role === 'admin';
-  // Sembunyikan menu Pengaturan untuk viewer
-  document.querySelectorAll('.nav-link[data-page="settings"]').forEach(el => {
-    el.closest('.nav-item').style.display = isAdmin ? '' : 'none';
-  });
-  // Kalau viewer lagi di halaman settings, lempar ke overview
-  if (!isAdmin) {
-    const cur = document.querySelector('.nav-link.active')?.dataset?.page;
-    if (cur === 'settings') navigate('overview');
-  }
+  // Settings nav visible untuk semua (viewer perlu akses Ganti Password)
+  // Sembunyikan bagian admin-only di dalam halaman settings
+  const adminSec = document.getElementById('settings-admin-section');
+  if (adminSec) adminSec.style.display = isAdmin ? '' : 'none';
 }
 
 // ─── CHANGE PASSWORD ──────────────────────────────────────
