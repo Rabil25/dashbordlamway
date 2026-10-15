@@ -11,7 +11,6 @@ const CONFIG = {
 };
 
 // ── KONFIGURASI WILAYAH — single source of truth ─────────────
-// Ubah di sini kalau ada reorganisasi wilayah
 const WILAYAH = {
   'Lampung Barat': {
     tl:        'ANDRES WELSEN',
@@ -70,6 +69,40 @@ function fmtDate(d) {
   return Utilities.formatDate(new Date(d), CONFIG.TIMEZONE, 'yyyy-MM-dd');
 }
 
+// ── Hitung Hari Kerja (Senin-Jumat) ─────────────────────────
+function calcHariKerja(now) {
+  const tz   = CONFIG.TIMEZONE;
+  const year = parseInt(Utilities.formatDate(now, tz, 'yyyy'));
+  const mon  = parseInt(Utilities.formatDate(now, tz, 'MM'));
+  const day  = parseInt(Utilities.formatDate(now, tz, 'dd'));
+
+  // Hari kerja senin-jumat
+  function isHK(d) { const w = d.getDay(); return w >= 1 && w <= 5; }
+
+  const firstDay = new Date(year, mon - 1, 1);
+  const lastDay  = new Date(year, mon, 0); // last day of month
+
+  let total = 0, elapsed = 0;
+  for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+    if (isHK(d)) {
+      total++;
+      if (d.getDate() <= day) elapsed++;
+    }
+  }
+  return { total, elapsed, month: mon, year };
+}
+
+// ── YYYYMM string untuk filter ───────────────────────────────
+function getYearMonth(now, offsetMonths) {
+  const tz  = CONFIG.TIMEZONE;
+  const y   = parseInt(Utilities.formatDate(now, tz, 'yyyy'));
+  const m   = parseInt(Utilities.formatDate(now, tz, 'MM'));
+  let yr = y, mo = m + offsetMonths;
+  if (mo <= 0) { mo += 12; yr--; }
+  if (mo > 12) { mo -= 12; yr++; }
+  return yr.toString() + mo.toString().padStart(2, '0');   // e.g. "202609"
+}
+
 // ── Master SF ────────────────────────────────────────────────
 function getSFList() {
   const ws   = ss().getSheetByName('Data Sales');
@@ -111,13 +144,20 @@ function getSFList() {
 
 // ── Performance Utama ────────────────────────────────────────
 function getPerformance() {
+  const now = new Date();
   const { sfList } = getSFList();
   const sfMap = {};
   sfList.forEach(sf => { sfMap[sf.kode.toLowerCase()] = sf; });
 
-  const ini  = parseBulan('Bulan_Ini',  sfMap);
-  const lalu = parseBulan('Bulan_Lalu', sfMap);
-  const wsa  = calcWSATSA(sfMap);
+  const thisYM = getYearMonth(now, 0);   // bulan ini, e.g. "202610"
+  const lastYM = getYearMonth(now, -1);  // bulan lalu, e.g. "202609"
+
+  // Semua data dari sheet Bulan_Ini, difilter per bulan
+  const ini  = parseBulan('Bulan_Ini', sfMap, thisYM);
+  const lalu = parseBulan('Bulan_Ini', sfMap, lastYM);
+
+  const hariKerja = calcHariKerja(now);
+  const wsa       = calcWSATSA(sfMap);
 
   const allKodes = new Set([
     ...Object.keys(ini.bySF),
@@ -147,7 +187,7 @@ function getPerformance() {
         wsa:     w.bulanIni,
         kendala: i.kendala,
         produk:  i.produk,
-        kab:     i.kab,      // PS per kabupaten (dari kolom VALIDASI KAB)
+        kab:     i.kab,
       },
       bulanLalu: {
         io:  l.io,
@@ -164,32 +204,36 @@ function getPerformance() {
     sfPerformance: sfPerf,
     rekapSTO:      rekapBySTO(sfPerf),
     rekapCluster:  rekapByCluster(sfPerf),
-    rekapKab:      rekapByKab(sfPerf),
+    rekapKab:      rekapByKabFull(ini, lalu),
     summary: {
-      bulanIni:    ini.total,
-      bulanLalu:   lalu.total,
-      digitalIni:  ini.digital,
-      digitalLalu: lalu.digital,
+      bulanIni:     ini.total,
+      bulanLalu:    lalu.total,
+      digitalIni:   ini.digital,
+      digitalLalu:  lalu.digital,
+      agencyIni:    ini.agency,
+      agencyLalu:   lalu.agency,
     },
+    hariKerja,
     wsaTrend:  wsa.trend,
     wilayah:   WILAYAH,
     updatedAt: new Date().toISOString(),
   };
 }
 
-// ── Parse Sheet Bulan_Ini / Bulan_Lalu ───────────────────────
-function parseBulan(sheetName, sfMap) {
+// ── Parse Sheet dengan filter bulan (YYYYMM) ─────────────────
+function parseBulan(sheetName, sfMap, yearMonth) {
+  // yearMonth: string "202609" – filter by Tanggal IO (YYYYMMDD, kolom BW)
   const ws = ss().getSheetByName(sheetName);
   if (!ws) return {
     bySF:    {},
-    total:   { io: 0, re: 0, ps: 0, kab: {} },
+    total:   { io: 0, re: 0, ps: 0, byKab: {} },
+    agency:  { io: 0, re: 0, ps: 0, byKab: {} },
     digital: { io: 0, re: 0, ps: 0 },
   };
 
   const rows = ws.getDataRange().getValues();
   const hdr  = rows[0];
 
-  // Case-insensitive column finder
   const findCol = (names) => {
     for (const n of names) {
       const idx = hdr.findIndex(h => h.toString().toLowerCase() === n.toLowerCase());
@@ -199,83 +243,115 @@ function parseBulan(sheetName, sfMap) {
   };
 
   const C = {
-    status:   findCol(['Status Order']),
-    io:       findCol(['Validasi IO']),
-    re:       findCol(['Validasi RE']),
-    ps:       findCol(['Validasi PS']),
-    codeSF:   findCol(['CODE SF', 'Validasi SF']),
-    kendala:  findCol(['Kategori Kendala']),
-    produk:   findCol(['Validasi Produk']),
-    // Kolom CW di spreadsheet = header "VALIDASI KAB" (bukan Calendar Week)
-    kab:      findCol(['VALIDASI KAB']),
-    // Kolom CI = "Channel 2": nilai "Agency" = SF/Agency, selain itu = Digital
-    channel2: findCol(['Channel 2']),
+    status:    findCol(['Status Order']),
+    io:        findCol(['Validasi IO']),
+    tanggalIO: findCol(['Tanggal IO']),
+    re:        findCol(['Validasi RE']),
+    ps:        findCol(['Validasi PS']),
+    codeSF:    findCol(['CODE SF', 'Validasi SF']),
+    kendala:   findCol(['Kategori Kendala']),
+    produk:    findCol(['Validasi Produk']),
+    kab:       findCol(['VALIDASI KAB']),
+    channel2:  findCol(['Channel 2']),
   };
 
+  function mkStat() { return { io: 0, re: 0, ps: 0, byKab: {} }; }
+  function addKab(stat, kab, field) {
+    if (!kab) return;
+    if (!stat.byKab[kab]) stat.byKab[kab] = { io: 0, re: 0, ps: 0 };
+    stat.byKab[kab][field]++;
+  }
+
   const bySF    = {};
-  const total   = { io: 0, re: 0, ps: 0, kab: {} };
+  const total   = mkStat();
+  const agency  = mkStat();
   const digital = { io: 0, re: 0, ps: 0 };
 
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r[C.status]) continue;
 
-    // Tentukan channel: Agency (SF) vs Digital
-    const ch        = (C.channel2 !== -1 ? r[C.channel2] : '').toString().trim().toLowerCase();
-    const isAgency  = ch === 'agency';
-    const isDigital = !isAgency;
+    // Filter bulan berdasarkan Tanggal IO (format YYYYMMDD)
+    if (yearMonth && C.tanggalIO !== -1) {
+      const tgl = r[C.tanggalIO] ? r[C.tanggalIO].toString().replace(/-/g, '').substring(0, 6) : '';
+      if (!tgl || tgl !== yearMonth) continue;
+    }
+
+    const ch       = (C.channel2 !== -1 ? r[C.channel2] : '').toString().trim().toLowerCase();
+    const isAgency = ch === 'agency';
+    const kabRaw   = C.kab !== -1 && r[C.kab] ? r[C.kab].toString().trim().toUpperCase() : '';
 
     const valIO = (C.io !== -1 ? r[C.io] : '').toString().toLowerCase();
     const valRE = (C.re !== -1 ? r[C.re] : '').toString().toLowerCase();
     const valPS = (C.ps !== -1 ? r[C.ps] : '').toString().toLowerCase();
 
-    // ── Hitung total semua baris (SF + Digital) ──
-    if (valIO.includes('valid io')) { total.io++; if (isDigital) digital.io++; }
-    if (valRE.includes('valid re')) { total.re++; if (isDigital) digital.re++; }
+    // ── Total semua channel ──
+    if (valIO.includes('valid io')) {
+      total.io++;
+      addKab(total, kabRaw, 'io');
+      if (!isAgency) digital.io++;
+    }
+    if (valRE.includes('valid re')) {
+      total.re++;
+      addKab(total, kabRaw, 're');
+      if (!isAgency) digital.re++;
+    }
     if (valPS.includes('put in service')) {
       total.ps++;
-      if (isDigital) digital.ps++;
-      // Distribusi PS per kabupaten (semua channel)
-      if (C.kab !== -1 && r[C.kab]) {
-        const kabVal = r[C.kab].toString().trim().toUpperCase();
-        if (kabVal) {
-          total.kab[kabVal] = (total.kab[kabVal] || 0) + 1;
-        }
-      }
+      addKab(total, kabRaw, 'ps');
+      if (!isAgency) digital.ps++;
     }
 
-    // ── Per-SF hanya untuk baris Agency ──
-    if (!isAgency) continue;
+    // ── Agency only ──
+    if (isAgency) {
+      if (valIO.includes('valid io')) { agency.io++; addKab(agency, kabRaw, 'io'); }
+      if (valRE.includes('valid re')) { agency.re++; addKab(agency, kabRaw, 're'); }
+      if (valPS.includes('put in service')) { agency.ps++; addKab(agency, kabRaw, 'ps'); }
+    }
 
+    // ── Per-SF (agency only) ──
+    if (!isAgency) continue;
     const rawKode = (C.codeSF !== -1 ? r[C.codeSF] : '') || '';
     const kode    = rawKode.toString().trim().toLowerCase();
     if (!kode || kode === '#n/a') continue;
 
-    if (!bySF[kode]) {
-      bySF[kode] = { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {} };
-    }
+    if (!bySF[kode]) bySF[kode] = { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {} };
 
     if (valIO.includes('valid io')) bySF[kode].io++;
     if (valRE.includes('valid re')) bySF[kode].re++;
     if (valPS.includes('put in service')) {
       bySF[kode].ps++;
-      if (C.kab !== -1 && r[C.kab]) {
-        const kabVal = r[C.kab].toString().trim().toUpperCase();
-        if (kabVal) {
-          bySF[kode].kab[kabVal] = (bySF[kode].kab[kabVal] || 0) + 1;
-        }
-      }
+      if (kabRaw) bySF[kode].kab[kabRaw] = (bySF[kode].kab[kabRaw] || 0) + 1;
     }
-
     if (C.kendala !== -1 && r[C.kendala]) bySF[kode].kendala++;
-
-    if (C.produk !== -1 && r[C.produk]) {
+    if (C.produk  !== -1 && r[C.produk]) {
       const p = r[C.produk].toString().trim();
       if (p) bySF[kode].produk[p] = (bySF[kode].produk[p] || 0) + 1;
     }
   }
 
-  return { bySF, total, digital };
+  return { bySF, total, agency, digital };
+}
+
+// ── Rekap per Kabupaten (Full: all + agency, ini + lalu) ─────
+function rekapByKabFull(ini, lalu) {
+  const allKabs = new Set([
+    ...Object.keys(ini.total.byKab),
+    ...Object.keys(lalu.total.byKab),
+  ]);
+  const result = [];
+  allKabs.forEach(kab => {
+    const cluster = KAB_TO_CLUSTER[kab] || 'Lainnya';
+    result.push({
+      kabupaten: kab,
+      cluster,
+      allIni:    ini.total.byKab[kab]  || { io: 0, re: 0, ps: 0 },
+      allLalu:   lalu.total.byKab[kab] || { io: 0, re: 0, ps: 0 },
+      agencyIni:  ini.agency.byKab[kab]  || { io: 0, re: 0, ps: 0 },
+      agencyLalu: lalu.agency.byKab[kab] || { io: 0, re: 0, ps: 0 },
+    });
+  });
+  return result.sort((a, b) => b.allIni.ps - a.allIni.ps);
 }
 
 // ── Rekap per STO ────────────────────────────────────────────
@@ -318,19 +394,6 @@ function rekapByCluster(sfPerf) {
   return Object.values(map);
 }
 
-// ── Rekap per Kabupaten ──────────────────────────────────────
-function rekapByKab(sfPerf) {
-  const map = {};
-  sfPerf.forEach(sf => {
-    Object.entries(sf.bulanIni.kab || {}).forEach(([kab, ps]) => {
-      const cluster = KAB_TO_CLUSTER[kab] || 'Tidak Dikenal';
-      if (!map[kab]) map[kab] = { kabupaten: kab, cluster, bulanIni: { ps: 0 } };
-      map[kab].bulanIni.ps += ps;
-    });
-  });
-  return Object.values(map).sort((a, b) => b.bulanIni.ps - a.bulanIni.ps);
-}
-
 // ── WSA / TSA ────────────────────────────────────────────────
 function calcWSATSA(sfMap) {
   const ws   = ss().getSheetByName('WSA_TSA');
@@ -348,25 +411,31 @@ function calcWSATSA(sfMap) {
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r[0]) continue;
-    const d = new Date(r[0]);
+
+    let d;
+    try { d = new Date(r[0]); } catch(e) { continue; }
     if (isNaN(d)) continue;
 
-    const kode    = (r[3] || '').toString().trim().toLowerCase();
-    const dateStr = fmtDate(d);
-    const m = d.getMonth(), y = d.getFullYear();
+    const yr = d.getFullYear(), mo = d.getMonth();
+    const dateStr = fmtDate(d).slice(0, 7);
+
+    const kode = (r[1] || '').toString().trim().toLowerCase();
+    if (!kode) continue;
+
+    const wsa = Number(r[2]) || 0;
 
     if (!bySF[kode]) bySF[kode] = { bulanIni: 0, bulanLalu: 0 };
 
-    if (m === thisMonth && y === thisYear) {
-      bySF[kode].bulanIni++;
-      trend[dateStr] = (trend[dateStr] || 0) + 1;
-    } else if (m === lastMonth && y === lastYear) {
-      bySF[kode].bulanLalu++;
-    }
+    if (yr === thisYear  && mo === thisMonth) bySF[kode].bulanIni  += wsa;
+    if (yr === lastYear  && mo === lastMonth) bySF[kode].bulanLalu += wsa;
+
+    if (!trend[dateStr]) trend[dateStr] = 0;
+    trend[dateStr] += wsa;
   }
 
   const trendArr = Object.entries(trend)
     .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-12)
     .map(([date, count]) => ({ date, count }));
 
   return { bySF, trend: trendArr };
@@ -374,99 +443,110 @@ function calcWSATSA(sfMap) {
 
 // ── Kendala ──────────────────────────────────────────────────
 function getKendala() {
-  const wsK  = ss().getSheetByName('Kendala');
-  const wsFU = ss().getSheetByName('FUKendala');
+  const ws   = ss().getSheetByName('Kendala');
+  if (!ws) return { kendala: [], fuKendala: [], byJenis: {}, total: 0, totalFU: 0 };
+  const rows = ws.getDataRange().getValues();
+  const hdr  = rows[0];
+  const col  = (name) => hdr.indexOf(name);
+  const C = {
+    tgl:     col('Tanggal'),
+    sto:     col('STO'),
+    kendala: col('Jenis Kendala'),
+    detail:  col('Detail'),
+    ket:     col('Keterangan'),
+    teknisi: col('Teknisi'),
+    order:   col('Order ID'),
+    solusi:  col('Solusi'),
+    status:  col('Status FU'),
+  };
 
-  const kendala = [];
-  if (wsK) {
-    const rows = wsK.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) {
-      const r = rows[i];
-      if (!r[0]) continue;
-      kendala.push({
-        tanggal:    fmtDate(r[0]),
-        teknisi:    (r[1] || '').toString().trim(),
-        orderId:    (r[2] || '').toString().trim(),
-        jenis:      (r[3] || '').toString().trim(),
-        detail:     (r[4] || '').toString().trim(),
-        koordinat:  (r[5] || '').toString().trim(),
-        keterangan: (r[6] || '').toString().trim(),
-      });
-    }
-    kendala.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
-  }
-
-  const fuKendala = [];
-  if (wsFU) {
-    const rows = wsFU.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) {
-      const r = rows[i];
-      if (!r[0]) continue;
-      const stoUpper = (r[2] || '').toString().trim().toUpperCase();
-      fuKendala.push({
-        tanggal: fmtDate(r[0]),
-        orderId: (r[1] || '').toString().trim(),
-        sto:     stoUpper,
-        cluster: STO_TO_CLUSTER[stoUpper] || '-',
-        kendala: (r[3] || '').toString().trim(),
-        solusi:  (r[4] || '').toString().trim(),
-        wsaTsa:  (r[5] || '').toString().trim(),
-      });
-    }
-    fuKendala.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
-  }
-
+  const list = [], fu = [];
   const byJenis = {};
-  kendala.forEach(k => {
-    const j = (k.jenis || 'Lainnya').replace(/^:\s*/, '').trim() || 'Lainnya';
-    byJenis[j] = (byJenis[j] || 0) + 1;
-  });
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[C.tgl]) continue;
+
+    const sto     = (r[C.sto] || '').toString().toUpperCase().trim();
+    const cluster = STO_TO_CLUSTER[sto] || KAB_TO_CLUSTER[sto] || '-';
+    const jenis   = (r[C.kendala] || 'Lainnya').toString().trim();
+
+    byJenis[jenis] = (byJenis[jenis] || 0) + 1;
+
+    const row = {
+      tanggal: r[C.tgl] ? fmtDate(r[C.tgl]) : '',
+      sto, cluster, jenis,
+      detail:   (r[C.detail]  || '').toString(),
+      keterangan:(r[C.ket]    || '').toString(),
+      teknisi:  (r[C.teknisi] || '').toString(),
+      orderId:  (r[C.order]   || '').toString(),
+    };
+    list.push(row);
+
+    const statusFU = (r[C.status] || '').toString().toLowerCase();
+    if (statusFU === 'fu aktif' || statusFU === 'aktif') {
+      fu.push({ ...row, solusi: (r[C.solusi] || '').toString() });
+    }
+  }
+
+  list.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  fu.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
 
   return {
-    kendala,
-    fuKendala,
+    kendala:   list,
+    fuKendala: fu,
     byJenis,
-    total:   kendala.length,
-    totalFU: fuKendala.length,
+    total:     list.length,
+    totalFU:   fu.length,
   };
 }
 
 // ── Absensi ──────────────────────────────────────────────────
 function getAbsen() {
-  const ws   = ss().getSheetByName('Absen');
+  const ws   = ss().getSheetByName('Absensi');
+  if (!ws) return { today: [], trend: [], count: 0 };
   const rows = ws.getDataRange().getValues();
+  const hdr  = rows[0];
+  const col  = (name) => hdr.indexOf(name);
+  const C = {
+    waktu:     col('Waktu'),
+    nama:      col('Nama'),
+    username:  col('Username'),
+    kelurahan: col('Kelurahan'),
+    deal:      col('Deal'),
+  };
 
-  const today     = fmtDate(new Date());
-  const todayList = [];
-  const byDate    = {};
+  const now      = new Date();
+  const todayStr = fmtDate(now);
+  const trend    = {};
+  const today    = [];
 
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
-    if (!r[0]) continue;
-    const waktu = r[4] || r[0];
-    const ds    = fmtDate(waktu);
-    byDate[ds]  = (byDate[ds] || 0) + 1;
-    if (ds === today) {
-      todayList.push({
-        userId:    r[1],
-        nama:      r[2],
-        username:  r[3],
-        waktu,
-        lat:       r[5],
-        lng:       r[6],
-        kelurahan: r[7],
-        deal:      r[9],
+    if (!r[C.waktu]) continue;
+
+    let d;
+    try { d = new Date(r[C.waktu]); } catch(e) { continue; }
+    if (isNaN(d)) continue;
+
+    const dateStr = fmtDate(d);
+    trend[dateStr] = (trend[dateStr] || 0) + 1;
+
+    if (dateStr === todayStr) {
+      today.push({
+        waktu:     r[C.waktu],
+        nama:      (r[C.nama]      || '').toString(),
+        username:  (r[C.username]  || '').toString(),
+        kelurahan: (r[C.kelurahan] || '').toString(),
+        deal:      r[C.deal] ? 1 : 0,
       });
     }
   }
 
-  const trend = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const ds = fmtDate(d);
-    trend.push({ date: ds, count: byDate[ds] || 0 });
-  }
+  const trendArr = Object.entries(trend)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-30)
+    .map(([date, count]) => ({ date, count }));
 
-  return { today: todayList, count: todayList.length, trend };
+  return { today, trend: trendArr, count: today.length };
 }

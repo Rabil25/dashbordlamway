@@ -221,6 +221,55 @@ tr:hover td{background:var(--surface2);}
 .deal-yes{background:var(--green-lite);color:var(--green);}
 .deal-no{background:var(--surface2);color:var(--muted);}
 
+/* ── WOK Performance Table ── */
+.wok-section-title{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:var(--red);color:#fff;font-size:12px;font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;border-radius:var(--r-sm) var(--r-sm) 0 0;
+  margin-top:20px;
+}
+.wok-tbl-wrap{overflow-x:auto;margin-bottom:4px;}
+.wok-tbl{width:100%;border-collapse:collapse;font-size:11px;min-width:900px;}
+.wok-tbl th{
+  background:var(--surface2);color:var(--fg2);font-weight:700;text-align:center;
+  padding:6px 6px;border:1px solid var(--border);font-size:10px;
+  letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;
+}
+.wok-tbl th.th-left{text-align:left;}
+.wok-tbl td{
+  padding:6px 8px;border:1px solid var(--border);
+  font-size:11px;white-space:nowrap;vertical-align:middle;
+}
+.wok-tbl .td-territory{font-weight:600;min-width:130px;}
+.wok-tbl .row-cluster td{background:color-mix(in srgb,var(--surface2) 60%,transparent);font-weight:700;}
+.wok-tbl .row-cluster.lb td{border-left:3px solid #1D4ED8;}
+.wok-tbl .row-cluster.wk td{border-left:3px solid #B45309;}
+.wok-tbl .row-kab td{padding-left:20px;}
+.wok-tbl .row-total td{background:color-mix(in srgb,var(--red-lite) 50%,transparent);font-weight:700;}
+.wok-tbl .td-num{text-align:right;font-variant-numeric:tabular-nums;}
+.wok-tbl .td-pct{text-align:right;font-variant-numeric:tabular-nums;}
+.mom-up{color:var(--green);font-weight:700;}
+.mom-dn{color:var(--red);font-weight:700;}
+.mom-ne{color:var(--muted);}
+.drr-val{color:var(--blue);}
+.hk-info{font-size:10px;color:var(--muted);}
+
+/* ── Target Input (Settings) ── */
+.target-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;}
+.target-field{display:flex;flex-direction:column;gap:4px;}
+.target-field label{font-size:11px;font-weight:600;color:var(--fg2);}
+.target-field input{
+  font-family:var(--font);font-size:13px;padding:7px 9px;
+  border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface2);color:var(--fg);text-align:right;
+}
+.target-field input:focus{outline:none;border-color:var(--red);}
+.target-cluster-label{
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);padding:8px 0 4px;border-bottom:1px solid var(--border);
+  margin-bottom:4px;grid-column:1/-1;
+}
+
 /* ── Responsive ── */
 @media(max-width:768px){
   .sidebar{transform:translateX(calc(-1 * var(--sidebar-w)));}
@@ -229,6 +278,7 @@ tr:hover td{background:var(--surface2);}
   .menu-btn{display:flex;}
   .grid-2,.cluster-grid,.kpi-grid{grid-template-columns:1fr;}
   .filter-bar{padding:8px 12px;}
+  .target-grid{grid-template-columns:1fr;}
 }
 </style>
 
@@ -243,6 +293,10 @@ tr:hover td{background:var(--surface2);}
       <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 1116 0A8 8 0 012 10zm3.5-1h9a.5.5 0 000-1h-9a.5.5 0 000 1zm0 3h9a.5.5 0 000-1h-9a.5.5 0 000 1zm0 3h5a.5.5 0 000-1h-5a.5.5 0 000 1z"/></svg>
       <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor" style="display:none"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/></svg>
       Overview
+    </a></li>
+    <li class="nav-item"><a class="nav-link" data-page="wok-perf" onclick="navigate('wok-perf');return false;">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 4a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H3a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h14a1 1 0 010 2H3a1 1 0 01-1-1zm1 5a1 1 0 100 2h14a1 1 0 100-2H3z"/></svg>
+      Performance WOK
     </a></li>
     <li class="nav-item"><a class="nav-link" data-page="performance" onclick="navigate('performance');return false;">
       <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/></svg>
@@ -313,6 +367,13 @@ tr:hover td{background:var(--surface2);}
           <div class="chart-wrap"><canvas id="chartWsa"></canvas></div>
         </div>
       </div>
+    </section>
+
+    <!-- ░░ PERFORMANCE WOK ░░ -->
+    <section class="page" id="page-wok-perf">
+      <div id="wok-hk-info" class="pill-row"></div>
+      <div id="wok-all"></div>
+      <div id="wok-agency"></div>
     </section>
 
     <!-- ░░ PERFORMANCE ░░ -->
@@ -387,6 +448,20 @@ tr:hover td{background:var(--surface2);}
         <div class="field"><label>Token</label><input id="cfgToken" type="password" placeholder="lpgLampung2026"></div>
         <button class="btn-primary" onclick="saveConfig()">Simpan &amp; Muat Data</button>
       </div>
+      <div class="config-wrap" style="margin-top:20px;">
+        <h2>🎯 Target PS per Wilayah</h2>
+        <p>Input target PS bulan ini. RE Target = PS×1.2 · IO Target = PS×1.5 (otomatis).</p>
+        <div class="target-grid">
+          <div class="target-cluster-label">CLUS LAMPUNG BARAT</div>
+          <div class="target-field"><label>Tanggamus</label><input id="tgt-TANGGAMUS" type="number" min="0" placeholder="0"></div>
+          <div class="target-field"><label>Lampung Barat</label><input id="tgt-LAMPUNG BARAT" type="number" min="0" placeholder="0"></div>
+          <div class="target-field"><label>Pesisir Barat</label><input id="tgt-PESISIR BARAT" type="number" min="0" placeholder="0"></div>
+          <div class="target-cluster-label">CLUS WAY KANAN</div>
+          <div class="target-field"><label>Lampung Utara</label><input id="tgt-LAMPUNG UTARA" type="number" min="0" placeholder="0"></div>
+          <div class="target-field"><label>Way Kanan</label><input id="tgt-WAY KANAN" type="number" min="0" placeholder="0"></div>
+        </div>
+        <button class="btn-primary" onclick="saveTargets()">Simpan Target</button>
+      </div>
     </section>
   </div><!-- /content -->
 </div><!-- /shell -->
@@ -397,6 +472,39 @@ const LS = {
   get: k => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
 };
+
+// ── PS Targets (localStorage) ────────────────────────────────
+const KAB_LIST = ['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT','LAMPUNG UTARA','WAY KANAN'];
+const KAB_TO_CLUSTER_JS = {
+  'TANGGAMUS':'Lampung Barat','LAMPUNG BARAT':'Lampung Barat','PESISIR BARAT':'Lampung Barat',
+  'LAMPUNG UTARA':'Way Kanan','WAY KANAN':'Way Kanan',
+};
+
+function getTargets() {
+  try {
+    const t = JSON.parse(LS.get('wokTargets') || '{}');
+    return t;
+  } catch { return {}; }
+}
+
+function saveTargets() {
+  const t = {};
+  KAB_LIST.forEach(k => {
+    const el = document.getElementById('tgt-' + k);
+    t[k] = el ? (parseInt(el.value) || 0) : 0;
+  });
+  LS.set('wokTargets', JSON.stringify(t));
+  alert('Target tersimpan!');
+  if (S.loaded) renderWokPerf();
+}
+
+function loadTargetInputs() {
+  const t = getTargets();
+  KAB_LIST.forEach(k => {
+    const el = document.getElementById('tgt-' + k);
+    if (el && t[k]) el.value = t[k];
+  });
+}
 
 // ── State ─────────────────────────────────────────────────────
 const S = {
@@ -411,7 +519,7 @@ const S = {
 };
 
 const PAGE_TITLES = {
-  overview: 'Overview', performance: 'Performance SF',
+  overview: 'Overview', 'wok-perf': 'Performance WOK', performance: 'Performance SF',
   kendala: 'Kendala', absensi: 'Absensi', settings: 'Pengaturan',
 };
 
@@ -428,6 +536,7 @@ function navigate(pageId) {
 
 function renderPage(pageId) {
   if (pageId === 'overview')     renderOverview();
+  if (pageId === 'wok-perf')     renderWokPerf();
   if (pageId === 'performance')  renderPerformance();
   if (pageId === 'kendala')      { loadKendala(); }
   if (pageId === 'absensi')      { loadAbsen(); }
@@ -676,6 +785,163 @@ function renderOverview() {
   });
 }
 
+// ── WOK Performance Table ────────────────────────────────────
+function renderWokPerf() {
+  const d  = S.perf;
+  if (!d) return;
+  const hk      = d.hariKerja || { total: 22, elapsed: 1 };
+  const targets = getTargets();
+  const rekapKab = d.rekapKab || [];
+
+  // Build kab lookup
+  const kabMap = {};
+  rekapKab.forEach(r => { kabMap[r.kabupaten] = r; });
+
+  // HK info banner
+  document.getElementById('wok-hk-info').innerHTML =
+    `<div class="pill"><span>Bulan</span>${hk.month}/${hk.year}</div>
+     <div class="pill"><span>HK Berjalan</span>${hk.elapsed}</div>
+     <div class="pill"><span>Total HK</span>${hk.total}</div>`;
+
+  // Compute cluster totals from kab data
+  const CLUSTERS = {
+    'Lampung Barat': { kabs: ['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT'], class:'lb' },
+    'Way Kanan':     { kabs: ['LAMPUNG UTARA','WAY KANAN'], class:'wk' },
+  };
+
+  function sumKabs(kabs, dataField) {
+    return kabs.reduce((acc, k) => {
+      const r = kabMap[k];
+      if (!r) return acc;
+      const s = r[dataField] || { io: 0, re: 0, ps: 0 };
+      acc.io += s.io; acc.re += s.re; acc.ps += s.ps;
+      return acc;
+    }, { io: 0, re: 0, ps: 0 });
+  }
+
+  function sumTargets(kabs) {
+    return kabs.reduce((a, k) => a + (targets[k] || 0), 0);
+  }
+
+  // Format helpers
+  function pct(v, t) { return t > 0 ? Math.round(v / t * 100) + '%' : '—'; }
+  function drr(mtd) {
+    if (!hk.elapsed) return '—';
+    return '<span class="drr-val">' + Math.round(mtd / hk.elapsed * hk.total) + '</span>';
+  }
+  function mom(ini, lalu) {
+    if (!lalu) return '<span class="mom-ne">—</span>';
+    const p = Math.round((ini - lalu) / lalu * 100);
+    if (isNaN(p) || !isFinite(p)) return '<span class="mom-ne">—</span>';
+    const cls = p > 0 ? 'mom-up' : p < 0 ? 'mom-dn' : 'mom-ne';
+    return `<span class="${cls}">${p > 0 ? '+' : ''}${p}%</span>`;
+  }
+  function tgtCell(ps) { return ps || '—'; }
+  function ratio(a, b) { return b > 0 ? (a / b * 100).toFixed(1) + '%' : '—'; }
+
+  function buildSection(sectionTitle, iniField, laluField) {
+    let wokIni  = { io: 0, re: 0, ps: 0 };
+    let wokLalu = { io: 0, re: 0, ps: 0 };
+    let wokTgt  = 0;
+    let rows    = '';
+
+    Object.entries(CLUSTERS).forEach(([clName, clCfg]) => {
+      const cIni  = sumKabs(clCfg.kabs, iniField);
+      const cLalu = sumKabs(clCfg.kabs, laluField);
+      const cTgt  = sumTargets(clCfg.kabs);
+      wokIni.io  += cIni.io;  wokIni.re  += cIni.re;  wokIni.ps  += cIni.ps;
+      wokLalu.io += cLalu.io; wokLalu.re += cLalu.re; wokLalu.ps += cLalu.ps;
+      wokTgt += cTgt;
+
+      const reTgt = Math.round(cTgt * 1.2);
+      const ioTgt = Math.round(cTgt * 1.5);
+
+      rows += `<tr class="row-cluster ${clCfg.class}">
+        <td class="td-territory">CLUS ${clName.toUpperCase()}</td>
+        <td class="td-num">${ioTgt || '—'}</td><td class="td-num">${cIni.io}</td>
+        <td class="td-num">${drr(cIni.io)}</td><td class="td-num">${cLalu.io}</td>
+        <td class="td-pct">${mom(cIni.io, cLalu.io)}</td>
+        <td class="td-num">${reTgt || '—'}</td><td class="td-num">${cIni.re}</td>
+        <td class="td-num">${drr(cIni.re)}</td><td class="td-num">${cLalu.re}</td>
+        <td class="td-pct">${mom(cIni.re, cLalu.re)}</td>
+        <td class="td-num">${cTgt || '—'}</td><td class="td-num">${cIni.ps}</td>
+        <td class="td-num">${drr(cIni.ps)}</td><td class="td-num">${cLalu.ps}</td>
+        <td class="td-pct">${mom(cIni.ps, cLalu.ps)}</td>
+        <td class="td-pct">${ratio(cIni.re, cIni.io)}</td>
+        <td class="td-pct">${ratio(cIni.ps, cIni.re)}</td>
+        <td class="td-num">${hk.elapsed}/${hk.total}</td>
+      </tr>`;
+
+      clCfg.kabs.forEach(kab => {
+        const r    = kabMap[kab];
+        const kIni  = r ? (r[iniField]  || { io: 0, re: 0, ps: 0 }) : { io: 0, re: 0, ps: 0 };
+        const kLalu = r ? (r[laluField] || { io: 0, re: 0, ps: 0 }) : { io: 0, re: 0, ps: 0 };
+        const kTgt  = targets[kab] || 0;
+        const kReTgt = Math.round(kTgt * 1.2);
+        const kIoTgt = Math.round(kTgt * 1.5);
+        rows += `<tr class="row-kab">
+          <td class="td-territory">${kab.charAt(0) + kab.slice(1).toLowerCase()}</td>
+          <td class="td-num">${kIoTgt || '—'}</td><td class="td-num">${kIni.io}</td>
+          <td class="td-num">${drr(kIni.io)}</td><td class="td-num">${kLalu.io}</td>
+          <td class="td-pct">${mom(kIni.io, kLalu.io)}</td>
+          <td class="td-num">${kReTgt || '—'}</td><td class="td-num">${kIni.re}</td>
+          <td class="td-num">${drr(kIni.re)}</td><td class="td-num">${kLalu.re}</td>
+          <td class="td-pct">${mom(kIni.re, kLalu.re)}</td>
+          <td class="td-num">${kTgt || '—'}</td><td class="td-num">${kIni.ps}</td>
+          <td class="td-num">${drr(kIni.ps)}</td><td class="td-num">${kLalu.ps}</td>
+          <td class="td-pct">${mom(kIni.ps, kLalu.ps)}</td>
+          <td class="td-pct">${ratio(kIni.re, kIni.io)}</td>
+          <td class="td-pct">${ratio(kIni.ps, kIni.re)}</td>
+          <td class="td-num">—</td>
+        </tr>`;
+      });
+    });
+
+    const wReTgt = Math.round(wokTgt * 1.2);
+    const wIoTgt = Math.round(wokTgt * 1.5);
+    rows += `<tr class="row-total">
+      <td class="td-territory">WOK LAMWAY</td>
+      <td class="td-num">${wIoTgt || '—'}</td><td class="td-num">${wokIni.io}</td>
+      <td class="td-num">${drr(wokIni.io)}</td><td class="td-num">${wokLalu.io}</td>
+      <td class="td-pct">${mom(wokIni.io, wokLalu.io)}</td>
+      <td class="td-num">${wReTgt || '—'}</td><td class="td-num">${wokIni.re}</td>
+      <td class="td-num">${drr(wokIni.re)}</td><td class="td-num">${wokLalu.re}</td>
+      <td class="td-pct">${mom(wokIni.re, wokLalu.re)}</td>
+      <td class="td-num">${wokTgt || '—'}</td><td class="td-num">${wokIni.ps}</td>
+      <td class="td-num">${drr(wokIni.ps)}</td><td class="td-num">${wokLalu.ps}</td>
+      <td class="td-pct">${mom(wokIni.ps, wokLalu.ps)}</td>
+      <td class="td-pct">${ratio(wokIni.re, wokIni.io)}</td>
+      <td class="td-pct">${ratio(wokIni.ps, wokIni.re)}</td>
+      <td class="td-num">${hk.elapsed}/${hk.total}</td>
+    </tr>`;
+
+    const thead = `<thead>
+      <tr>
+        <th class="th-left" rowspan="2">Territory</th>
+        <th colspan="5">IO (Valid IO)</th>
+        <th colspan="5">RE (Valid RE)</th>
+        <th colspan="5">PS (Put In Service)</th>
+        <th rowspan="2">RE/IO<br>%</th>
+        <th rowspan="2">PS/RE<br>%</th>
+        <th rowspan="2">HK</th>
+      </tr>
+      <tr>
+        <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
+        <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
+        <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
+      </tr>
+    </thead>`;
+
+    return `<div class="wok-section-title">${sectionTitle}</div>
+      <div class="wok-tbl-wrap">
+        <table class="wok-tbl">${thead}<tbody>${rows}</tbody></table>
+      </div>`;
+  }
+
+  document.getElementById('wok-all').innerHTML    = buildSection('WOK Performance All',    'allIni',    'allLalu');
+  document.getElementById('wok-agency').innerHTML = buildSection('Agency Performance All', 'agencyIni', 'agencyLalu');
+}
+
 // ── Performance ───────────────────────────────────────────────
 function renderPerformance() {
   const sto = filteredSTO();
@@ -847,9 +1113,9 @@ function saveConfig() {
 (function init() {
   const url   = LS.get('apiUrl');
   const token = LS.get('apiToken');
-  // Pre-fill settings
   if (url)   document.getElementById('cfgUrl').value   = url;
   if (token) document.getElementById('cfgToken').value = token;
+  loadTargetInputs();
 
   if (!url || !token) {
     navigate('settings');
