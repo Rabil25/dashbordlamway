@@ -61,6 +61,7 @@ function doGet(e) {
       case 'orders':      data = getOrders(params);          break;
       case 'login':       data = loginUser(params);          break;
       case 'register':    data = registerUser(params);       break;
+      case 'changepass':  data = changePassword(params);     break;
       default:            data = { error: 'Unknown action' };
     }
     return jsonOut({ ok: true, ...data });
@@ -175,6 +176,26 @@ function registerUser(params) {
   return { ok: true, message: isFirst
     ? 'Akun admin berhasil dibuat.'
     : 'Pendaftaran berhasil! Menunggu persetujuan admin sebelum bisa login.' };
+}
+
+function changePassword(params) {
+  const username = (params.username || '').toString().trim().toLowerCase();
+  const oldHash  = (params.oldHash  || '').toString().trim();
+  const newHash  = (params.newHash  || '').toString().trim();
+  if (!username || !oldHash || !newHash) return { ok: false, error: 'Data tidak lengkap.' };
+
+  const ws   = getAkunSheet();
+  const rows = ws.getDataRange().getValues();
+
+  for (let i = 1; i < rows.length; i++) {
+    const rowUser = (rows[i][1] || '').toString().trim().toLowerCase();
+    if (rowUser !== username) continue;
+    const rowHash = (rows[i][3] || '').toString().trim();
+    if (rowHash !== oldHash) return { ok: false, error: 'Password lama salah.' };
+    ws.getRange(i + 1, 4).setValue(newHash); // kolom D = index 4
+    return { ok: true, message: 'Password berhasil diubah.' };
+  }
+  return { ok: false, error: 'User tidak ditemukan.' };
 }
 
 // ── Master SF ────────────────────────────────────────────────
@@ -739,6 +760,8 @@ function getOrders(params) {
     const tglStr = tglIO ? tglIO.toString().replace(/-/g, '').substring(0, 8) : '';
     if (startStr && tglStr && tglStr < startStr) continue;
     if (endStr   && tglStr && tglStr > endStr)   continue;
+    // Kalau tglStr kosong tapi ada filter tanggal, skip juga (order belum IO)
+    if ((startStr || endStr) && !tglStr) continue;
 
     const ch2  = (C.channel2 !== -1 ? r[C.channel2] : '').toString().trim().toLowerCase();
     const isAg = ch2 === 'agency';

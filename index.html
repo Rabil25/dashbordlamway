@@ -1303,7 +1303,8 @@ tr:hover td{background:var(--surface2);}
         </div>
       </div>
 
-      <div class="g2">
+      <!-- ADMIN ONLY: API + Target -->
+      <div class="g2" id="settings-admin-section">
         <div class="sec">
           <div class="sec-head"><div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Koneksi API</span></div></div>
           <div class="sec-body config-card" style="max-width:100%">
@@ -1333,6 +1334,19 @@ tr:hover td{background:var(--surface2);}
             </div>
             <button class="btn-primary" onclick="saveTargets()" style="margin-top:14px">💾 Simpan Target</button>
           </div>
+        </div>
+      </div>
+
+      <!-- ALL USERS: Ganti Password -->
+      <div class="sec" style="margin-top:20px;max-width:460px">
+        <div class="sec-head"><div class="sec-head-left"><div class="sec-dot" style="background:#e8001c"></div><span class="sec-title">Ganti Password</span></div></div>
+        <div class="sec-body config-card" style="max-width:100%">
+          <div class="field"><label>Password Lama</label><div class="pw-wrap"><input type="password" id="cp-old" placeholder="password saat ini"><button type="button" class="pw-eye" onclick="togglePw('cp-old',this)" tabindex="-1">👁</button></div></div>
+          <div class="field"><label>Password Baru</label><div class="pw-wrap"><input type="password" id="cp-new" placeholder="minimal 6 karakter"><button type="button" class="pw-eye" onclick="togglePw('cp-new',this)" tabindex="-1">👁</button></div></div>
+          <div class="field"><label>Konfirmasi Password Baru</label><div class="pw-wrap"><input type="password" id="cp-new2" placeholder="ulangi password baru"><button type="button" class="pw-eye" onclick="togglePw('cp-new2',this)" tabindex="-1">👁</button></div></div>
+          <div id="cp-err" class="auth-err" style="display:none"></div>
+          <div id="cp-ok" class="auth-ok" style="display:none"></div>
+          <button class="btn-primary" onclick="doChangePassword()" id="cp-btn">🔒 Simpan Password Baru</button>
         </div>
       </div>
     </div>
@@ -2503,6 +2517,44 @@ function renderAbsen() {
     '<div class="empty"><div class="icon">📋</div><p>Belum ada yang absen hari ini.</p></div>';
 }
 
+// ─── ROLE-BASED SETTINGS ──────────────────────────────────
+function applyRoleUI(role) {
+  const isAdmin = role === 'admin';
+  const adminSec = document.getElementById('settings-admin-section');
+  if (adminSec) adminSec.style.display = isAdmin ? '' : 'none';
+}
+
+// ─── CHANGE PASSWORD ──────────────────────────────────────
+async function doChangePassword() {
+  const oldP  = document.getElementById('cp-old').value;
+  const newP  = document.getElementById('cp-new').value;
+  const newP2 = document.getElementById('cp-new2').value;
+  const err   = document.getElementById('cp-err');
+  const ok    = document.getElementById('cp-ok');
+  const btn   = document.getElementById('cp-btn');
+  err.style.display = 'none'; ok.style.display = 'none';
+  if (!oldP || !newP || !newP2) { err.textContent='Semua field wajib diisi.'; err.style.display=''; return; }
+  if (newP.length < 6)          { err.textContent='Password baru minimal 6 karakter.'; err.style.display=''; return; }
+  if (newP !== newP2)           { err.textContent='Konfirmasi password tidak cocok.'; err.style.display=''; return; }
+  const sess = getSession();
+  if (!sess) { err.textContent='Sesi tidak ditemukan, silakan login ulang.'; err.style.display=''; return; }
+  btn.disabled = true; btn.textContent = 'Menyimpan…';
+  try {
+    const oldHash = await hashPassword(oldP);
+    const newHash = await hashPassword(newP);
+    const d = await fetchAPI('changepass', { username: sess.username, oldHash, newHash });
+    if (!d.ok) throw new Error(d.error || 'Gagal mengubah password');
+    ok.textContent = '✓ Password berhasil diubah!'; ok.style.display = '';
+    document.getElementById('cp-old').value = '';
+    document.getElementById('cp-new').value = '';
+    document.getElementById('cp-new2').value = '';
+  } catch(e) {
+    err.textContent = e.message; err.style.display = '';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔒 Simpan Password Baru';
+  }
+}
+
 // ─── CONFIG ───────────────────────────────────────────────
 function saveConfig() {
   const url   = document.getElementById('cfgUrl').value.trim();
@@ -2568,6 +2620,7 @@ async function doLogin() {
     saveSession(sess);
     hideAuthOverlay();
     updateAvatarUI(sess);
+    applyRoleUI(sess.role);
     loadPerformance();
   } catch(e) {
     err.textContent = e.message; err.style.display = '';
@@ -2767,6 +2820,7 @@ function init() {
   const sess = getSession();
   if (!sess) { showLoginModal(); return; }
   updateAvatarUI(sess);
+  applyRoleUI(sess.role);
   loadPerformance();
 }
 // Tunggu seluruh DOM selesai diparse (termasuk modal HTML di bawah script)
