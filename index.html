@@ -1,569 +1,882 @@
-<title>WOK Dashboard — IndiHome LPG</title>
+<title>Dashboard WOK LamWay</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-/* ── Tokens ── */
+/* ─── TOKENS ─────────────────────────────────────────────── */
 :root {
-  --red:#C8102E; --red-d:#a00d24; --red-lite:#FEE2E6;
+  --red:#C8102E; --red-d:#a00d24; --red-lite:#FEE2E6; --red-mid:rgba(200,16,46,.12);
   --green:#16A34A; --green-d:#15803D; --green-lite:#DCFCE7;
   --amber:#D97706; --amber-lite:#FEF3C7;
-  --blue:#2563EB; --blue-lite:#DBEAFE;
+  --blue:#1D4ED8; --blue-2:#2563EB; --blue-lite:#DBEAFE; --blue-mid:rgba(29,78,216,.1);
   --purple:#7C3AED; --purple-lite:#EDE9FE;
-  --cyan:#0891B2; --cyan-lite:#CFFAFE;
-  --bg:#F0F2F5; --surface:#FFFFFF; --surface2:#F3F4F6;
-  --fg:#111827; --fg2:#4B5563; --muted:#9CA3AF; --border:#E5E7EB;
-  --sidebar-bg:#0A1220; --sidebar-fg:#94A3B8; --sidebar-active:#FFFFFF;
-  --sidebar-accent:#3B82F6;
-  --sidebar-w:230px;
-  --font:'Plus Jakarta Sans',system-ui,sans-serif;
-  --font-mono:'Inter',monospace;
-  --r:12px; --r-sm:8px; --r-xs:6px;
-  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
-  --shadow-md:0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --teal:#0891B2; --teal-lite:#CFFAFE;
+  --bg:#F1F5F9; --surface:#FFFFFF; --surface2:#F8FAFC; --surface3:#F1F5F9;
+  --fg:#0F172A; --fg2:#475569; --muted:#94A3B8; --border:#E2E8F0; --border2:#CBD5E1;
+  --navy:#0A1220; --navy2:#0F1E35; --navy3:#162032;
+  --sidebar-fg:#94A3B8; --sidebar-active-bg:rgba(59,130,246,.15); --sidebar-active:#60A5FA;
+  --sidebar-w:220px;
+  --font:'Inter',system-ui,sans-serif;
+  --r:10px; --r-sm:7px; --r-xs:5px;
+  --sh:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.03);
+  --sh-md:0 4px 12px rgba(0,0,0,.06),0 2px 4px rgba(0,0,0,.04);
+  --sh-lg:0 8px 24px rgba(0,0,0,.08);
 }
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0F172A; --surface:#1E293B; --surface2:#273548;
-  --fg:#F1F5F9; --fg2:#94A3B8; --muted:#64748B; --border:#334155;
-  --red-lite:#4C0519; --green-lite:#14532D; --amber-lite:#451A03; --blue-lite:#1E3A5F; --purple-lite:#2E1065;
+  --bg:#0F172A; --surface:#1E293B; --surface2:#1A2540; --surface3:#1E293B;
+  --fg:#F1F5F9; --fg2:#94A3B8; --muted:#64748B; --border:#1E3A5F; --border2:#334155;
+  --red-lite:rgba(200,16,46,.18); --green-lite:rgba(22,163,74,.18);
+  --amber-lite:rgba(217,119,6,.18); --blue-lite:rgba(37,99,235,.18); --purple-lite:rgba(124,58,237,.18);
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
-  --bg:#0F172A; --surface:#1E293B; --surface2:#273548;
-  --fg:#F1F5F9; --fg2:#94A3B8; --muted:#64748B; --border:#334155;
-  --red-lite:#4C0519; --green-lite:#14532D; --amber-lite:#451A03; --blue-lite:#1E3A5F; --purple-lite:#2E1065;
+  --bg:#0F172A; --surface:#1E293B; --surface2:#1A2540; --surface3:#1E293B;
+  --fg:#F1F5F9; --fg2:#94A3B8; --muted:#64748B; --border:#1E3A5F; --border2:#334155;
+  --red-lite:rgba(200,16,46,.18); --green-lite:rgba(22,163,74,.18);
+  --amber-lite:rgba(217,119,6,.18); --blue-lite:rgba(37,99,235,.18); --purple-lite:rgba(124,58,237,.18);
   color-scheme:dark;
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;}
-body{font-family:var(--font);background:var(--bg);color:var(--fg);font-size:14px;line-height:1.5;display:flex;min-height:100vh;overflow-x:hidden;}
+body{font-family:var(--font);background:var(--bg);color:var(--fg);font-size:13px;line-height:1.5;display:flex;min-height:100vh;overflow-x:hidden;}
 
-/* ── Sidebar ── */
+/* ─── SIDEBAR ─────────────────────────────────────────────── */
 .sidebar{
   position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);
-  background:var(--sidebar-bg);color:var(--sidebar-fg);
+  background:var(--navy);color:var(--sidebar-fg);
   display:flex;flex-direction:column;z-index:200;
-  transform:translateX(0);transition:transform .25s ease;
   padding-top:env(safe-area-inset-top,0px);
-  padding-left:max(0px,env(safe-area-inset-left,0px));
-  border-right:1px solid rgba(255,255,255,.05);
+  transition:transform .25s ease;
+  border-right:1px solid rgba(255,255,255,.04);
 }
-.sidebar-brand{
-  padding:18px 18px 14px;
-  border-bottom:1px solid rgba(255,255,255,.06);
+.sb-brand{
+  padding:16px 16px 12px;
+  border-bottom:1px solid rgba(255,255,255,.05);
   display:flex;align-items:center;gap:10px;
 }
-.brand-icon{
-  width:36px;height:36px;border-radius:9px;
-  background:linear-gradient(135deg,#C8102E,#991b1b);
+.sb-logo{
+  width:34px;height:34px;border-radius:8px;
+  background:linear-gradient(135deg,var(--red) 0%,#7f1d1d 100%);
   display:flex;align-items:center;justify-content:center;
-  font-size:16px;flex-shrink:0;
+  font-size:16px;flex-shrink:0;box-shadow:0 2px 8px rgba(200,16,46,.4);
 }
-.brand-text .brand-name{font-size:13px;font-weight:700;color:#fff;letter-spacing:.01em;}
-.brand-text .brand-sub{font-size:10px;color:#475569;margin-top:1px;}
-.nav-list{list-style:none;padding:10px 10px;flex:1;overflow-y:auto;}
-.nav-item{display:block;margin-bottom:2px;}
-.nav-link{
-  display:flex;align-items:center;gap:9px;padding:8px 10px;
-  color:var(--sidebar-fg);text-decoration:none;font-size:12.5px;font-weight:500;
-  border-radius:8px;transition:all .15s;cursor:pointer;
-}
-.nav-link:hover{color:#CBD5E1;background:rgba(255,255,255,.06);}
-.nav-link.active{color:#fff;background:rgba(59,130,246,.2);box-shadow:inset 0 0 0 1px rgba(59,130,246,.3);}
-.nav-link.active .nav-icon{color:var(--sidebar-accent);}
-.nav-icon{width:15px;height:15px;flex-shrink:0;color:#64748B;transition:color .15s;}
-.nav-link:hover .nav-icon{color:#94A3B8;}
-.nav-section{padding:14px 10px 4px;font-size:9.5px;font-weight:700;color:#334155;letter-spacing:.1em;text-transform:uppercase;}
-.sidebar-footer{padding:12px 18px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:#334155;}
-#lastUpdated{font-size:10px;color:#334155;margin-top:2px;}
+.sb-brand-text .sb-name{font-size:12.5px;font-weight:700;color:#fff;letter-spacing:.01em;line-height:1.2;}
+.sb-brand-text .sb-sub{font-size:10px;color:#3B5068;margin-top:2px;}
 
-/* ── Overlay (mobile) ── */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;}
+.nav-section-label{padding:12px 14px 4px;font-size:9px;font-weight:700;color:#2D4057;letter-spacing:.12em;text-transform:uppercase;}
+.nav-list{list-style:none;padding:4px 8px;flex:1;overflow-y:auto;}
+.nav-item{margin-bottom:1px;}
+.nav-link{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;
+  color:#64748B;text-decoration:none;font-size:12px;font-weight:500;
+  border-radius:var(--r-sm);transition:all .15s;cursor:pointer;
+}
+.nav-link:hover{color:#94A3B8;background:rgba(255,255,255,.04);}
+.nav-link.active{color:#fff;background:rgba(96,165,250,.12);font-weight:600;}
+.nav-link.active .nav-icon{color:#60A5FA;}
+.nav-icon{width:14px;height:14px;flex-shrink:0;color:#3B5068;transition:color .15s;}
+.nav-link:hover .nav-icon,.nav-link.active .nav-icon{color:#60A5FA;}
+.nav-badge{margin-left:auto;font-size:9px;background:rgba(200,16,46,.8);color:#fff;border-radius:10px;padding:1px 5px;font-weight:700;}
+
+.sb-footer{padding:10px 14px;border-top:1px solid rgba(255,255,255,.04);}
+.sb-update{font-size:10px;color:#2D4057;}
+#lastUpdated{color:#3B5068;}
+.sb-version{font-size:9px;color:#1E3A5F;margin-top:3px;}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;backdrop-filter:blur(2px);}
 .overlay.show{display:block;}
 
-/* ── Main shell ── */
-.shell{
-  margin-left:var(--sidebar-w);flex:1;min-width:0;
-  display:flex;flex-direction:column;
-  background:var(--bg);
-}
+/* ─── SHELL ────────────────────────────────────────────────── */
+.shell{margin-left:var(--sidebar-w);flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg);}
 
-/* ── Topbar ── */
+/* ─── TOPBAR ─────────────────────────────────────────────── */
 .topbar{
   position:sticky;top:env(safe-area-inset-top,0px);z-index:100;
   background:var(--surface);border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:12px;
-  padding:10px max(16px,env(safe-area-inset-right,0px)) 10px 20px;
-  min-height:56px;
-  box-shadow:0 1px 0 var(--border);
+  display:flex;align-items:center;gap:10px;
+  padding:8px max(16px,env(safe-area-inset-right,0px)) 8px 16px;
+  min-height:52px;
 }
-.menu-btn{display:none;background:none;border:none;color:var(--fg2);padding:4px;cursor:pointer;}
-.page-title{font-size:14px;font-weight:700;min-width:0;color:var(--fg2);white-space:nowrap;}
-.topbar-center{flex:1;max-width:320px;margin:0 auto;}
-.topbar-search{
-  width:100%;font-family:var(--font);font-size:13px;padding:6px 12px 6px 32px;
-  border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--fg);
-  outline:none;transition:border-color .15s;
+.menu-btn{display:none;background:none;border:none;color:var(--fg2);padding:6px;cursor:pointer;border-radius:6px;}
+.menu-btn:hover{background:var(--surface2);}
+.tb-search-wrap{flex:1;max-width:300px;position:relative;}
+.tb-search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+.tb-search{
+  width:100%;font-family:var(--font);font-size:12px;padding:6px 10px 6px 30px;
+  border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--fg);outline:none;
+  transition:border-color .15s;
 }
-.topbar-search:focus{border-color:var(--blue);}
-.topbar-search-wrap{position:relative;}
-.topbar-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
-.topbar-right{display:flex;gap:8px;align-items:center;}
+.tb-search:focus{border-color:var(--blue-2);}
+.tb-right{margin-left:auto;display:flex;gap:6px;align-items:center;}
 .live-badge{
-  display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+  display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;
   color:#16A34A;background:#DCFCE7;border-radius:20px;padding:3px 9px;
-  letter-spacing:.03em;
 }
-.live-dot{width:6px;height:6px;background:#16A34A;border-radius:50%;animation:livepulse 1.4s ease-in-out infinite;}
-@keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.85)}}
+.live-dot{width:6px;height:6px;background:#16A34A;border-radius:50%;animation:pulse 1.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
 .btn-icon{
-  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-xs);
-  color:var(--fg2);width:32px;height:32px;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:14px;transition:all .15s;
+  background:transparent;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  color:var(--fg2);width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:13px;transition:all .15s;
 }
-.btn-icon:hover{background:var(--border);color:var(--fg);}
+.btn-icon:hover{background:var(--surface2);color:var(--fg);}
 
-/* ── Filter bar ── */
+/* ─── PAGE HEADER ─────────────────────────────────────────── */
+.page-header{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 60%,#1a3050 100%);
+  padding:16px max(16px,env(safe-area-inset-right,0px)) 16px 20px;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  background-size:cover;
+  position:relative;overflow:hidden;
+}
+.ph-grid-bg{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:24px 24px;
+  pointer-events:none;
+}
+.ph-content{position:relative;z-index:1;}
+.ph-eyebrow{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#3B5068;margin-bottom:4px;}
+.ph-title{font-size:16px;font-weight:700;color:#fff;line-height:1.2;}
+.ph-sub{font-size:11px;color:#4A6480;margin-top:3px;}
+.ph-actions{position:relative;z-index:1;display:flex;gap:6px;align-items:center;padding-top:2px;}
+.btn-ph{
+  font-family:var(--font);font-size:11px;font-weight:600;padding:5px 12px;
+  border-radius:var(--r-sm);cursor:pointer;transition:all .15s;
+}
+.btn-ph-outline{background:transparent;border:1.5px solid rgba(255,255,255,.15);color:#94A3B8;}
+.btn-ph-outline:hover{border-color:rgba(255,255,255,.3);color:#fff;}
+.btn-ph-primary{background:var(--red);border:none;color:#fff;}
+.btn-ph-primary:hover{background:var(--red-d);}
+
+/* ─── FILTER BAR ─────────────────────────────────────────── */
 .filter-bar{
-  display:flex;gap:8px;padding:10px 16px;background:var(--surface);
-  border-bottom:1px solid var(--border);flex-wrap:wrap;
+  display:flex;gap:8px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px 20px;
+  background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;
 }
-.filter-bar select{
-  font-family:var(--font);font-size:12px;padding:5px 8px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface2);color:var(--fg);cursor:pointer;
+.filter-label{font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;}
+.filter-select{
+  font-family:var(--font);font-size:12px;font-weight:500;padding:5px 28px 5px 10px;
+  border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface2);color:var(--fg);
+  cursor:pointer;outline:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394A3B8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;
+  transition:border-color .15s;
 }
-.filter-label{font-size:11px;color:var(--muted);align-self:center;}
-.filter-reset{font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:4px 6px;font-family:var(--font);}
-.filter-reset:hover{text-decoration:underline;}
+.filter-select:focus{border-color:var(--blue-2);}
+.filter-active{border-color:var(--blue-2)!important;background:var(--blue-lite)!important;color:var(--blue)!important;}
+.filter-reset{
+  font-family:var(--font);font-size:11px;font-weight:600;color:var(--muted);
+  background:none;border:1.5px solid var(--border);border-radius:var(--r-sm);
+  padding:4px 10px;cursor:pointer;transition:all .15s;
+}
+.filter-reset:hover{color:var(--red);border-color:var(--red);}
 
-/* ── Pages ── */
-.content{flex:1;padding:20px max(16px,env(safe-area-inset-right,0px)) 32px 16px;overflow-x:hidden;}
+/* ─── CONTENT ─────────────────────────────────────────────── */
+.content{flex:1;padding:18px max(16px,env(safe-area-inset-right,0px)) 36px 20px;overflow-x:hidden;}
 .page{display:none;}
 .page.active{display:block;}
 
-/* ── Config card ── */
-.config-wrap{
-  max-width:480px;margin:40px auto;background:var(--surface);border-radius:var(--r);
-  box-shadow:var(--shadow);padding:28px;
-}
-.config-wrap h2{font-size:16px;font-weight:700;margin-bottom:4px;}
-.config-wrap p{font-size:13px;color:var(--fg2);margin-bottom:20px;}
-.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-.field label{font-size:12px;font-weight:600;color:var(--fg2);}
-.field input{
-  font-family:var(--font);font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
-  border:1px solid var(--border);background:var(--surface2);color:var(--fg);
-}
-.field input:focus{outline:none;border-color:var(--red);}
-.btn-primary{
-  background:var(--red);color:#fff;border:none;border-radius:var(--r-sm);
-  font-family:var(--font);font-size:13px;font-weight:600;padding:9px 18px;cursor:pointer;width:100%;
-}
-.btn-primary:hover{background:var(--red-d);}
-
-/* ── KPI Grid ── */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
+/* ─── KPI GRID ─────────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:20px;}
 .kpi-card{
-  background:var(--surface);border-radius:var(--r);padding:18px 20px 16px;
-  box-shadow:var(--shadow-md);position:relative;overflow:hidden;
-  border:1px solid var(--border);
+  background:var(--surface);border-radius:var(--r);padding:16px;
+  box-shadow:var(--sh-md);border:1px solid var(--border);
+  display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;
 }
-.kpi-card-icon{
-  position:absolute;right:16px;top:16px;
-  width:38px;height:38px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;font-size:18px;
-  opacity:.9;
+.kpi-card::before{
+  content:'';position:absolute;inset:0 auto 0 0;width:3px;
+  border-radius:3px 0 0 3px;
 }
-.kpi-card-icon.green{background:#DCFCE7;color:#16A34A;}
-.kpi-card-icon.blue{background:#DBEAFE;color:#2563EB;}
-.kpi-card-icon.amber{background:#FEF3C7;color:#D97706;}
-.kpi-card-icon.red{background:#FEE2E6;color:#C8102E;}
-.kpi-card-icon.purple{background:#EDE9FE;color:#7C3AED;}
-.kpi-label{font-size:11.5px;font-weight:600;color:var(--fg2);letter-spacing:.02em;}
-.kpi-value{font-size:30px;font-weight:800;margin:6px 0 4px;line-height:1;letter-spacing:-.02em;font-family:var(--font-mono),var(--font);}
-.kpi-delta{font-size:11px;display:flex;align-items:center;gap:3px;}
-.delta-up{color:var(--green);}
-.delta-dn{color:var(--red);}
-.delta-neu{color:var(--muted);}
+.kpi-card.green::before{background:var(--green);}
+.kpi-card.blue::before{background:var(--blue);}
+.kpi-card.amber::before{background:var(--amber);}
+.kpi-card.red::before{background:var(--red);}
+.kpi-card.purple::before{background:var(--purple);}
+.kpi-card.teal::before{background:var(--teal);}
+.kpi-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.kpi-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.kpi-icon.green{background:var(--green-lite);}
+.kpi-icon.blue{background:var(--blue-lite);}
+.kpi-icon.amber{background:var(--amber-lite);}
+.kpi-icon.red{background:var(--red-lite);}
+.kpi-icon.purple{background:var(--purple-lite);}
+.kpi-icon.teal{background:var(--teal-lite);}
+.kpi-label{font-size:11px;font-weight:600;color:var(--fg2);letter-spacing:.01em;}
+.kpi-value{font-size:26px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+.kpi-footer{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.kpi-delta{font-size:10.5px;font-weight:700;}
+.kpi-vs{font-size:10px;color:var(--muted);}
+.kpi-progress-wrap{margin-top:4px;}
+.kpi-progress-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px;}
+.kpi-progress-track{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.kpi-progress-fill{height:100%;border-radius:2px;transition:width .4s ease;}
+.kpi-progress-fill.green{background:var(--green);}
+.kpi-progress-fill.blue{background:var(--blue);}
+.kpi-progress-fill.amber{background:var(--amber);}
+.kpi-progress-fill.red{background:var(--red);}
+.up{color:var(--green);} .dn{color:var(--red);} .neu{color:var(--muted);}
 
-/* ── Section header ── */
-.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;}
-.sec-title{font-size:13px;font-weight:700;}
-.sec-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+/* ─── SECTION ─────────────────────────────────────────────── */
+.sec{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-md);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.sec-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+}
+.sec-head-left{display:flex;align-items:center;gap:8px;}
+.sec-dot{width:8px;height:8px;border-radius:50%;}
+.sec-dot.blue{background:var(--blue);}
+.sec-dot.amber{background:var(--amber);}
+.sec-dot.green{background:var(--green);}
+.sec-dot.red{background:var(--red);}
+.sec-title{font-size:12.5px;font-weight:700;color:var(--fg);}
+.sec-sub{font-size:10.5px;color:var(--muted);}
+.sec-body{padding:16px;}
+.sec-body-0{padding:0;}
+.chart-wrap{position:relative;}
+.chart-wrap canvas{display:block;}
 
-/* ── 2-col grid ── */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
-.card{background:var(--surface);border-radius:var(--r);padding:18px;box-shadow:var(--shadow-md);border:1px solid var(--border);}
-.card-title{font-size:12px;font-weight:700;color:var(--fg2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
-.chart-wrap{position:relative;height:220px;}
-
-/* ── Cluster cards ── */
-.cluster-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
+/* ─── CLUSTER CARDS ────────────────────────────────────────── */
+.cluster-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
 .cluster-card{
-  background:var(--surface);border-radius:var(--r);padding:18px;
-  box-shadow:var(--shadow-md);border:1px solid var(--border);
-  border-top:3px solid var(--border);
+  background:var(--surface);border-radius:var(--r);padding:16px;
+  box-shadow:var(--sh-md);border:1px solid var(--border);
 }
-.cluster-card.lb{border-top-color:#2563EB;}
-.cluster-card.wk{border-top-color:#D97706;}
-.cluster-card h3{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--fg);}
-.cluster-stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);}
-.cluster-stat:last-child{border-bottom:none;}
-.cluster-stat .lbl{font-size:12px;color:var(--fg2);}
-.cluster-stat .val{font-size:13px;font-weight:700;font-family:var(--font-mono),var(--font);}
+.cl-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.cl-dot{width:10px;height:10px;border-radius:2px;}
+.cl-dot.lb{background:#1D4ED8;}
+.cl-dot.wk{background:#D97706;}
+.cl-name{font-size:13px;font-weight:700;}
+.cl-tl{font-size:10px;color:var(--muted);margin-left:auto;}
+.cl-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);}
+.cl-row:last-child{border-bottom:none;}
+.cl-lbl{font-size:11px;color:var(--fg2);}
+.cl-val{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;}
 
-/* ── Table ── */
+/* ─── TABLE ────────────────────────────────────────────────── */
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:12px;}
-th{background:var(--surface2);color:var(--fg2);font-weight:600;text-align:left;padding:8px 10px;white-space:nowrap;font-size:11px;letter-spacing:.03em;text-transform:uppercase;}
-td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+th{
+  background:var(--surface2);color:var(--fg2);font-weight:600;text-align:left;
+  padding:8px 10px;white-space:nowrap;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:var(--surface2);}
-.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.03em;}
+.text-right{text-align:right;}
+.tnum{font-variant-numeric:tabular-nums;}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.02em;white-space:nowrap;}
 .badge-lb{background:var(--blue-lite);color:var(--blue);}
 .badge-wk{background:var(--amber-lite);color:var(--amber);}
-.badge-uk{background:var(--surface2);color:var(--muted);}
-.rank-num{font-size:11px;color:var(--muted);font-weight:600;width:24px;text-align:right;}
-.sf-name{font-weight:600;}
+.badge-neu{background:var(--surface2);color:var(--muted);}
+.badge-green{background:var(--green-lite);color:var(--green);}
+.badge-red{background:var(--red-lite);color:var(--red);}
+.rank{font-size:11px;color:var(--muted);font-weight:700;text-align:right;width:24px;}
+.sf-name{font-weight:600;font-size:12px;}
 .sf-kode{font-size:10px;color:var(--muted);}
-.conv-bar{display:flex;align-items:center;gap:6px;}
-.conv-track{flex:1;min-width:40px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
-.conv-fill{height:100%;background:var(--red);border-radius:2px;}
-.text-right{text-align:right;}
-.text-num{font-variant-numeric:tabular-nums;}
+.conv-wrap{display:flex;align-items:center;gap:5px;}
+.conv-track{flex:1;min-width:36px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.conv-fill{height:100%;background:var(--blue-2);border-radius:2px;}
 
-/* ── Search ── */
-.search-bar{display:flex;gap:8px;margin-bottom:12px;}
-.search-input{
-  flex:1;font-family:var(--font);font-size:13px;padding:7px 10px;
-  border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface2);color:var(--fg);
-}
-.search-input:focus{outline:none;border-color:var(--red);}
-
-/* ── Pagination ── */
-.pagination{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:12px;font-size:12px;}
-.page-btn{
-  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);
-  padding:4px 10px;cursor:pointer;font-size:12px;color:var(--fg2);font-family:var(--font);
-}
-.page-btn:hover:not(:disabled){background:var(--border);}
-.page-btn:disabled{opacity:.4;cursor:default;}
-.page-info{color:var(--fg2);}
-
-/* ── Summary pills ── */
-.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-.pill{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;}
-.pill span{color:var(--muted);font-weight:400;margin-right:4px;}
-
-/* ── Skeleton ── */
-.sk{border-radius:6px;background:var(--surface2);animation:shimmer 1.4s infinite;}
-@keyframes shimmer{0%,100%{opacity:.6}50%{opacity:1}}
-.sk-h{height:20px;} .sk-kpi{height:80px;} .sk-row{height:36px;margin-bottom:6px;}
-
-/* ── Error / Empty ── */
-.state-msg{text-align:center;padding:40px 20px;color:var(--muted);}
-.state-msg .icon{font-size:32px;margin-bottom:8px;}
-.state-msg p{font-size:13px;}
-
-/* ── Absen list ── */
-.absen-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
-.absen-item:last-child{border-bottom:none;}
-.absen-nama{font-weight:600;font-size:13px;}
-.absen-detail{font-size:11px;color:var(--muted);}
-.absen-time{font-size:11px;color:var(--fg2);text-align:right;}
-.deal-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;}
-.deal-yes{background:var(--green-lite);color:var(--green);}
-.deal-no{background:var(--surface2);color:var(--muted);}
-
-/* ── WOK Performance Table ── */
+/* ─── WOK TABLE ─────────────────────────────────────────────── */
 .wok-section-title{
-  display:flex;align-items:center;gap:8px;padding:11px 16px;
-  background:linear-gradient(90deg,#0A1220 0%,#1e2d42 100%);
-  color:#fff;font-size:11.5px;font-weight:700;
-  letter-spacing:.06em;text-transform:uppercase;border-radius:var(--r) var(--r) 0 0;
-  margin-top:24px;border:1px solid rgba(255,255,255,.07);
-  border-bottom:none;
+  display:flex;align-items:center;gap:8px;padding:10px 16px;
+  background:linear-gradient(90deg,var(--navy) 0%,var(--navy3) 100%);
+  color:#fff;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  border-radius:var(--r) var(--r) 0 0;border:1px solid rgba(255,255,255,.05);border-bottom:none;
+  margin-top:20px;
 }
-.wok-tbl-wrap{overflow-x:auto;margin-bottom:4px;border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);}
-.wok-tbl{width:100%;border-collapse:collapse;font-size:11px;min-width:900px;}
+.wok-section-title:first-child{margin-top:0;}
+.wok-tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);margin-bottom:6px;}
+.wok-tbl{width:100%;border-collapse:collapse;font-size:11px;min-width:920px;}
 .wok-tbl th{
   background:var(--surface2);color:var(--fg2);font-weight:700;text-align:center;
-  padding:6px 6px;border:1px solid var(--border);font-size:10px;
-  letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;
+  padding:6px;border:1px solid var(--border);font-size:10px;letter-spacing:.04em;
+  text-transform:uppercase;white-space:nowrap;
 }
-.wok-tbl th.th-left{text-align:left;}
-.wok-tbl td{
-  padding:6px 8px;border:1px solid var(--border);
-  font-size:11px;white-space:nowrap;vertical-align:middle;
-}
-.wok-tbl .td-territory{font-weight:600;min-width:130px;}
-.wok-tbl .row-cluster td{background:color-mix(in srgb,var(--surface2) 60%,transparent);font-weight:700;}
-.wok-tbl .row-cluster.lb td{border-left:3px solid #1D4ED8;}
-.wok-tbl .row-cluster.wk td{border-left:3px solid #B45309;}
-.wok-tbl .row-kab td{padding-left:20px;}
-.wok-tbl .row-total td{background:color-mix(in srgb,var(--red-lite) 50%,transparent);font-weight:700;}
-.wok-tbl .td-num{text-align:right;font-variant-numeric:tabular-nums;}
-.wok-tbl .td-pct{text-align:right;font-variant-numeric:tabular-nums;}
+.wok-tbl th.th-l{text-align:left;}
+.wok-tbl td{padding:6px 8px;border:1px solid var(--border);font-size:11px;white-space:nowrap;vertical-align:middle;}
+.wok-tbl .td-terr{font-weight:600;min-width:130px;}
+.wok-tbl .td-r{text-align:right;font-variant-numeric:tabular-nums;}
+.wok-tbl .row-cl td{background:var(--surface2);font-weight:700;}
+.wok-tbl .row-cl.lb td:first-child{border-left:3px solid var(--blue);}
+.wok-tbl .row-cl.wk td:first-child{border-left:3px solid var(--amber);}
+.wok-tbl .row-kab td{padding-left:22px;}
+.wok-tbl .row-tot td{background:rgba(200,16,46,.06);font-weight:700;}
 .mom-up{color:var(--green);font-weight:700;}
 .mom-dn{color:var(--red);font-weight:700;}
 .mom-ne{color:var(--muted);}
-.drr-val{color:var(--blue);}
-.hk-info{font-size:10px;color:var(--muted);}
-
-/* ── Target Input (Settings) ── */
-.target-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;}
-.target-field{display:flex;flex-direction:column;gap:4px;}
-.target-field label{font-size:11px;font-weight:600;color:var(--fg2);}
-.target-field input{
-  font-family:var(--font);font-size:13px;padding:7px 9px;
-  border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface2);color:var(--fg);text-align:right;
+.drr{color:var(--blue-2);font-weight:600;}
+.hk-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.hk-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 10px;
+  font-size:11px;font-weight:500;
 }
-.target-field input:focus{outline:none;border-color:var(--red);}
-.target-cluster-label{
-  font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);padding:8px 0 4px;border-bottom:1px solid var(--border);
+.hk-pill span{color:var(--muted);font-weight:400;}
+
+/* ─── PAGINATION ─────────────────────────────────────────────── */
+.pager{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:10px 16px 12px;font-size:11px;color:var(--muted);}
+.pg-btn{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:4px 10px;cursor:pointer;font-size:11.5px;color:var(--fg2);font-family:var(--font);
+  transition:all .15s;
+}
+.pg-btn:hover:not(:disabled){background:var(--border);}
+.pg-btn:disabled{opacity:.4;cursor:default;}
+
+/* ─── FUNNEL ─────────────────────────────────────────────────── */
+.funnel-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.funnel-bar-wrap{flex:1;background:var(--surface2);border-radius:4px;height:28px;overflow:hidden;position:relative;}
+.funnel-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;color:#fff;transition:width .5s ease;}
+.funnel-lbl{width:24px;font-size:10px;font-weight:700;color:var(--fg2);text-align:right;}
+.funnel-val{width:44px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;}
+.funnel-pct{width:36px;font-size:10.5px;color:var(--muted);text-align:right;}
+
+/* ─── SUMMARY PILLS ─────────────────────────────────────────── */
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.pill{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:11.5px;font-weight:600;}
+.pill span{color:var(--muted);font-weight:400;margin-right:4px;}
+
+/* ─── SEARCH ─────────────────────────────────────────────────── */
+.search-row{display:flex;gap:8px;margin-bottom:12px;align-items:center;}
+.search-input{
+  flex:1;font-family:var(--font);font-size:12px;padding:7px 10px;
+  border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface2);color:var(--fg);outline:none;
+  transition:border-color .15s;
+}
+.search-input:focus{border-color:var(--blue-2);}
+.count-badge{font-size:10.5px;color:var(--muted);white-space:nowrap;}
+
+/* ─── ABSEN ───────────────────────────────────────────────────── */
+.absen-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.absen-item:last-child{border-bottom:none;}
+.absen-nama{font-weight:600;font-size:12px;}
+.absen-detail{font-size:10.5px;color:var(--muted);}
+.absen-time{font-size:11px;color:var(--fg2);text-align:right;}
+.deal-badge{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:10px;margin-top:2px;}
+.deal-y{background:var(--green-lite);color:var(--green);}
+.deal-n{background:var(--surface2);color:var(--muted);}
+
+/* ─── CONFIG ──────────────────────────────────────────────────── */
+.config-card{max-width:460px;margin:0 auto;}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.field label{font-size:11px;font-weight:600;color:var(--fg2);}
+.field input{
+  font-family:var(--font);font-size:12.5px;padding:8px 10px;
+  border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface2);color:var(--fg);outline:none;
+  transition:border-color .15s;
+}
+.field input:focus{border-color:var(--blue-2);}
+.btn-primary{
+  background:var(--red);color:#fff;border:none;border-radius:var(--r-sm);
+  font-family:var(--font);font-size:12.5px;font-weight:700;padding:9px 18px;cursor:pointer;width:100%;
+  transition:background .15s;
+}
+.btn-primary:hover{background:var(--red-d);}
+.target-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
+.tgt-field{display:flex;flex-direction:column;gap:4px;}
+.tgt-field label{font-size:10.5px;font-weight:600;color:var(--fg2);}
+.tgt-field input{
+  font-family:var(--font);font-size:12px;padding:6px 8px;
+  border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface2);color:var(--fg);
+  text-align:right;outline:none;
+}
+.tgt-field input:focus{border-color:var(--blue-2);}
+.tgt-cluster-hdr{
+  font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);padding:8px 0 3px;border-bottom:1px solid var(--border);
   margin-bottom:4px;grid-column:1/-1;
 }
 
-/* ── Responsive ── */
+/* ─── SKELETON / STATES ──────────────────────────────────────── */
+.sk{border-radius:6px;background:var(--surface2);animation:shimmer 1.6s infinite;}
+@keyframes shimmer{0%,100%{opacity:.5}50%{opacity:.9}}
+.sk-h{height:18px;} .sk-kpi{height:84px;} .sk-row{height:32px;margin-bottom:5px;}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty .icon{font-size:30px;margin-bottom:8px;}
+.empty p{font-size:12px;}
+.error-banner{
+  display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FCA5A5;
+  border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:#991B1B;margin-bottom:16px;
+}
+
+/* ─── GUIDE ──────────────────────────────────────────────────── */
+.guide-item{padding:14px 0;border-bottom:1px solid var(--border);}
+.guide-item:last-child{border-bottom:none;}
+.guide-term{font-size:13px;font-weight:700;color:var(--fg);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.guide-def{font-size:12px;color:var(--fg2);line-height:1.6;}
+.guide-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+
+/* ─── GRID HELPERS ───────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.mb12{margin-bottom:12px;} .mb16{margin-bottom:16px;} .mb4{margin-bottom:4px;}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────── */
 @media(max-width:768px){
   .sidebar{transform:translateX(calc(-1 * var(--sidebar-w)));}
   .sidebar.open{transform:translateX(0);}
   .shell{margin-left:0;}
   .menu-btn{display:flex;}
-  .grid-2,.cluster-grid,.kpi-grid{grid-template-columns:1fr;}
-  .filter-bar{padding:8px 12px;}
+  .kpi-grid,.cluster-grid,.g2,.g3{grid-template-columns:1fr;}
   .target-grid{grid-template-columns:1fr;}
+  .tb-search-wrap{display:none;}
+  .ph-sub{display:none;}
 }
 </style>
 
-<!-- Sidebar -->
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
 <nav class="sidebar" id="sidebar">
-  <div class="sidebar-brand">
-    <div class="brand-icon">📡</div>
-    <div class="brand-text">
-      <div class="brand-name">WOK Dashboard</div>
-      <div class="brand-sub">IndiHome LPG · Lampung</div>
+  <div class="sb-brand">
+    <div class="sb-logo">📡</div>
+    <div class="sb-brand-text">
+      <div class="sb-name">WOK Dashboard</div>
+      <div class="sb-sub">IndiHome LPG · Lampung</div>
     </div>
   </div>
+
+  <div class="nav-section-label">Monitoring</div>
   <ul class="nav-list">
-    <li class="nav-item"><a class="nav-link active" data-page="overview" onclick="navigate('overview');return false;">
-      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 1116 0A8 8 0 012 10zm3.5-1h9a.5.5 0 000-1h-9a.5.5 0 000 1zm0 3h9a.5.5 0 000-1h-9a.5.5 0 000 1zm0 3h5a.5.5 0 000-1h-5a.5.5 0 000 1z"/></svg>
-      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor" style="display:none"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/></svg>
-      Overview
-    </a></li>
-    <li class="nav-item"><a class="nav-link" data-page="wok-perf" onclick="navigate('wok-perf');return false;">
-      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 4a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H3a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h14a1 1 0 010 2H3a1 1 0 01-1-1zm1 5a1 1 0 100 2h14a1 1 0 100-2H3z"/></svg>
-      Performance WOK
-    </a></li>
-    <li class="nav-item"><a class="nav-link" data-page="performance" onclick="navigate('performance');return false;">
-      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/></svg>
-      Performance SF
-    </a></li>
-    <li class="nav-item"><a class="nav-link" data-page="kendala" onclick="navigate('kendala');return false;">
-      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-      Kendala
-    </a></li>
-    <li class="nav-item"><a class="nav-link" data-page="absensi" onclick="navigate('absensi');return false;">
-      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
-      Absensi
-    </a></li>
-    <li class="nav-item" style="margin-top:auto"><a class="nav-link" data-page="settings" onclick="navigate('settings');return false;">
-      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
-      Pengaturan
-    </a></li>
+    <li class="nav-item">
+      <a class="nav-link active" data-page="overview" onclick="navigate('overview');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+        Overview
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-page="wok-perf" onclick="navigate('wok-perf');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M2 12l3-4 3 2 3-5 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Performa WOK
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-page="performance" onclick="navigate('performance');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Performance SF
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-page="kendala" onclick="navigate('kendala');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 10l-3 1.5.5-3.5L3 5.5l3.5-.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        Kendala
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-page="absensi" onclick="navigate('absensi');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Absensi
+      </a>
+    </li>
   </ul>
-  <div class="sidebar-footer">
-    <div>Data dari Google Sheets</div>
-    <div id="lastUpdated">—</div>
+
+  <div class="nav-section-label">Lainnya</div>
+  <ul class="nav-list" style="flex:unset;padding-bottom:4px;">
+    <li class="nav-item">
+      <a class="nav-link" data-page="panduan" onclick="navigate('panduan');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M3 2h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Panduan
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-page="settings" onclick="navigate('settings');return false;" href="#">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Pengaturan
+      </a>
+    </li>
+  </ul>
+
+  <div class="sb-footer">
+    <div class="sb-update">Diperbarui: <span id="lastUpdated">—</span></div>
+    <div class="sb-version">SPV LamWay · IndiHome LPG</div>
   </div>
 </nav>
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
-<!-- Main shell -->
+<!-- ═══════════════ SHELL ═══════════════ -->
 <div class="shell">
+
+  <!-- Topbar -->
   <header class="topbar">
-    <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
+      <svg width="18" height="18" fill="none" viewBox="0 0 18 18"><path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
     </button>
-    <span class="page-title" id="pageTitle">Overview</span>
-    <div class="topbar-center">
-      <div class="topbar-search-wrap">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-        <input class="topbar-search" id="topSearch" type="search" placeholder="Cari SF, STO, kabupaten…" oninput="handleTopSearch(this.value)">
-      </div>
+    <div class="tb-search-wrap">
+      <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <input class="tb-search" type="search" placeholder="Cari SF, STO…" oninput="handleTopSearch(this.value)">
     </div>
-    <div class="topbar-right">
-      <div class="live-badge"><span class="live-dot"></span>LIVE</div>
-      <button class="btn-icon" id="refreshBtn" onclick="refreshData()" title="Refresh">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+    <div class="tb-right">
+      <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+      <button class="btn-icon" onclick="refreshData()" title="Refresh">
+        <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M1 7A6 6 0 0112.5 4M13 7a6 6 0 01-11.5 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 1.5v3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,0)"/></svg>
       </button>
+      <button class="btn-icon" onclick="toggleTheme()" title="Toggle tema" id="themeBtn">🌙</button>
     </div>
   </header>
 
+  <!-- Filter Bar -->
   <div class="filter-bar" id="filterBar">
-    <span class="filter-label">Filter:</span>
-    <select id="fCluster" onchange="applyFilter()">
+    <span class="filter-label">Filter</span>
+    <select class="filter-select" id="fCluster" onchange="applyFilter()">
       <option value="">Semua Cluster</option>
       <option value="Lampung Barat">Lampung Barat</option>
       <option value="Way Kanan">Way Kanan</option>
     </select>
-    <select id="fSTO" onchange="applyFilter()">
+    <select class="filter-select" id="fSTO" onchange="applyFilter()">
       <option value="">Semua STO</option>
     </select>
+    <select class="filter-select" id="fKendalaJenis" onchange="applyFilter()" style="display:none">
+      <option value="">Semua Jenis</option>
+    </select>
     <button class="filter-reset" onclick="resetFilter()">✕ Reset</button>
+    <span style="margin-left:auto;font-size:10.5px;color:var(--muted)" id="filterStatus"></span>
   </div>
 
-  <div class="content">
-    <!-- ░░ OVERVIEW ░░ -->
-    <section class="page active" id="page-overview">
+  <!-- ─── OVERVIEW ─── -->
+  <div class="page active" data-page="overview" id="page-overview">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">WOK Lampung Barat – Way Kanan</div>
+        <div class="ph-title">Overview Performa</div>
+        <div class="ph-sub" id="ov-period">Bulan berjalan · IndiHome LPG</div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn-ph btn-ph-outline" onclick="refreshData()">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="content">
       <div id="ov-kpi" class="kpi-grid">
-        <div class="kpi-card sk sk-kpi"></div><div class="kpi-card sk sk-kpi"></div>
-        <div class="kpi-card sk sk-kpi"></div><div class="kpi-card sk sk-kpi"></div>
+        <div class="sk sk-kpi"></div><div class="sk sk-kpi"></div>
+        <div class="sk sk-kpi"></div><div class="sk sk-kpi"></div>
+        <div class="sk sk-kpi"></div>
       </div>
       <div class="cluster-grid" id="ov-clusters"></div>
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title">PS per Kabupaten — Bulan Ini</div>
-          <div class="chart-wrap"><canvas id="chartKab"></canvas></div>
+      <div class="g2">
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot red"></div><span class="sec-title">PS per Kabupaten</span></div>
+            <span class="sec-sub">Bulan ini</span>
+          </div>
+          <div class="sec-body"><div class="chart-wrap" style="height:200px"><canvas id="chartKab"></canvas></div></div>
         </div>
-        <div class="card">
-          <div class="card-title">Tren WSA/TSA — 14 Hari</div>
-          <div class="chart-wrap"><canvas id="chartWsa"></canvas></div>
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Tren WSA/TSA</span></div>
+            <span class="sec-sub">30 hari terakhir</span>
+          </div>
+          <div class="sec-body"><div class="chart-wrap" style="height:200px"><canvas id="chartWsa"></canvas></div></div>
         </div>
       </div>
-    </section>
+      <div class="sec mb16" id="ov-funnel-sec" style="display:none">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot amber"></div><span class="sec-title">Funnel IO → RE → PS</span></div>
+          <span class="sec-sub">Agregat bulan ini</span>
+        </div>
+        <div class="sec-body" id="ov-funnel"></div>
+      </div>
+    </div>
+  </div>
 
-    <!-- ░░ PERFORMANCE WOK ░░ -->
-    <section class="page" id="page-wok-perf">
-      <div id="wok-hk-info" class="pill-row"></div>
+  <!-- ─── WOK PERF ─── -->
+  <div class="page" data-page="wok-perf" id="page-wok-perf">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">Tabel Monitoring</div>
+        <div class="ph-title">Performa WOK</div>
+        <div class="ph-sub">IO · RE · PS per Cluster & Kabupaten</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="hk-pills" id="wok-hk-info"></div>
       <div id="wok-all"></div>
-      <div id="wok-agency"></div>
-    </section>
+      <div id="wok-agency" style="margin-top:8px"></div>
+    </div>
+  </div>
 
-    <!-- ░░ PERFORMANCE ░░ -->
-    <section class="page" id="page-performance">
-      <div class="grid-2" style="margin-bottom:16px;">
-        <div class="card">
-          <div class="card-title">PS per STO — Bulan Ini vs Lalu</div>
-          <div class="chart-wrap"><canvas id="chartSTO"></canvas></div>
+  <!-- ─── PERFORMANCE SF ─── -->
+  <div class="page" data-page="performance" id="page-performance">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">Analisis SF</div>
+        <div class="ph-title">Performance SF</div>
+        <div class="ph-sub">Ranking & rekap per STO</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="g2 mb16">
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot red"></div><span class="sec-title">PS per STO</span></div>
+          </div>
+          <div class="sec-body"><div class="chart-wrap" style="height:180px"><canvas id="chartSTO"></canvas></div></div>
         </div>
-        <div class="card">
-          <div class="card-title">Rekap STO</div>
-          <div class="tbl-wrap" id="tbl-sto"></div>
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">IO per STO</span></div>
+          </div>
+          <div class="sec-body"><div class="chart-wrap" style="height:180px"><canvas id="chartIO"></canvas></div></div>
         </div>
       </div>
-      <div class="card">
-        <div class="sec-hdr">
-          <div><div class="sec-title">Ranking SF</div><div class="sec-sub" id="sf-count-label"></div></div>
+      <div class="sec mb16">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot amber"></div><span class="sec-title">Rekap per STO</span></div>
         </div>
-        <div class="search-bar">
-          <input class="search-input" id="sfSearch" type="search" placeholder="Cari nama / kode / STO…" oninput="renderSF()">
-        </div>
-        <div class="tbl-wrap" id="tbl-sf"></div>
-        <div class="pagination" id="sf-pager"></div>
+        <div class="sec-body-0 tbl-wrap" id="tbl-sto"></div>
       </div>
-    </section>
+      <div class="sec">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Ranking SF</span></div>
+          <span class="count-badge" id="sf-count-label"></span>
+        </div>
+        <div class="sec-body">
+          <div class="search-row">
+            <input class="search-input" id="sfSearch" type="search" placeholder="Cari nama / kode / STO…" oninput="renderSF()">
+          </div>
+          <div class="tbl-wrap" id="tbl-sf"></div>
+          <div class="pager" id="sf-pager"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <!-- ░░ KENDALA ░░ -->
-    <section class="page" id="page-kendala">
+  <!-- ─── KENDALA ─── -->
+  <div class="page" data-page="kendala" id="page-kendala">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">Monitoring Kendala</div>
+        <div class="ph-title">Kendala Lapangan</div>
+        <div class="ph-sub">Distribusi, tren, dan detail kendala SF</div>
+      </div>
+    </div>
+    <div class="content">
       <div class="pill-row" id="kendala-pills"></div>
-      <div class="grid-2" style="margin-bottom:16px;">
-        <div class="card">
-          <div class="card-title">Follow-Up Kendala Terbaru</div>
-          <div class="tbl-wrap" id="tbl-fu"></div>
+      <div class="g2 mb16">
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot red"></div><span class="sec-title">Distribusi Jenis</span></div>
+          </div>
+          <div class="sec-body"><div class="chart-wrap" style="height:200px"><canvas id="chartKendala"></canvas></div></div>
         </div>
-        <div class="card">
-          <div class="card-title">Distribusi Jenis Kendala</div>
-          <div class="chart-wrap" style="height:180px;"><canvas id="chartKendala"></canvas></div>
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot amber"></div><span class="sec-title">Tindak Lanjut (FU)</span></div>
+          </div>
+          <div class="sec-body-0 tbl-wrap" id="tbl-fu"></div>
         </div>
       </div>
-      <div class="card">
-        <div class="sec-hdr"><div class="sec-title">Riwayat Kendala</div></div>
-        <div class="tbl-wrap" id="tbl-kendala"></div>
+      <div class="sec">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Detail Kendala</span></div>
+        </div>
+        <div class="sec-body">
+          <div class="search-row" id="kendala-search-row">
+            <input class="search-input" id="kendalaSearch" type="search" placeholder="Cari teknisi, jenis, detail…" oninput="renderKendalaFiltered()">
+          </div>
+          <div class="tbl-wrap" id="tbl-kendala"></div>
+        </div>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <!-- ░░ ABSENSI ░░ -->
-    <section class="page" id="page-absensi">
-      <div class="kpi-grid" style="margin-bottom:16px;">
-        <div class="kpi-card" id="ab-count-card">
-          <div class="kpi-label">Hadir Hari Ini</div>
-          <div class="kpi-value" id="ab-count">—</div>
+  <!-- ─── ABSENSI ─── -->
+  <div class="page" data-page="absensi" id="page-absensi">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">Kehadiran SF</div>
+        <div class="ph-title">Absensi Harian</div>
+        <div class="ph-sub">Rekap dan tren kehadiran tim</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="kpi-grid mb16">
+        <div class="kpi-card blue">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Hadir Hari Ini</div>
+              <div class="kpi-value" id="ab-count">—</div>
+            </div>
+            <div class="kpi-icon blue">📋</div>
+          </div>
+          <div class="kpi-footer"><span class="kpi-vs">orang tercatat</span></div>
         </div>
       </div>
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title">Tren Kehadiran — 14 Hari</div>
-          <div class="chart-wrap"><canvas id="chartAbsen"></canvas></div>
+      <div class="g2 mb16">
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Tren Kehadiran</span></div>
+          </div>
+          <div class="sec-body"><div class="chart-wrap" style="height:180px"><canvas id="chartAbsen"></canvas></div></div>
         </div>
-        <div class="card">
-          <div class="card-title" id="ab-today-title">Daftar Hadir Hari Ini</div>
-          <div id="ab-list"></div>
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot green"></div><span class="sec-title" id="ab-today-title">Hadir Hari Ini</span></div>
+          </div>
+          <div class="sec-body" id="ab-list"></div>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <!-- ░░ SETTINGS ░░ -->
-    <section class="page" id="page-settings">
-      <div class="config-wrap">
-        <h2>⚙ Pengaturan API</h2>
-        <p>Masukkan URL deployment Google Apps Script dan token autentikasi.</p>
-        <div class="field"><label>API URL</label><input id="cfgUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div>
-        <div class="field"><label>Token</label><input id="cfgToken" type="password" placeholder="lpgLampung2026"></div>
-        <button class="btn-primary" onclick="saveConfig()">Simpan &amp; Muat Data</button>
+  <!-- ─── PANDUAN ─── -->
+  <div class="page" data-page="panduan" id="page-panduan">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">Referensi</div>
+        <div class="ph-title">Panduan Dashboard</div>
+        <div class="ph-sub">Definisi KPI, sumber data, dan cara baca grafik</div>
       </div>
-      <div class="config-wrap" style="margin-top:20px;">
-        <h2>🎯 Target PS per Wilayah</h2>
-        <p>Input target PS bulan ini. RE Target = PS×1.2 · IO Target = PS×1.5 (otomatis).</p>
-        <div class="target-grid">
-          <div class="target-cluster-label">CLUS LAMPUNG BARAT</div>
-          <div class="target-field"><label>Tanggamus</label><input id="tgt-TANGGAMUS" type="number" min="0" placeholder="0"></div>
-          <div class="target-field"><label>Lampung Barat</label><input id="tgt-LAMPUNG BARAT" type="number" min="0" placeholder="0"></div>
-          <div class="target-field"><label>Pesisir Barat</label><input id="tgt-PESISIR BARAT" type="number" min="0" placeholder="0"></div>
-          <div class="target-cluster-label">CLUS WAY KANAN</div>
-          <div class="target-field"><label>Lampung Utara</label><input id="tgt-LAMPUNG UTARA" type="number" min="0" placeholder="0"></div>
-          <div class="target-field"><label>Way Kanan</label><input id="tgt-WAY KANAN" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="content">
+      <div class="g2">
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Definisi KPI</span></div>
+          </div>
+          <div class="sec-body">
+            <div class="guide-item">
+              <div class="guide-term"><span class="guide-badge badge badge-red" style="background:var(--red-lite);color:var(--red)">IO</span> Valid IO</div>
+              <div class="guide-def">Input Order yang telah tervalidasi. Dihitung dari baris di sheet dengan status "Valid IO" pada kolom VALIDASI KAB, bulan berjalan (tanggal IO = kolom BW format YYYYMMDD).</div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-term"><span class="guide-badge badge badge-lb">RE</span> Valid RE</div>
+              <div class="guide-def">Order yang sudah dalam status Register. Status "Valid RE" pada kolom VALIDASI KAB.</div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-term"><span class="guide-badge badge badge-green">PS</span> Put In Service</div>
+              <div class="guide-def">Order yang telah aktif/terpasang. Status "Put In Service". Ini adalah KPI utama realisasi.</div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-term"><span class="guide-badge badge badge-neu">DRR</span> Daily Run Rate</div>
+              <div class="guide-def">Proyeksi akhir bulan berdasarkan laju harian: <strong>DRR = MTD ÷ HK Berjalan × Total HK</strong>. Berwarna biru.</div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-term"><span class="guide-badge badge badge-neu">MoM%</span> Month over Month</div>
+              <div class="guide-def">Perbandingan kumulatif hari 1–N bulan ini vs hari 1–N bulan lalu (same-day cutoff). Hijau = naik, merah = turun.</div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-term">WSA / TSA</div>
+              <div class="guide-def">Wireless Service Activation / Triple Service Activation. Dihitung dari baris dengan kolom CI = Agency.</div>
+            </div>
+          </div>
         </div>
-        <button class="btn-primary" onclick="saveTargets()">Simpan Target</button>
+        <div class="sec">
+          <div class="sec-head">
+            <div class="sec-head-left"><div class="sec-dot amber"></div><span class="sec-title">Struktur Wilayah</span></div>
+          </div>
+          <div class="sec-body">
+            <div class="guide-item">
+              <div class="guide-term"><span class="badge badge-lb">Lampung Barat</span></div>
+              <div class="guide-def"><strong>TL:</strong> Andres Welsen<br><strong>STO:</strong> LIW, KRU, KOT, TGP<br><strong>Kabupaten:</strong> Lampung Barat, Tanggamus, Pesisir Barat</div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-term"><span class="badge badge-wk">Way Kanan</span></div>
+              <div class="guide-def"><strong>TL:</strong> Agus Setiawan<br><strong>STO:</strong> BKM, KBI, BDU<br><strong>Kabupaten:</strong> Lampung Utara, Way Kanan</div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-term">Target</div>
+              <div class="guide-def">Target PS diinput manual di halaman Pengaturan per kabupaten. RE Target = PS × 1.2, IO Target = PS × 1.5.</div>
+            </div>
+            <div class="guide-item">
+              <div class="guide-term">Sumber Data</div>
+              <div class="guide-def">Google Sheets via Google Apps Script. Dashboard bersifat <strong>read-only</strong> — tidak menulis ke sumber data.</div>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
-  </div><!-- /content -->
+      <div class="sec">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot green"></div><span class="sec-title">Warna Status & Cara Baca</span></div>
+        </div>
+        <div class="sec-body">
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block"></span>Positif / Naik</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block"></span>Negatif / Turun / Kritis</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--amber);display:inline-block"></span>Perhatian / Tengah</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--blue);display:inline-block"></span>Informasi / DRR</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block"></span>Tidak ada data / Netral</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SETTINGS ─── -->
+  <div class="page" data-page="settings" id="page-settings">
+    <div class="page-header">
+      <div class="ph-grid-bg"></div>
+      <div class="ph-content">
+        <div class="ph-eyebrow">Konfigurasi</div>
+        <div class="ph-title">Pengaturan</div>
+        <div class="ph-sub">Koneksi API dan target PS per kabupaten</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="g2">
+        <div class="sec">
+          <div class="sec-head"><div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Koneksi API</span></div></div>
+          <div class="sec-body config-card" style="max-width:100%">
+            <div class="field">
+              <label>URL Google Apps Script</label>
+              <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/…/exec">
+            </div>
+            <div class="field">
+              <label>Token Autentikasi</label>
+              <input type="password" id="cfgToken" placeholder="token rahasia">
+            </div>
+            <button class="btn-primary" onclick="saveConfig()">💾 Simpan & Muat Data</button>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><div class="sec-head-left"><div class="sec-dot amber"></div><span class="sec-title">Target PS Bulanan</span></div></div>
+          <div class="sec-body">
+            <p style="font-size:11px;color:var(--muted);margin-bottom:10px">RE Target = PS × 1.2 &nbsp;·&nbsp; IO Target = PS × 1.5</p>
+            <div class="target-grid" id="tgt-grid">
+              <div class="tgt-cluster-hdr">📍 Cluster Lampung Barat</div>
+              <div class="tgt-field"><label>Tanggamus</label><input type="number" id="tgt-TANGGAMUS" min="0"></div>
+              <div class="tgt-field"><label>Lampung Barat</label><input type="number" id="tgt-LAMPUNG BARAT" min="0"></div>
+              <div class="tgt-field"><label>Pesisir Barat</label><input type="number" id="tgt-PESISIR BARAT" min="0"></div>
+              <div class="tgt-cluster-hdr">📍 Cluster Way Kanan</div>
+              <div class="tgt-field"><label>Lampung Utara</label><input type="number" id="tgt-LAMPUNG UTARA" min="0"></div>
+              <div class="tgt-field"><label>Way Kanan</label><input type="number" id="tgt-WAY KANAN" min="0"></div>
+            </div>
+            <button class="btn-primary" onclick="saveTargets()" style="margin-top:14px">💾 Simpan Target</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /shell -->
 
 <script>
-// ── Config ────────────────────────────────────────────────────
+// ─── CONFIG ──────────────────────────────────────────────
 const LS = {
-  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
-  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  get: k => { try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set: (k,v) => { try{ localStorage.setItem(k,v); }catch(e){} },
 };
 
-// ── PS Targets (localStorage) ────────────────────────────────
+// ─── TARGETS ─────────────────────────────────────────────
 const KAB_LIST = ['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT','LAMPUNG UTARA','WAY KANAN'];
-const KAB_TO_CLUSTER_JS = {
-  'TANGGAMUS':'Lampung Barat','LAMPUNG BARAT':'Lampung Barat','PESISIR BARAT':'Lampung Barat',
-  'LAMPUNG UTARA':'Way Kanan','WAY KANAN':'Way Kanan',
-};
-
 function getTargets() {
-  try {
-    const t = JSON.parse(LS.get('wokTargets') || '{}');
-    return t;
-  } catch { return {}; }
+  try { return JSON.parse(LS.get('wokTargets') || '{}'); } catch(e) { return {}; }
 }
-
 function saveTargets() {
   const t = {};
   KAB_LIST.forEach(k => {
     const el = document.getElementById('tgt-' + k);
-    t[k] = el ? (parseInt(el.value) || 0) : 0;
+    if (el) t[k] = Number(el.value) || 0;
   });
   LS.set('wokTargets', JSON.stringify(t));
-  alert('Target tersimpan!');
   if (S.loaded) renderWokPerf();
 }
-
 function loadTargetInputs() {
   const t = getTargets();
   KAB_LIST.forEach(k => {
@@ -572,111 +885,114 @@ function loadTargetInputs() {
   });
 }
 
-// ── State ─────────────────────────────────────────────────────
+// ─── STATE ───────────────────────────────────────────────
 const S = {
-  perf: null,      // performance API response
-  kendala: null,   // kendala API response
-  absen: null,     // absen API response
-  loaded: {},      // which pages have been loaded
-  filter: { cluster: '', sto: '' },
-  sfPage: 0,
-  sfSearch: '',
-  charts: {},
+  perf: null, kendala: null, absen: null, loaded: false, sfPage: 0,
+  filter: { cluster: '', sto: '', kendalaJenis: '' },
 };
 
-const PAGE_TITLES = {
-  overview: 'Overview', 'wok-perf': 'Performance WOK', performance: 'Performance SF',
-  kendala: 'Kendala', absensi: 'Absensi', settings: 'Pengaturan',
-};
-
-// ── Navigation ────────────────────────────────────────────────
+// ─── NAVIGATION ──────────────────────────────────────────
 function navigate(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
-  document.getElementById('page-' + pageId).classList.add('active');
-  document.querySelectorAll('[data-page="' + pageId + '"]').forEach(a => a.classList.add('active'));
-  document.getElementById('pageTitle').textContent = PAGE_TITLES[pageId] || pageId;
+  const pg = document.querySelector(`[data-page="${pageId}"].page`);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll(`[data-page="${pageId}"]`).forEach(a => a.classList.add('active'));
+
+  // show/hide jenis filter
+  const jenisEl = document.getElementById('fKendalaJenis');
+  jenisEl.style.display = pageId === 'kendala' ? '' : 'none';
+
   closeSidebar();
-  if (!S.loaded[pageId] && S.perf) renderPage(pageId);
+  renderPage(pageId);
 }
 
 function renderPage(pageId) {
-  if (pageId === 'overview')     renderOverview();
-  if (pageId === 'wok-perf')     renderWokPerf();
-  if (pageId === 'performance')  renderPerformance();
-  if (pageId === 'kendala')      { loadKendala(); }
-  if (pageId === 'absensi')      { loadAbsen(); }
-  S.loaded[pageId] = true;
+  if (pageId === 'overview')    renderOverview();
+  if (pageId === 'wok-perf')    renderWokPerf();
+  if (pageId === 'performance') renderPerformance();
+  if (pageId === 'kendala')     loadKendala();
+  if (pageId === 'absensi')     loadAbsen();
 }
 
-// ── Sidebar ───────────────────────────────────────────────────
+// ─── SIDEBAR ─────────────────────────────────────────────
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('show');
+  const s = document.getElementById('sidebar'); const o = document.getElementById('overlay');
+  s.classList.toggle('open'); o.classList.toggle('show');
 }
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
 }
 
-// ── API ───────────────────────────────────────────────────────
+// ─── THEME ───────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const cur = html.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+  LS.set('theme', next);
+}
+(function initTheme(){ const t = LS.get('theme'); if(t){ document.documentElement.setAttribute('data-theme',t); document.getElementById('themeBtn').textContent = t==='dark'?'☀️':'🌙'; } })();
+
+// ─── API ──────────────────────────────────────────────────
 async function fetchAPI(action) {
   const url   = LS.get('apiUrl');
   const token = LS.get('apiToken');
-  if (!url || !token) throw new Error('API belum dikonfigurasi');
+  if (!url || !token) throw new Error('Konfigurasi API belum diset.');
   const r = await fetch(`${url}?token=${encodeURIComponent(token)}&action=${action}`);
-  if (!r.ok) throw new Error('HTTP ' + r.status);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const d = await r.json();
-  if (!d.ok) throw new Error(d.error || 'API error');
+  if (d.error) throw new Error(d.error);
   return d;
 }
 
 async function loadPerformance() {
+  document.getElementById('lastUpdated').textContent = '…memuat';
   try {
-    S.perf = await fetchAPI('performance');
-    buildSTOFilter();
-    // Render current active page
+    S.perf = await fetchAPI('getPerformance');
+    S.loaded = true;
+    document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
     renderPage(activePage);
-    document.getElementById('lastUpdated').textContent =
-      'Update: ' + new Date(S.perf.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  } catch (e) {
-    document.getElementById('ov-kpi').innerHTML =
-      `<div class="state-msg" style="grid-column:1/-1"><div class="icon">⚠️</div><p>${e.message}</p></div>`;
+  } catch(e) {
+    document.getElementById('lastUpdated').textContent = 'Error';
+    showError('ov-kpi', e.message);
   }
 }
 
 async function loadKendala() {
   if (S.kendala) { renderKendala(); return; }
-  document.getElementById('tbl-kendala').innerHTML = '<div class="sk sk-row"></div>'.repeat(5);
   try {
-    S.kendala = await fetchAPI('kendala');
+    S.kendala = await fetchAPI('getKendala');
+    buildKendalaJenisFilter();
     renderKendala();
-  } catch (e) {
-    document.getElementById('tbl-kendala').innerHTML =
-      `<div class="state-msg"><p>${e.message}</p></div>`;
-  }
+  } catch(e) { showError('tbl-kendala', e.message); }
 }
 
 async function loadAbsen() {
   if (S.absen) { renderAbsen(); return; }
   try {
-    S.absen = await fetchAPI('absen');
+    S.absen = await fetchAPI('getAbsen');
     renderAbsen();
-  } catch (e) {
-    document.getElementById('ab-list').innerHTML = `<div class="state-msg"><p>${e.message}</p></div>`;
-  }
+  } catch(e) { showError('ab-list', e.message); }
 }
 
 async function refreshData() {
-  S.perf = null; S.kendala = null; S.absen = null;
-  S.loaded = {};
-  document.getElementById('refreshBtn').style.opacity = '.4';
+  S.perf = null; S.kendala = null; S.absen = null; S.loaded = false;
   await loadPerformance();
-  document.getElementById('refreshBtn').style.opacity = '1';
+  const pg = document.querySelector('.nav-link.active')?.dataset?.page;
+  if (pg === 'kendala') { S.kendala = null; loadKendala(); }
+  if (pg === 'absensi') { S.absen = null; loadAbsen(); }
 }
 
-// ── Filter ────────────────────────────────────────────────────
+function showError(containerId, msg) {
+  const el = document.getElementById(containerId);
+  if (el) el.innerHTML = `<div class="error-banner">⚠️ ${msg || 'Gagal memuat data.'}</div>`;
+}
+
+// ─── FILTER ───────────────────────────────────────────────
 const WILAYAH_MAP = {
   'Lampung Barat': ['LIW','KRU','KOT','TGP'],
   'Way Kanan':     ['BKM','KBI','BDU'],
@@ -687,52 +1003,74 @@ function buildSTOFilter() {
   sel.innerHTML = '<option value="">Semua STO</option>' +
     all.map(s => `<option value="${s}">${s}</option>`).join('');
 }
+function buildKendalaJenisFilter() {
+  if (!S.kendala) return;
+  const sel = document.getElementById('fKendalaJenis');
+  const jenis = Object.keys(S.kendala.byJenis || {});
+  sel.innerHTML = '<option value="">Semua Jenis</option>' +
+    jenis.map(j => `<option value="${j}">${j}</option>`).join('');
+}
 function applyFilter() {
-  S.filter.cluster = document.getElementById('fCluster').value;
-  S.filter.sto     = document.getElementById('fSTO').value;
-  // Cascade: if cluster selected, limit STO
+  const cl  = document.getElementById('fCluster').value;
+  const sto = document.getElementById('fSTO').value;
+  const kj  = document.getElementById('fKendalaJenis').value;
+
   const stoSel = document.getElementById('fSTO');
-  const allowed = S.filter.cluster ? WILAYAH_MAP[S.filter.cluster] || [] : null;
-  [...stoSel.options].forEach(opt => {
-    if (!opt.value) return;
-    opt.hidden = allowed ? !allowed.includes(opt.value) : false;
+  const allowed = cl ? WILAYAH_MAP[cl] || [] : null;
+  stoSel.querySelectorAll('option').forEach(o => {
+    if (!o.value) return;
+    o.hidden = allowed ? !allowed.includes(o.value) : false;
   });
-  if (allowed && !allowed.includes(S.filter.sto)) {
-    S.filter.sto = '';
+  if (sto && allowed && !allowed.includes(sto)) {
     stoSel.value = '';
   }
-  S.loaded = {};
+
+  S.filter.cluster = cl; S.filter.sto = sto; S.filter.kendalaJenis = kj;
+
+  // style active filters
+  document.getElementById('fCluster').classList.toggle('filter-active', !!cl);
+  document.getElementById('fSTO').classList.toggle('filter-active', !!sto);
+  document.getElementById('fKendalaJenis').classList.toggle('filter-active', !!kj);
+
+  const parts = [];
+  if (cl) parts.push(cl);
+  if (sto) parts.push(sto);
+  if (kj) parts.push(kj);
+  document.getElementById('filterStatus').textContent = parts.length ? `Aktif: ${parts.join(' · ')}` : '';
+
   const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
   renderPage(activePage);
 }
 function resetFilter() {
   document.getElementById('fCluster').value = '';
   document.getElementById('fSTO').value = '';
-  S.filter = { cluster: '', sto: '' };
-  applyFilter();
+  document.getElementById('fKendalaJenis').value = '';
+  S.filter = { cluster:'', sto:'', kendalaJenis:'' };
+  document.getElementById('filterStatus').textContent = '';
+  ['fCluster','fSTO','fKendalaJenis'].forEach(id => document.getElementById(id).classList.remove('filter-active'));
+  const activePage = document.querySelector('.nav-link.active')?.dataset?.page || 'overview';
+  renderPage(activePage);
 }
-
 function handleTopSearch(val) {
-  // Route global search to SF search on Performance page
   const sfEl = document.getElementById('sfSearch');
   if (sfEl) sfEl.value = val;
   if (val && document.querySelector('.nav-link.active')?.dataset?.page !== 'performance') {
     navigate('performance');
   }
-  S.sfPage = 0;
   if (S.perf) renderSF();
 }
 
+// ─── DATA HELPERS ─────────────────────────────────────────
 function filteredSF() {
-  if (!S.perf) return [];
-  return S.perf.sfPerformance.filter(sf => {
+  if (!S.perf?.sfList) return [];
+  return S.perf.sfList.filter(sf => {
     if (S.filter.cluster && sf.cluster !== S.filter.cluster) return false;
     if (S.filter.sto && sf.sto !== S.filter.sto) return false;
     return true;
   });
 }
 function filteredSTO() {
-  if (!S.perf) return [];
+  if (!S.perf?.rekapSTO) return [];
   return S.perf.rekapSTO.filter(s => {
     if (S.filter.cluster && s.cluster !== S.filter.cluster) return false;
     if (S.filter.sto && s.sto !== S.filter.sto) return false;
@@ -740,321 +1078,313 @@ function filteredSTO() {
   });
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-const fmtN = n => (n||0).toLocaleString('id-ID');
+// ─── UTILS ────────────────────────────────────────────────
+const fmt = n => (n||0).toLocaleString('id-ID');
 function delta(now, prev) {
-  if (!prev) return '<span class="delta-neu">—</span>';
+  if (!prev) return '<span class="neu">—</span>';
   const d = now - prev;
-  if (d > 0) return `<span class="delta-up">▲ ${d}</span>`;
-  if (d < 0) return `<span class="delta-dn">▼ ${Math.abs(d)}</span>`;
-  return `<span class="delta-neu">= ${prev}</span>`;
+  const p = Math.round(d / prev * 100);
+  if (!isFinite(p)) return '<span class="neu">—</span>';
+  const cls = d > 0 ? 'up' : d < 0 ? 'dn' : 'neu';
+  return `<span class="${cls}">${d > 0 ? '+' : ''}${d} (${d > 0 ? '+' : ''}${p}%)</span>`;
 }
 function clusterBadge(c) {
-  if (c === 'Lampung Barat') return `<span class="badge badge-lb">LB</span>`;
-  if (c === 'Way Kanan')     return `<span class="badge badge-wk">WK</span>`;
-  return `<span class="badge badge-uk">?</span>`;
+  const cls = c === 'Lampung Barat' ? 'badge-lb' : c === 'Way Kanan' ? 'badge-wk' : 'badge-neu';
+  const short = c === 'Lampung Barat' ? 'LB' : c === 'Way Kanan' ? 'WK' : c || '—';
+  return `<span class="badge ${cls}">${short}</span>`;
 }
+
+const CHARTS = {};
 function mkChart(id, cfg) {
-  if (S.charts[id]) S.charts[id].destroy();
+  if (CHARTS[id]) CHARTS[id].destroy();
   const ctx = document.getElementById(id)?.getContext('2d');
   if (!ctx) return;
-  S.charts[id] = new Chart(ctx, cfg);
+  const defaults = {
+    plugins: { legend: { labels: { font: { family: 'Inter', size: 11 }, boxWidth: 10, padding: 8 } } },
+    scales: {},
+  };
+  cfg.options = { ...defaults, ...cfg.options };
+  CHARTS[id] = new Chart(ctx, cfg);
 }
-const CHART_COLORS = {
-  red:  'rgba(200,16,46,.85)', redFade: 'rgba(200,16,46,.35)',
-  blue: 'rgba(29,78,216,.8)', amber: 'rgba(180,83,9,.8)',
-  green:'rgba(21,128,61,.8)',
+
+const CC = {
+  red:'rgba(200,16,46,1)', redF:'rgba(200,16,46,.12)',
+  blue:'rgba(29,78,216,1)', blueF:'rgba(29,78,216,.12)',
+  green:'rgba(22,163,74,1)', greenF:'rgba(22,163,74,.12)',
+  amber:'rgba(217,119,6,1)', amberF:'rgba(217,119,6,.12)',
+  muted:'rgba(148,163,184,1)',
 };
 
-// ── Overview ─────────────────────────────────────────────────
+// ─── OVERVIEW ──────────────────────────────────────────────
 function renderOverview() {
+  if (!S.perf) return;
   const d = S.perf;
   const sfs = filteredSF();
-  const sto = filteredSTO();
+  const targets = getTargets();
 
-  // Aggregate totals from filtered SF
   const bi = sfs.reduce((a, sf) => ({
-    io: a.io + sf.bulanIni.io, ps: a.ps + sf.bulanIni.ps,
-    wsa: a.wsa + sf.bulanIni.wsa, re: a.re + sf.bulanIni.re,
-  }), { io:0, ps:0, wsa:0, re:0 });
+    io:a.io+sf.bulanIni.io, ps:a.ps+sf.bulanIni.ps,
+    wsa:a.wsa+sf.bulanIni.wsa, re:a.re+sf.bulanIni.re,
+  }), {io:0,ps:0,wsa:0,re:0});
   const bl = sfs.reduce((a, sf) => ({
-    io: a.io + sf.bulanLalu.io, ps: a.ps + sf.bulanLalu.ps,
-    wsa: a.wsa + sf.bulanLalu.wsa,
-  }), { io:0, ps:0, wsa:0 });
-  const konv = bi.io ? Math.round(bi.ps / bi.io * 100) : 0;
+    io:a.io+sf.bulanLalu.io, ps:a.ps+sf.bulanLalu.ps,
+    wsa:a.wsa+sf.bulanLalu.wsa, re:a.re+sf.bulanLalu.re,
+  }), {io:0,ps:0,wsa:0,re:0});
+
+  // Compute targets
+  const hk = d.hariKerja || {};
+  const tgts = getTargets();
+  let totalTgt = 0;
+  const filterKabs = S.filter.cluster
+    ? (S.filter.cluster === 'Lampung Barat' ? ['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT'] : ['LAMPUNG UTARA','WAY KANAN'])
+    : KAB_LIST;
+  filterKabs.forEach(k => { totalTgt += (tgts[k] || 0); });
+  const ioTgt = Math.round(totalTgt * 1.5);
+  const reTgt = Math.round(totalTgt * 1.2);
+  const psPct = totalTgt ? Math.min(Math.round(bi.ps / totalTgt * 100), 100) : 0;
+  const ioPct = ioTgt    ? Math.min(Math.round(bi.io / ioTgt * 100), 100) : 0;
+  const rePct = reTgt    ? Math.min(Math.round(bi.re / reTgt * 100), 100) : 0;
+  const konv  = bi.io ? Math.round(bi.ps / bi.io * 100) : 0;
   const konvL = bl.io ? Math.round(bl.ps / bl.io * 100) : 0;
 
+  document.getElementById('ov-period').textContent = hk.month
+    ? `Bulan ${hk.month}/${hk.year} · HK Berjalan ${hk.elapsed}/${hk.total}`
+    : 'Bulan berjalan · IndiHome LPG';
+
   document.getElementById('ov-kpi').innerHTML = `
-    <div class="kpi-card">
-      <div class="kpi-card-icon blue">📥</div>
-      <div class="kpi-label">Total IO</div>
-      <div class="kpi-value">${fmtN(bi.io)}</div>
-      <div class="kpi-delta">${delta(bi.io, bl.io)} <span style="color:var(--muted)">vs bln lalu</span></div>
+    <div class="kpi-card red">
+      <div class="kpi-top"><div><div class="kpi-label">Total IO</div><div class="kpi-value">${fmt(bi.io)}</div></div><div class="kpi-icon red">📥</div></div>
+      <div class="kpi-footer">${delta(bi.io,bl.io)}<span class="kpi-vs">vs bln lalu</span></div>
+      ${ioTgt ? `<div class="kpi-progress-wrap"><div class="kpi-progress-label"><span>vs Target</span><span>${ioPct}%</span></div><div class="kpi-progress-track"><div class="kpi-progress-fill red" style="width:${ioPct}%"></div></div></div>` : ''}
     </div>
-    <div class="kpi-card">
-      <div class="kpi-card-icon green">✅</div>
-      <div class="kpi-label">Total PS</div>
-      <div class="kpi-value">${fmtN(bi.ps)}</div>
-      <div class="kpi-delta">${delta(bi.ps, bl.ps)} <span style="color:var(--muted)">vs bln lalu</span></div>
+    <div class="kpi-card amber">
+      <div class="kpi-top"><div><div class="kpi-label">Total RE</div><div class="kpi-value">${fmt(bi.re)}</div></div><div class="kpi-icon amber">🔄</div></div>
+      <div class="kpi-footer">${delta(bi.re,bl.re)}<span class="kpi-vs">vs bln lalu</span></div>
+      ${reTgt ? `<div class="kpi-progress-wrap"><div class="kpi-progress-label"><span>vs Target</span><span>${rePct}%</span></div><div class="kpi-progress-track"><div class="kpi-progress-fill amber" style="width:${rePct}%"></div></div></div>` : ''}
     </div>
-    <div class="kpi-card">
-      <div class="kpi-card-icon purple">📡</div>
-      <div class="kpi-label">WSA / TSA</div>
-      <div class="kpi-value">${fmtN(bi.wsa)}</div>
-      <div class="kpi-delta">${delta(bi.wsa, bl.wsa)} <span style="color:var(--muted)">vs bln lalu</span></div>
+    <div class="kpi-card green">
+      <div class="kpi-top"><div><div class="kpi-label">Total PS</div><div class="kpi-value">${fmt(bi.ps)}</div></div><div class="kpi-icon green">✅</div></div>
+      <div class="kpi-footer">${delta(bi.ps,bl.ps)}<span class="kpi-vs">vs bln lalu</span></div>
+      ${totalTgt ? `<div class="kpi-progress-wrap"><div class="kpi-progress-label"><span>vs Target ${fmt(totalTgt)}</span><span>${psPct}%</span></div><div class="kpi-progress-track"><div class="kpi-progress-fill green" style="width:${psPct}%"></div></div></div>` : ''}
     </div>
-    <div class="kpi-card">
-      <div class="kpi-card-icon amber">🎯</div>
-      <div class="kpi-label">Konversi IO→PS</div>
-      <div class="kpi-value">${konv}%</div>
-      <div class="kpi-delta">${delta(konv, konvL)} <span style="color:var(--muted)">vs bln lalu</span></div>
+    <div class="kpi-card purple">
+      <div class="kpi-top"><div><div class="kpi-label">WSA / TSA</div><div class="kpi-value">${fmt(bi.wsa)}</div></div><div class="kpi-icon purple">📡</div></div>
+      <div class="kpi-footer">${delta(bi.wsa,bl.wsa)}<span class="kpi-vs">vs bln lalu</span></div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-top"><div><div class="kpi-label">Konversi IO→PS</div><div class="kpi-value">${konv}%</div></div><div class="kpi-icon blue">🎯</div></div>
+      <div class="kpi-footer">${delta(konv,konvL)}<span class="kpi-vs">vs bln lalu</span></div>
     </div>`;
 
   // Cluster cards
-  const clusters = ['Lampung Barat','Way Kanan'];
-  const clCls = { 'Lampung Barat': 'lb', 'Way Kanan': 'wk' };
-  document.getElementById('ov-clusters').innerHTML = clusters.map(cl => {
-    const clSF = sfs.filter(sf => sf.cluster === cl);
-    const cBi = clSF.reduce((a,sf) => ({ io:a.io+sf.bulanIni.io, ps:a.ps+sf.bulanIni.ps, wsa:a.wsa+sf.bulanIni.wsa }), {io:0,ps:0,wsa:0});
-    const cBl = clSF.reduce((a,sf) => ({ io:a.io+sf.bulanLalu.io, ps:a.ps+sf.bulanLalu.ps, wsa:a.wsa+sf.bulanLalu.wsa }), {io:0,ps:0,wsa:0});
-    const ck = cBi.io ? Math.round(cBi.ps/cBi.io*100) : 0;
-    return `<div class="cluster-card ${clCls[cl]}">
-      <h3>${cl}</h3>
-      <div class="cluster-stat"><span class="lbl">IO Bulan Ini</span><span class="val">${fmtN(cBi.io)}</span></div>
-      <div class="cluster-stat"><span class="lbl">PS Bulan Ini</span><span class="val">${fmtN(cBi.ps)}</span></div>
-      <div class="cluster-stat"><span class="lbl">WSA/TSA</span><span class="val">${fmtN(cBi.wsa)}</span></div>
-      <div class="cluster-stat"><span class="lbl">Konversi</span><span class="val">${ck}%</span></div>
-      <div class="cluster-stat"><span class="lbl">vs Bln Lalu PS</span><span class="val">${delta(cBi.ps, cBl.ps)}</span></div>
-    </div>`;
-  }).join('');
+  const clDef = {
+    'Lampung Barat': { cls:'lb', tl:'Andres Welsen', kabs:['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT'] },
+    'Way Kanan':     { cls:'wk', tl:'Agus Setiawan', kabs:['LAMPUNG UTARA','WAY KANAN'] },
+  };
+  const kabMap = {};
+  (d.rekapKab||[]).forEach(r => { kabMap[r.kabupaten] = r; });
 
-  // Kabupaten chart
-  const kabData = d.rekapKab.filter(k => {
-    if (S.filter.cluster && k.cluster !== S.filter.cluster) return false;
-    return true;
-  });
+  document.getElementById('ov-clusters').innerHTML = Object.entries(clDef)
+    .filter(([n]) => !S.filter.cluster || n === S.filter.cluster)
+    .map(([clName, cfg]) => {
+      const clSF = sfs.filter(sf => sf.cluster === clName);
+      const cBi = clSF.reduce((a,sf) => ({io:a.io+sf.bulanIni.io,ps:a.ps+sf.bulanIni.ps,wsa:a.wsa+sf.bulanIni.wsa,re:a.re+sf.bulanIni.re}),{io:0,ps:0,wsa:0,re:0});
+      const cBl = clSF.reduce((a,sf) => ({io:a.io+sf.bulanLalu.io,ps:a.ps+sf.bulanLalu.ps,wsa:a.wsa+sf.bulanLalu.wsa}),{io:0,ps:0,wsa:0});
+      const ck = cBi.io ? Math.round(cBi.ps/cBi.io*100) : 0;
+      const cTgt = cfg.kabs.reduce((a,k)=>a+(tgts[k]||0),0);
+      const cPct = cTgt ? Math.min(Math.round(cBi.ps/cTgt*100),100) : 0;
+      return `<div class="cluster-card">
+        <div class="cl-header"><div class="cl-dot ${cfg.cls}"></div><span class="cl-name">${clName}</span><span class="cl-tl">TL: ${cfg.tl}</span></div>
+        <div class="cl-row"><span class="cl-lbl">IO</span><span class="cl-val">${fmt(cBi.io)}</span></div>
+        <div class="cl-row"><span class="cl-lbl">RE</span><span class="cl-val">${fmt(cBi.re)}</span></div>
+        <div class="cl-row"><span class="cl-lbl">PS</span><span class="cl-val">${fmt(cBi.ps)}</span></div>
+        <div class="cl-row"><span class="cl-lbl">WSA/TSA</span><span class="cl-val">${fmt(cBi.wsa)}</span></div>
+        <div class="cl-row"><span class="cl-lbl">Konversi IO→PS</span><span class="cl-val">${ck}%</span></div>
+        ${cTgt ? `<div class="cl-row"><span class="cl-lbl">Target PS</span><span class="cl-val">${fmt(cTgt)} <small style="color:var(--muted);font-weight:400">(${cPct}%)</small></span></div>` : ''}
+      </div>`;
+    }).join('');
+
+  // Charts
+  const kabData = (d.rekapKab||[]).filter(k => !S.filter.cluster || k.cluster === S.filter.cluster);
   mkChart('chartKab', {
-    type: 'bar',
-    data: {
-      labels: kabData.map(k => k.kabupaten),
-      datasets: [{
-        label: 'PS',
-        data: kabData.map(k => k.bulanIni.ps),
-        backgroundColor: kabData.map(k =>
-          k.cluster === 'Lampung Barat' ? CHART_COLORS.blue :
-          k.cluster === 'Way Kanan' ? CHART_COLORS.amber : CHART_COLORS.redFade),
-        borderRadius: 4,
+    type:'bar',
+    data:{
+      labels:kabData.map(k=>k.kabupaten.charAt(0)+k.kabupaten.slice(1).toLowerCase()),
+      datasets:[{
+        label:'PS',data:kabData.map(k=>k.bulanIni.ps),
+        backgroundColor:kabData.map(k=>k.cluster==='Lampung Barat'?CC.blue:CC.amber),
+        borderRadius:4,
       }],
     },
-    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } },
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}},
   });
 
-  // WSA trend chart
-  const wt = d.wsaTrend;
+  const wt = d.wsaTrend || [];
   mkChart('chartWsa', {
-    type: 'line',
-    data: {
-      labels: wt.map(p => p.date.slice(5)),
-      datasets: [{
-        label: 'WSA/TSA',
-        data: wt.map(p => p.count),
-        borderColor: CHART_COLORS.red, backgroundColor: CHART_COLORS.redFade,
-        tension: .3, fill: true, pointRadius: 2,
+    type:'line',
+    data:{
+      labels:wt.map(p=>p.date.slice(5)),
+      datasets:[{
+        label:'WSA/TSA',data:wt.map(p=>p.count),
+        borderColor:CC.red,backgroundColor:CC.redF,
+        tension:.35,fill:true,pointRadius:1.5,borderWidth:2,
       }],
     },
-    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10},maxTicksLimit:8}}}},
   });
+
+  // Funnel
+  if (bi.io > 0) {
+    document.getElementById('ov-funnel-sec').style.display = '';
+    document.getElementById('ov-funnel').innerHTML = `
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Catatan: funnel di bawah adalah agregat order pada bulan berjalan, bukan kohor yang sama.</p>
+      <div class="funnel-row"><span class="funnel-lbl">IO</span><div class="funnel-bar-wrap"><div class="funnel-fill" style="width:100%;background:var(--red)">IO</div></div><span class="funnel-val">${fmt(bi.io)}</span><span class="funnel-pct">100%</span></div>
+      <div class="funnel-row"><span class="funnel-lbl">RE</span><div class="funnel-bar-wrap"><div class="funnel-fill" style="width:${bi.io?Math.round(bi.re/bi.io*100):0}%;background:var(--amber)">RE</div></div><span class="funnel-val">${fmt(bi.re)}</span><span class="funnel-pct">${bi.io?Math.round(bi.re/bi.io*100):0}%</span></div>
+      <div class="funnel-row"><span class="funnel-lbl">PS</span><div class="funnel-bar-wrap"><div class="funnel-fill" style="width:${bi.io?Math.round(bi.ps/bi.io*100):0}%;background:var(--green)">PS</div></div><span class="funnel-val">${fmt(bi.ps)}</span><span class="funnel-pct">${bi.io?Math.round(bi.ps/bi.io*100):0}%</span></div>`;
+  }
 }
 
-// ── WOK Performance Table ────────────────────────────────────
+// ─── WOK PERF ─────────────────────────────────────────────
 function renderWokPerf() {
-  const d  = S.perf;
+  const d = S.perf;
   if (!d) return;
-  const hk      = d.hariKerja || { total: 22, elapsed: 1 };
+  const hk = d.hariKerja || {total:22,elapsed:1};
   const targets = getTargets();
   const rekapKab = d.rekapKab || [];
-
-  // Build kab lookup
   const kabMap = {};
   rekapKab.forEach(r => { kabMap[r.kabupaten] = r; });
 
-  // HK info banner
-  document.getElementById('wok-hk-info').innerHTML =
-    `<div class="pill"><span>Bulan</span>${hk.month}/${hk.year}</div>
-     <div class="pill"><span>HK Berjalan</span>${hk.elapsed}</div>
-     <div class="pill"><span>Total HK</span>${hk.total}</div>`;
+  document.getElementById('wok-hk-info').innerHTML = `
+    <div class="hk-pill"><span>Bulan</span>${hk.month}/${hk.year}</div>
+    <div class="hk-pill"><span>HK Berjalan</span>${hk.elapsed}</div>
+    <div class="hk-pill"><span>Total HK</span>${hk.total}</div>
+    <div class="hk-pill"><span>Sisa HK</span>${(hk.total||0)-(hk.elapsed||0)}</div>`;
 
-  // Compute cluster totals from kab data
   const CLUSTERS = {
-    'Lampung Barat': { kabs: ['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT'], class:'lb' },
-    'Way Kanan':     { kabs: ['LAMPUNG UTARA','WAY KANAN'], class:'wk' },
+    'Lampung Barat':{ kabs:['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT'],cls:'lb' },
+    'Way Kanan':    { kabs:['LAMPUNG UTARA','WAY KANAN'],cls:'wk' },
   };
-
-  function sumKabs(kabs, dataField) {
-    return kabs.reduce((acc, k) => {
-      const r = kabMap[k];
-      if (!r) return acc;
-      const s = r[dataField] || { io: 0, re: 0, ps: 0 };
-      acc.io += s.io; acc.re += s.re; acc.ps += s.ps;
-      return acc;
-    }, { io: 0, re: 0, ps: 0 });
+  function sumK(kabs, f) {
+    return kabs.reduce((a,k)=>{ const r=kabMap[k]; if(!r)return a; const s=r[f]||{io:0,re:0,ps:0}; a.io+=s.io;a.re+=s.re;a.ps+=s.ps;return a; },{io:0,re:0,ps:0});
   }
-
-  function sumTargets(kabs) {
-    return kabs.reduce((a, k) => a + (targets[k] || 0), 0);
+  function sumT(kabs){ return kabs.reduce((a,k)=>a+(targets[k]||0),0); }
+  function pct(v,t){ return t>0?Math.round(v/t*100)+'%':'—'; }
+  function drr(m){ if(!hk.elapsed)return '—'; return `<span class="drr">${Math.round(m/hk.elapsed*hk.total)}</span>`; }
+  function mom(a,b){
+    if(!b)return '<span class="mom-ne">—</span>';
+    const p=Math.round((a-b)/b*100);
+    if(!isFinite(p))return '<span class="mom-ne">—</span>';
+    return `<span class="${p>0?'mom-up':p<0?'mom-dn':'mom-ne'}">${p>0?'+':''}${p}%</span>`;
   }
+  function ratio(a,b){ return b>0?(a/b*100).toFixed(1)+'%':'—'; }
 
-  // Format helpers
-  function pct(v, t) { return t > 0 ? Math.round(v / t * 100) + '%' : '—'; }
-  function drr(mtd) {
-    if (!hk.elapsed) return '—';
-    return '<span class="drr-val">' + Math.round(mtd / hk.elapsed * hk.total) + '</span>';
-  }
-  function mom(ini, lalu) {
-    if (!lalu) return '<span class="mom-ne">—</span>';
-    const p = Math.round((ini - lalu) / lalu * 100);
-    if (isNaN(p) || !isFinite(p)) return '<span class="mom-ne">—</span>';
-    const cls = p > 0 ? 'mom-up' : p < 0 ? 'mom-dn' : 'mom-ne';
-    return `<span class="${cls}">${p > 0 ? '+' : ''}${p}%</span>`;
-  }
-  function tgtCell(ps) { return ps || '—'; }
-  function ratio(a, b) { return b > 0 ? (a / b * 100).toFixed(1) + '%' : '—'; }
-
-  function buildSection(sectionTitle, iniField, laluField) {
-    let wokIni  = { io: 0, re: 0, ps: 0 };
-    let wokLalu = { io: 0, re: 0, ps: 0 };
-    let wokTgt  = 0;
-    let rows    = '';
-
-    Object.entries(CLUSTERS).forEach(([clName, clCfg]) => {
-      // Respect cluster filter
+  function buildSection(title, iniF, laluF) {
+    let wI={io:0,re:0,ps:0}, wL={io:0,re:0,ps:0}, wT=0, rows='';
+    Object.entries(CLUSTERS).forEach(([clName,clCfg]) => {
       if (S.filter.cluster && clName !== S.filter.cluster) return;
-
-      const cIni  = sumKabs(clCfg.kabs, iniField);
-      const cLalu = sumKabs(clCfg.kabs, laluField);
-      const cTgt  = sumTargets(clCfg.kabs);
-      wokIni.io  += cIni.io;  wokIni.re  += cIni.re;  wokIni.ps  += cIni.ps;
-      wokLalu.io += cLalu.io; wokLalu.re += cLalu.re; wokLalu.ps += cLalu.ps;
-      wokTgt += cTgt;
-
-      const reTgt = Math.round(cTgt * 1.2);
-      const ioTgt = Math.round(cTgt * 1.5);
-
-      rows += `<tr class="row-cluster ${clCfg.class}">
-        <td class="td-territory">CLUS ${clName.toUpperCase()}</td>
-        <td class="td-num">${ioTgt || '—'}</td><td class="td-num">${cIni.io}</td>
-        <td class="td-num">${drr(cIni.io)}</td><td class="td-num">${cLalu.io}</td>
-        <td class="td-pct">${mom(cIni.io, cLalu.io)}</td>
-        <td class="td-num">${reTgt || '—'}</td><td class="td-num">${cIni.re}</td>
-        <td class="td-num">${drr(cIni.re)}</td><td class="td-num">${cLalu.re}</td>
-        <td class="td-pct">${mom(cIni.re, cLalu.re)}</td>
-        <td class="td-num">${cTgt || '—'}</td><td class="td-num">${cIni.ps}</td>
-        <td class="td-num">${drr(cIni.ps)}</td><td class="td-num">${cLalu.ps}</td>
-        <td class="td-pct">${mom(cIni.ps, cLalu.ps)}</td>
-        <td class="td-pct">${ratio(cIni.re, cIni.io)}</td>
-        <td class="td-pct">${ratio(cIni.ps, cIni.re)}</td>
-        <td class="td-num">${hk.elapsed}/${hk.total}</td>
+      const cI=sumK(clCfg.kabs,iniF), cL=sumK(clCfg.kabs,laluF), cT=sumT(clCfg.kabs);
+      wI.io+=cI.io;wI.re+=cI.re;wI.ps+=cI.ps;
+      wL.io+=cL.io;wL.re+=cL.re;wL.ps+=cL.ps;
+      wT+=cT;
+      const rT=Math.round(cT*1.2), ioT=Math.round(cT*1.5);
+      rows += `<tr class="row-cl ${clCfg.cls}">
+        <td class="td-terr">CLUS ${clName.toUpperCase()}</td>
+        <td class="td-r">${ioT||'—'}</td><td class="td-r">${cI.io}</td><td class="td-r">${drr(cI.io)}</td><td class="td-r">${cL.io}</td><td class="td-r">${mom(cI.io,cL.io)}</td>
+        <td class="td-r">${rT||'—'}</td><td class="td-r">${cI.re}</td><td class="td-r">${drr(cI.re)}</td><td class="td-r">${cL.re}</td><td class="td-r">${mom(cI.re,cL.re)}</td>
+        <td class="td-r">${cT||'—'}</td><td class="td-r">${cI.ps}</td><td class="td-r">${drr(cI.ps)}</td><td class="td-r">${cL.ps}</td><td class="td-r">${mom(cI.ps,cL.ps)}</td>
+        <td class="td-r">${ratio(cI.re,cI.io)}</td><td class="td-r">${ratio(cI.ps,cI.re)}</td>
       </tr>`;
 
-      clCfg.kabs.filter(kab => !S.filter.sto || (kabMap[kab])).forEach(kab => {
-        const r    = kabMap[kab];
-        const kIni  = r ? (r[iniField]  || { io: 0, re: 0, ps: 0 }) : { io: 0, re: 0, ps: 0 };
-        const kLalu = r ? (r[laluField] || { io: 0, re: 0, ps: 0 }) : { io: 0, re: 0, ps: 0 };
-        const kTgt  = targets[kab] || 0;
-        const kReTgt = Math.round(kTgt * 1.2);
-        const kIoTgt = Math.round(kTgt * 1.5);
+      clCfg.kabs.forEach(kab => {
+        if (S.filter.sto) {
+          const stoMap = {'TANGGAMUS':['TGP'],'LAMPUNG BARAT':['LIW','KRU'],'PESISIR BARAT':['KOT'],'LAMPUNG UTARA':['BKM','KBI'],'WAY KANAN':['BDU']};
+          if (stoMap[kab] && !stoMap[kab].includes(S.filter.sto)) return;
+        }
+        const r=kabMap[kab];
+        const kI=r?(r[iniF]||{io:0,re:0,ps:0}):{io:0,re:0,ps:0};
+        const kL=r?(r[laluF]||{io:0,re:0,ps:0}):{io:0,re:0,ps:0};
+        const kT=targets[kab]||0, kRT=Math.round(kT*1.2), kIT=Math.round(kT*1.5);
         rows += `<tr class="row-kab">
-          <td class="td-territory">${kab.charAt(0) + kab.slice(1).toLowerCase()}</td>
-          <td class="td-num">${kIoTgt || '—'}</td><td class="td-num">${kIni.io}</td>
-          <td class="td-num">${drr(kIni.io)}</td><td class="td-num">${kLalu.io}</td>
-          <td class="td-pct">${mom(kIni.io, kLalu.io)}</td>
-          <td class="td-num">${kReTgt || '—'}</td><td class="td-num">${kIni.re}</td>
-          <td class="td-num">${drr(kIni.re)}</td><td class="td-num">${kLalu.re}</td>
-          <td class="td-pct">${mom(kIni.re, kLalu.re)}</td>
-          <td class="td-num">${kTgt || '—'}</td><td class="td-num">${kIni.ps}</td>
-          <td class="td-num">${drr(kIni.ps)}</td><td class="td-num">${kLalu.ps}</td>
-          <td class="td-pct">${mom(kIni.ps, kLalu.ps)}</td>
-          <td class="td-pct">${ratio(kIni.re, kIni.io)}</td>
-          <td class="td-pct">${ratio(kIni.ps, kIni.re)}</td>
-          <td class="td-num">—</td>
+          <td class="td-terr">${kab.charAt(0)+kab.slice(1).toLowerCase()}</td>
+          <td class="td-r">${kIT||'—'}</td><td class="td-r">${kI.io}</td><td class="td-r">${drr(kI.io)}</td><td class="td-r">${kL.io}</td><td class="td-r">${mom(kI.io,kL.io)}</td>
+          <td class="td-r">${kRT||'—'}</td><td class="td-r">${kI.re}</td><td class="td-r">${drr(kI.re)}</td><td class="td-r">${kL.re}</td><td class="td-r">${mom(kI.re,kL.re)}</td>
+          <td class="td-r">${kT||'—'}</td><td class="td-r">${kI.ps}</td><td class="td-r">${drr(kI.ps)}</td><td class="td-r">${kL.ps}</td><td class="td-r">${mom(kI.ps,kL.ps)}</td>
+          <td class="td-r">${ratio(kI.re,kI.io)}</td><td class="td-r">${ratio(kI.ps,kI.re)}</td>
         </tr>`;
       });
     });
-
-    const wReTgt = Math.round(wokTgt * 1.2);
-    const wIoTgt = Math.round(wokTgt * 1.5);
-    rows += `<tr class="row-total">
-      <td class="td-territory">WOK LAMWAY</td>
-      <td class="td-num">${wIoTgt || '—'}</td><td class="td-num">${wokIni.io}</td>
-      <td class="td-num">${drr(wokIni.io)}</td><td class="td-num">${wokLalu.io}</td>
-      <td class="td-pct">${mom(wokIni.io, wokLalu.io)}</td>
-      <td class="td-num">${wReTgt || '—'}</td><td class="td-num">${wokIni.re}</td>
-      <td class="td-num">${drr(wokIni.re)}</td><td class="td-num">${wokLalu.re}</td>
-      <td class="td-pct">${mom(wokIni.re, wokLalu.re)}</td>
-      <td class="td-num">${wokTgt || '—'}</td><td class="td-num">${wokIni.ps}</td>
-      <td class="td-num">${drr(wokIni.ps)}</td><td class="td-num">${wokLalu.ps}</td>
-      <td class="td-pct">${mom(wokIni.ps, wokLalu.ps)}</td>
-      <td class="td-pct">${ratio(wokIni.re, wokIni.io)}</td>
-      <td class="td-pct">${ratio(wokIni.ps, wokIni.re)}</td>
-      <td class="td-num">${hk.elapsed}/${hk.total}</td>
+    const wRT=Math.round(wT*1.2),wIT=Math.round(wT*1.5);
+    rows += `<tr class="row-tot">
+      <td class="td-terr">WOK LAMWAY</td>
+      <td class="td-r">${wIT||'—'}</td><td class="td-r">${wI.io}</td><td class="td-r">${drr(wI.io)}</td><td class="td-r">${wL.io}</td><td class="td-r">${mom(wI.io,wL.io)}</td>
+      <td class="td-r">${wRT||'—'}</td><td class="td-r">${wI.re}</td><td class="td-r">${drr(wI.re)}</td><td class="td-r">${wL.re}</td><td class="td-r">${mom(wI.re,wL.re)}</td>
+      <td class="td-r">${wT||'—'}</td><td class="td-r">${wI.ps}</td><td class="td-r">${drr(wI.ps)}</td><td class="td-r">${wL.ps}</td><td class="td-r">${mom(wI.ps,wL.ps)}</td>
+      <td class="td-r">${ratio(wI.re,wI.io)}</td><td class="td-r">${ratio(wI.ps,wI.re)}</td>
     </tr>`;
-
-    const thead = `<thead>
-      <tr>
-        <th class="th-left" rowspan="2">Territory</th>
-        <th colspan="5">IO (Valid IO)</th>
-        <th colspan="5">RE (Valid RE)</th>
-        <th colspan="5">PS (Put In Service)</th>
-        <th rowspan="2">RE/IO<br>%</th>
-        <th rowspan="2">PS/RE<br>%</th>
-        <th rowspan="2">HK</th>
-      </tr>
-      <tr>
-        <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
-        <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
-        <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
-      </tr>
-    </thead>`;
-
-    return `<div class="wok-section-title">${sectionTitle}</div>
+    return `<div class="wok-section-title">◆ ${title}</div>
       <div class="wok-tbl-wrap">
-        <table class="wok-tbl">${thead}<tbody>${rows}</tbody></table>
+        <table class="wok-tbl">
+          <thead>
+            <tr>
+              <th class="th-l" rowspan="2">Territory</th>
+              <th colspan="5">IO (Valid IO)</th>
+              <th colspan="5">RE (Valid RE)</th>
+              <th colspan="5">PS (Put In Service)</th>
+              <th rowspan="2">RE/IO</th><th rowspan="2">PS/RE</th>
+            </tr>
+            <tr>
+              <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
+              <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
+              <th>Target</th><th>MTD</th><th>DRR</th><th>LM</th><th>MoM%</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
       </div>`;
   }
 
-  document.getElementById('wok-all').innerHTML    = buildSection('WOK Performance All',    'allIni',    'allLalu');
-  document.getElementById('wok-agency').innerHTML = buildSection('Agency Performance All', 'agencyIni', 'agencyLalu');
+  document.getElementById('wok-all').innerHTML    = buildSection('All Channel', 'allIni', 'allLalu');
+  document.getElementById('wok-agency').innerHTML = buildSection('Agency / SF', 'agencyIni', 'agencyLalu');
 }
 
-// ── Performance ───────────────────────────────────────────────
+// ─── PERFORMANCE ─────────────────────────────────────────
 function renderPerformance() {
   const sto = filteredSTO();
-
-  // STO chart
   mkChart('chartSTO', {
-    type: 'bar',
-    data: {
-      labels: sto.map(s => s.sto),
-      datasets: [
-        { label: 'PS Bln Ini',  data: sto.map(s => s.bulanIni.ps),  backgroundColor: CHART_COLORS.red,    borderRadius: 4 },
-        { label: 'PS Bln Lalu', data: sto.map(s => s.bulanLalu.ps), backgroundColor: CHART_COLORS.redFade, borderRadius: 4 },
+    type:'bar',
+    data:{
+      labels:sto.map(s=>s.sto),
+      datasets:[
+        {label:'PS Bln Ini', data:sto.map(s=>s.bulanIni.ps),  backgroundColor:CC.red,   borderRadius:4},
+        {label:'PS Bln Lalu',data:sto.map(s=>s.bulanLalu.ps), backgroundColor:CC.redF,  borderRadius:4},
       ],
     },
-    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } }, scales: { y: { beginAtZero: true } } },
+    options:{plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}},
+  });
+  mkChart('chartIO', {
+    type:'bar',
+    data:{
+      labels:sto.map(s=>s.sto),
+      datasets:[
+        {label:'IO Bln Ini', data:sto.map(s=>s.bulanIni.io),  backgroundColor:CC.blue,  borderRadius:4},
+        {label:'IO Bln Lalu',data:sto.map(s=>s.bulanLalu.io), backgroundColor:CC.blueF, borderRadius:4},
+      ],
+    },
+    options:{plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}}},
   });
 
-  // STO table
   document.getElementById('tbl-sto').innerHTML = `
     <table>
-      <thead><tr><th>STO</th><th>Cluster</th><th class="text-right">IO</th><th class="text-right">PS</th><th class="text-right">WSA</th><th class="text-right">Δ PS</th><th class="text-right">SF</th></tr></thead>
-      <tbody>${sto.map(s => `<tr>
+      <thead><tr><th>STO</th><th>Cluster</th><th class="text-right">IO</th><th class="text-right">RE</th><th class="text-right">PS</th><th class="text-right">WSA</th><th class="text-right">Δ PS</th><th class="text-right">SF Aktif</th></tr></thead>
+      <tbody>${sto.map(s=>`<tr>
         <td><strong>${s.sto}</strong></td>
         <td>${clusterBadge(s.cluster)}</td>
-        <td class="text-right text-num">${fmtN(s.bulanIni.io)}</td>
-        <td class="text-right text-num">${fmtN(s.bulanIni.ps)}</td>
-        <td class="text-right text-num">${fmtN(s.bulanIni.wsa)}</td>
-        <td class="text-right">${delta(s.bulanIni.ps, s.bulanLalu.ps)}</td>
-        <td class="text-right text-num">${s.sfAktif}</td>
+        <td class="text-right tnum">${fmt(s.bulanIni.io)}</td>
+        <td class="text-right tnum">${fmt(s.bulanIni.re||0)}</td>
+        <td class="text-right tnum">${fmt(s.bulanIni.ps)}</td>
+        <td class="text-right tnum">${fmt(s.bulanIni.wsa)}</td>
+        <td class="text-right">${delta(s.bulanIni.ps,s.bulanLalu.ps)}</td>
+        <td class="text-right tnum">${s.sfAktif||0}</td>
       </tr>`).join('')}</tbody>
     </table>`;
 
@@ -1063,148 +1393,156 @@ function renderPerformance() {
 }
 
 function renderSF() {
-  const q = (document.getElementById('sfSearch')?.value || '').toLowerCase();
+  const q = (document.getElementById('sfSearch')?.value||'').toLowerCase();
   let sfs = filteredSF().filter(sf => {
     if (!q) return true;
-    return sf.nama.toLowerCase().includes(q) || sf.kode.toLowerCase().includes(q) || sf.sto.toLowerCase().includes(q);
+    return sf.nama.toLowerCase().includes(q)||sf.kode.toLowerCase().includes(q)||sf.sto.toLowerCase().includes(q);
   });
   const total = sfs.length;
   document.getElementById('sf-count-label').textContent = `${total} SF`;
-  const PAGE = 20;
-  const maxPage = Math.max(0, Math.ceil(total / PAGE) - 1);
+  const PAGE = 20, maxPage = Math.max(0,Math.ceil(total/PAGE)-1);
   if (S.sfPage > maxPage) S.sfPage = maxPage;
-  const slice = sfs.slice(S.sfPage * PAGE, (S.sfPage + 1) * PAGE);
+  const slice = sfs.slice(S.sfPage*PAGE,(S.sfPage+1)*PAGE);
 
   document.getElementById('tbl-sf').innerHTML = `
     <table>
-      <thead><tr><th>#</th><th>Nama SF</th><th>STO</th><th class="text-right">IO</th><th class="text-right">PS</th><th class="text-right">WSA</th><th class="text-right">Konv.</th><th class="text-right">Δ PS</th></tr></thead>
-      <tbody>${slice.map((sf, i) => {
-        const konv = sf.bulanIni.io ? Math.round(sf.bulanIni.ps / sf.bulanIni.io * 100) : 0;
+      <thead><tr><th>#</th><th>Nama SF</th><th>STO</th><th class="text-right">IO</th><th class="text-right">RE</th><th class="text-right">PS</th><th class="text-right">WSA</th><th class="text-right">Konv.</th><th class="text-right">Δ PS</th></tr></thead>
+      <tbody>${slice.map((sf,i)=>{
+        const konv=sf.bulanIni.io?Math.round(sf.bulanIni.ps/sf.bulanIni.io*100):0;
+        const konvCls=konv>=60?'green':konv>=30?'amber':'red';
         return `<tr>
-          <td class="rank-num">${S.sfPage * PAGE + i + 1}</td>
+          <td class="rank">${S.sfPage*PAGE+i+1}</td>
           <td><div class="sf-name">${sf.nama}</div><div class="sf-kode">${sf.kode}</div></td>
           <td>${clusterBadge(sf.cluster)} ${sf.sto}</td>
-          <td class="text-right text-num">${fmtN(sf.bulanIni.io)}</td>
-          <td class="text-right text-num">${fmtN(sf.bulanIni.ps)}</td>
-          <td class="text-right text-num">${fmtN(sf.bulanIni.wsa)}</td>
-          <td><div class="conv-bar"><div class="conv-track"><div class="conv-fill" style="width:${konv}%"></div></div><span style="font-size:11px;white-space:nowrap">${konv}%</span></div></td>
-          <td class="text-right">${delta(sf.bulanIni.ps, sf.bulanLalu.ps)}</td>
+          <td class="text-right tnum">${fmt(sf.bulanIni.io)}</td>
+          <td class="text-right tnum">${fmt(sf.bulanIni.re||0)}</td>
+          <td class="text-right tnum">${fmt(sf.bulanIni.ps)}</td>
+          <td class="text-right tnum">${fmt(sf.bulanIni.wsa)}</td>
+          <td><div class="conv-wrap"><div class="conv-track"><div class="conv-fill" style="width:${konv}%;background:var(--${konvCls})"></div></div><span style="font-size:10.5px;min-width:28px;text-align:right">${konv}%</span></div></td>
+          <td class="text-right">${delta(sf.bulanIni.ps,sf.bulanLalu.ps)}</td>
         </tr>`;
       }).join('')}</tbody>
     </table>`;
 
   document.getElementById('sf-pager').innerHTML = `
-    <button class="page-btn" onclick="sfNav(-1)" ${S.sfPage === 0 ? 'disabled' : ''}>‹ Prev</button>
-    <span class="page-info">Hal ${S.sfPage + 1} / ${maxPage + 1}</span>
-    <button class="page-btn" onclick="sfNav(1)" ${S.sfPage >= maxPage ? 'disabled' : ''}>Next ›</button>`;
+    <button class="pg-btn" onclick="sfNav(-1)" ${S.sfPage===0?'disabled':''}>‹ Prev</button>
+    <span>${S.sfPage+1} / ${maxPage+1}</span>
+    <button class="pg-btn" onclick="sfNav(1)" ${S.sfPage>=maxPage?'disabled':''}>Next ›</button>`;
 }
-function sfNav(dir) { S.sfPage += dir; renderSF(); }
+function sfNav(d){ S.sfPage+=d; renderSF(); }
 
-// ── Kendala ───────────────────────────────────────────────────
+// ─── KENDALA ─────────────────────────────────────────────
 function renderKendala() {
   const d = S.kendala;
+  if (!d) return;
 
   // Pills
-  document.getElementById('kendala-pills').innerHTML =
-    `<div class="pill"><span>Total Kendala</span>${d.total}</div>
-     <div class="pill"><span>FU Aktif</span>${d.totalFU}</div>
-     ${Object.entries(d.byJenis).map(([j,n]) =>
-       `<div class="pill"><span>${j}</span>${n}</div>`).join('')}`;
+  document.getElementById('kendala-pills').innerHTML = `
+    <div class="pill"><span>Total</span>${d.total}</div>
+    <div class="pill"><span>FU Aktif</span>${d.totalFU}</div>
+    ${Object.entries(d.byJenis||{}).slice(0,5).map(([j,n])=>`<div class="pill"><span>${j}</span>${n}</div>`).join('')}`;
 
-  // FU table (recent 20)
-  const fu = d.fuKendala.slice(0, 20);
+  // Jenis chart
+  const jList = Object.entries(d.byJenis||{}).sort((a,b)=>b[1]-a[1]);
+  mkChart('chartKendala', {
+    type:'bar',
+    data:{
+      labels:jList.map(([j])=>j),
+      datasets:[{data:jList.map(([,n])=>n),backgroundColor:CC.red,borderRadius:4}],
+    },
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:10},precision:0}},y:{ticks:{font:{size:10}}}}},
+  });
+
+  // FU table
+  const fu = (d.fuKendala||[]).slice(0,15);
   document.getElementById('tbl-fu').innerHTML = fu.length ? `
     <table>
       <thead><tr><th>Tanggal</th><th>STO</th><th>Kendala</th><th>Solusi</th></tr></thead>
-      <tbody>${fu.map(r => `<tr>
-        <td style="white-space:nowrap">${r.tanggal}</td>
+      <tbody>${fu.map(r=>`<tr>
+        <td style="white-space:nowrap;font-size:11px">${r.tanggal}</td>
         <td>${clusterBadge(r.cluster)} ${r.sto}</td>
-        <td style="max-width:180px">${r.kendala}</td>
-        <td style="max-width:180px;color:var(--fg2)">${r.solusi}</td>
+        <td style="max-width:160px;font-size:11px">${r.kendala}</td>
+        <td style="max-width:160px;font-size:11px;color:var(--fg2)">${r.solusi}</td>
       </tr>`).join('')}</tbody>
-    </table>` : '<div class="state-msg"><p>Belum ada data FU kendala.</p></div>';
+    </table>` : '<div class="empty"><p>Belum ada data FU.</p></div>';
 
-  // Jenis chart
-  const jenisList = Object.entries(d.byJenis);
-  mkChart('chartKendala', {
-    type: 'bar',
-    data: {
-      labels: jenisList.map(([j]) => j),
-      datasets: [{ data: jenisList.map(([,n]) => n), backgroundColor: CHART_COLORS.red, borderRadius: 4 }],
-    },
-    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } },
-  });
-
-  // Kendala table (recent 50)
-  const kl = d.kendala.slice(0, 50);
-  document.getElementById('tbl-kendala').innerHTML = kl.length ? `
-    <table>
-      <thead><tr><th>Tanggal</th><th>Teknisi</th><th>Order ID</th><th>Jenis</th><th>Detail / Keterangan</th></tr></thead>
-      <tbody>${kl.map(r => `<tr>
-        <td style="white-space:nowrap">${r.tanggal}</td>
-        <td>${r.teknisi}</td>
-        <td style="font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis">${r.orderId}</td>
-        <td><span class="badge badge-uk" style="white-space:nowrap">${r.jenis}</span></td>
-        <td style="color:var(--fg2);max-width:240px">${r.keterangan || r.detail}</td>
-      </tr>`).join('')}</tbody>
-    </table>` : '<div class="state-msg"><p>Belum ada data kendala.</p></div>';
+  renderKendalaFiltered();
 }
 
-// ── Absensi ───────────────────────────────────────────────────
+function renderKendalaFiltered() {
+  const d = S.kendala;
+  if (!d) return;
+  const q = (document.getElementById('kendalaSearch')?.value||'').toLowerCase();
+  const jFilter = S.filter.kendalaJenis;
+  const stoFilter = S.filter.sto;
+  const clFilter = S.filter.cluster;
+
+  let kl = (d.kendala||[]).filter(r => {
+    if (jFilter && r.jenis !== jFilter) return false;
+    if (stoFilter && r.sto !== stoFilter) return false;
+    if (clFilter && r.cluster !== clFilter) return false;
+    if (q && !r.teknisi?.toLowerCase().includes(q) && !r.jenis?.toLowerCase().includes(q) && !r.keterangan?.toLowerCase().includes(q) && !r.detail?.toLowerCase().includes(q)) return false;
+    return true;
+  }).slice(0,60);
+
+  document.getElementById('tbl-kendala').innerHTML = kl.length ? `
+    <table>
+      <thead><tr><th>Tanggal</th><th>Teknisi</th><th>STO</th><th>Jenis</th><th>Detail / Keterangan</th></tr></thead>
+      <tbody>${kl.map(r=>`<tr>
+        <td style="white-space:nowrap;font-size:11px">${r.tanggal}</td>
+        <td style="font-size:12px">${r.teknisi}</td>
+        <td>${clusterBadge(r.cluster)} ${r.sto}</td>
+        <td><span class="badge badge-neu" style="white-space:nowrap;font-size:10px">${r.jenis}</span></td>
+        <td style="color:var(--fg2);max-width:260px;font-size:11px">${r.keterangan||r.detail||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table>` : '<div class="empty"><div class="icon">📋</div><p>Tidak ada data kendala yang sesuai filter.</p></div>';
+}
+
+// ─── ABSENSI ─────────────────────────────────────────────
 function renderAbsen() {
   const d = S.absen;
+  if (!d) return;
   document.getElementById('ab-count').textContent = d.count;
   document.getElementById('ab-today-title').textContent = `Hadir Hari Ini (${d.count} orang)`;
 
   mkChart('chartAbsen', {
-    type: 'bar',
-    data: {
-      labels: d.trend.map(p => p.date.slice(5)),
-      datasets: [{ label: 'Hadir', data: d.trend.map(p => p.count), backgroundColor: CHART_COLORS.red, borderRadius: 4 }],
+    type:'bar',
+    data:{
+      labels:d.trend.map(p=>p.date.slice(5)),
+      datasets:[{label:'Hadir',data:d.trend.map(p=>p.count),backgroundColor:CC.blue,borderRadius:4}],
     },
-    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10},precision:0}},x:{ticks:{font:{size:10},maxTicksLimit:10}}}},
   });
 
-  document.getElementById('ab-list').innerHTML = d.today.length ?
+  document.getElementById('ab-list').innerHTML = d.today?.length ?
     d.today.map(a => {
-      const waktu = a.waktu ? new Date(a.waktu).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '—';
+      const wkt = a.waktu ? new Date(a.waktu).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '—';
       return `<div class="absen-item">
-        <div>
-          <div class="absen-nama">${a.nama || '—'}</div>
-          <div class="absen-detail">@${a.username || '—'} · ${a.kelurahan || '—'}</div>
-        </div>
-        <div class="absen-time">
-          <div>${waktu}</div>
-          <div class="deal-badge ${Number(a.deal) ? 'deal-yes' : 'deal-no'}">${Number(a.deal) ? 'Deal' : '-'}</div>
-        </div>
+        <div><div class="absen-nama">${a.nama||'—'}</div><div class="absen-detail">@${a.username||'—'} · ${a.kelurahan||'—'}</div></div>
+        <div class="absen-time"><div>${wkt}</div><div class="deal-badge ${Number(a.deal)?'deal-y':'deal-n'}">${Number(a.deal)?'Deal':'—'}</div></div>
       </div>`;
     }).join('') :
-    '<div class="state-msg"><div class="icon">📋</div><p>Belum ada yang absen hari ini.</p></div>';
+    '<div class="empty"><div class="icon">📋</div><p>Belum ada yang absen hari ini.</p></div>';
 }
 
-// ── Config ────────────────────────────────────────────────────
+// ─── CONFIG ───────────────────────────────────────────────
 function saveConfig() {
   const url   = document.getElementById('cfgUrl').value.trim();
   const token = document.getElementById('cfgToken').value.trim();
   if (!url || !token) return alert('URL dan token harus diisi.');
-  LS.set('apiUrl', url);
-  LS.set('apiToken', token);
-  navigate('overview');
-  loadPerformance();
+  LS.set('apiUrl', url); LS.set('apiToken', token);
+  navigate('overview'); loadPerformance();
 }
 
-// ── Init ──────────────────────────────────────────────────────
+// ─── INIT ─────────────────────────────────────────────────
 (function init() {
+  buildSTOFilter();
   const url   = LS.get('apiUrl');
   const token = LS.get('apiToken');
   if (url)   document.getElementById('cfgUrl').value   = url;
   if (token) document.getElementById('cfgToken').value = token;
   loadTargetInputs();
-
-  if (!url || !token) {
-    navigate('settings');
-  } else {
-    loadPerformance();
-  }
+  if (!url || !token) { navigate('settings'); }
+  else { loadPerformance(); }
 })();
 </script>
