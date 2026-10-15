@@ -1558,12 +1558,8 @@ function renderWokPerf() {
     });
     // Jika tidak ada filter cluster, pakai summary total dari GAS (konsisten dengan Overview KPI).
     // Jika ada filter cluster, pakai hasil sumK (hanya kab di cluster tersebut).
-    const totI = (!S.filter.cluster && summaryIni)
-      ? {io: summaryIni.io||0, re: summaryIni.re||0, ps: summaryIni.ps||0}
-      : wI;
-    const totL = (!S.filter.cluster && summaryLalu)
-      ? {io: summaryLalu.io||0, re: summaryLalu.re||0, ps: summaryLalu.ps||0}
-      : wL;
+    const totI = wI;
+    const totL = wL;
     const wRT=Math.round(wT*1.2),wIT=Math.round(wT*1.5);
     rows += `<tr class="row-tot">
       <td class="td-terr">WOK LAMWAY</td>
