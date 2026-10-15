@@ -676,6 +676,10 @@ tr:hover td{background:var(--surface2);}
 .auth-field label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
 .auth-field input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box;transition:border-color .15s}
 .auth-field input:focus{border-color:#e8001c}
+.auth-field .pw-wrap{position:relative}
+.auth-field .pw-wrap input{padding-right:38px}
+.auth-field .pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:2px;line-height:1;display:flex;align-items:center}
+.auth-field .pw-eye:hover{color:var(--text)}
 .auth-err{font-size:12px;color:#ef4444;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:8px 12px;margin-bottom:12px}
 .auth-ok{font-size:12.5px;color:#059669;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:10px 12px;margin-bottom:12px;line-height:1.5}
 .auth-btn{width:100%;padding:10px;background:linear-gradient(135deg,#e8001c,#c10016);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s;letter-spacing:.2px}
@@ -2603,6 +2607,13 @@ async function doRegister() {
   }
 }
 
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+
 function confirmLogout() { document.getElementById('logout-confirm').style.display = 'flex'; }
 function doLogout() {
   clearSession();
@@ -2782,7 +2793,7 @@ if (document.readyState === 'loading') {
     <h2 class="auth-title">Masuk ke Akun</h2>
     <p class="auth-sub">Gunakan username dan password yang sudah didaftarkan</p>
     <div class="auth-field"><label>Username</label><input id="li-user" type="text" placeholder="contoh: rabil25" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="auth-field"><label>Password</label><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="auth-field"><label>Password</label><div class="pw-wrap"><input id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"><button type="button" class="pw-eye" onclick="togglePw('li-pass',this)" tabindex="-1">👁</button></div></div>
     <div id="li-err" class="auth-err" style="display:none"></div>
     <button class="auth-btn" onclick="doLogin()" id="li-btn">Masuk</button>
     <p class="auth-switch">Belum punya akun? <a href="#" onclick="showRegister();return false">Daftar sekarang</a></p>
@@ -2803,8 +2814,8 @@ if (document.readyState === 'loading') {
     <div class="auth-pending-note">⏳ Pendaftaran perlu disetujui admin terlebih dahulu sebelum bisa login. Hubungi supervisor untuk approval di sheet <strong>Akun_Web</strong>.</div>
     <div class="auth-field"><label>Nama Lengkap</label><input id="rg-nama" type="text" placeholder="contoh: Rabil Rezky"></div>
     <div class="auth-field"><label>Username</label><input id="rg-user" type="text" placeholder="huruf kecil, tanpa spasi"></div>
-    <div class="auth-field"><label>Password</label><input id="rg-pass" type="password" placeholder="minimal 6 karakter"></div>
-    <div class="auth-field"><label>Konfirmasi Password</label><input id="rg-pass2" type="password" placeholder="ulangi password"></div>
+    <div class="auth-field"><label>Password</label><div class="pw-wrap"><input id="rg-pass" type="password" placeholder="minimal 6 karakter"><button type="button" class="pw-eye" onclick="togglePw('rg-pass',this)" tabindex="-1">👁</button></div></div>
+    <div class="auth-field"><label>Konfirmasi Password</label><div class="pw-wrap"><input id="rg-pass2" type="password" placeholder="ulangi password"><button type="button" class="pw-eye" onclick="togglePw('rg-pass2',this)" tabindex="-1">👁</button></div></div>
     <div id="rg-err" class="auth-err" style="display:none"></div>
     <div id="rg-ok" class="auth-ok" style="display:none"></div>
     <button class="auth-btn" onclick="doRegister()" id="rg-btn">Daftar</button>
