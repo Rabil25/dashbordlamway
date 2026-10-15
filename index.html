@@ -1039,9 +1039,16 @@ function loadTargetInputs() {
 }
 
 // ─── DEFAULT DATE RANGE (1st of current month → today) ───
-function todayStr() { return new Date().toISOString().slice(0,10); }
+// Gunakan offset WIB (UTC+7) agar tanggal default tidak geser -1 hari
+// saat dashboard dibuka antara jam 00:00–06:59 WIB.
+function todayStr() {
+  const d = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 10);
+}
 function firstOfMonthStr() {
-  const d = new Date(); d.setDate(1); return d.toISOString().slice(0,10);
+  const d = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  d.setUTCDate(1);
+  return d.toISOString().slice(0, 10);
 }
 
 // ─── STATE ───────────────────────────────────────────────
