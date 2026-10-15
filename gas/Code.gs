@@ -354,7 +354,18 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     }
 
     // Tanggal masing-masing metric (format YYYYMMDD)
-    const getTgl = (col) => col !== -1 && r[col] ? r[col].toString().replace(/-/g, '').substring(0, 8) : '';
+    // Handle both text strings ("2026-09-01", "2026/09/01") and Date objects
+    const getTgl = (col) => {
+      if (col === -1 || r[col] === null || r[col] === undefined || r[col] === '') return '';
+      const v = r[col];
+      if (v instanceof Date) {
+        const y = v.getFullYear();
+        const m = String(v.getMonth() + 1).padStart(2, '0');
+        const d = String(v.getDate()).padStart(2, '0');
+        return `${y}${m}${d}`;
+      }
+      return v.toString().replace(/-/g, '').replace(/\//g, '').substring(0, 8);
+    };
     const tglIO = getTgl(C.tanggalIO);
     const tglRE = getTgl(C.tanggalRE);
     const tglPS = getTgl(C.tanggalPS);
