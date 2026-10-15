@@ -1,6 +1,8 @@
 <title>Dashboard WOK LamWay</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -18,11 +20,21 @@
   --navy:#0A1220; --navy2:#0F1E35; --navy3:#162032;
   --sidebar-fg:#94A3B8; --sidebar-active-bg:rgba(59,130,246,.15); --sidebar-active:#60A5FA;
   --sidebar-w:220px;
-  --font:'Inter',system-ui,sans-serif;
-  --r:10px; --r-sm:7px; --r-xs:5px;
+  --font:'Plus Jakarta Sans',system-ui,sans-serif;
+  --r:10px; --r-sm:7px; --r-lg:14px; --r-sm:7px; --r-xs:5px;
   --sh:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.03);
   --sh-md:0 4px 12px rgba(0,0,0,.06),0 2px 4px rgba(0,0,0,.04);
   --sh-lg:0 8px 24px rgba(0,0,0,.08);
+
+  /* ── Appearance tokens (overridden by JS) ─────────────── */
+  --p-primary:#1D4ED8; --p-primary-d:#1e40af; --p-primary-lite:#DBEAFE;
+  --p-accent:#6366f1;  /* sidebar active accent */
+  --pad-content:18px 20px 36px; /* density: comfortable */
+  --pad-card:16px;
+  --font-scale:1;        /* 1 = normal, .9 = compact, 1.1 = large */
+  --tr:.18s;             /* transition speed; 0s = minimal */
+  --effect-sh:var(--sh-md);  /* balanced; none for minimal */
+  --effect-hover-sh:0 6px 20px rgba(0,0,0,.09);
 }
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0F172A; --surface:#1E293B; --surface2:#1A2540; --surface3:#1E293B;
@@ -326,9 +338,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);font-size:13px
 /* ─── KPI GRID ─────────────────────────────────────────────── */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:20px;}
 .kpi-card{
-  background:var(--surface);border-radius:var(--r);padding:16px;
-  box-shadow:var(--sh-md);border:1px solid var(--border);
+  background:var(--surface);border-radius:var(--r);padding:var(--pad-card);
+  box-shadow:var(--effect-sh);border:1px solid var(--border);
   display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden;
+  transition:box-shadow var(--tr),transform var(--tr),border-color var(--tr);
+  cursor:default;
+}
+.kpi-card:hover{
+  box-shadow:var(--effect-hover-sh);
+  transform:translateY(-1px);
+  border-color:var(--border2);
 }
 .kpi-card::before{
   content:'';position:absolute;inset:0 auto 0 0;width:3px;
@@ -364,7 +383,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);font-size:13px
 .up{color:var(--green);} .dn{color:var(--red);} .neu{color:var(--muted);}
 
 /* ─── SECTION ─────────────────────────────────────────────── */
-.sec{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-md);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.sec{background:var(--surface);border-radius:var(--r);box-shadow:var(--effect-sh);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;transition:box-shadow var(--tr);}
 .sec-head{
   display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:12px 16px;border-bottom:1px solid var(--border);
@@ -623,6 +642,23 @@ tr:hover td{background:var(--surface2);}
   .ph-sub{display:none;}
   #map-container{height:60vh;min-height:300px;}
 }
+.app-opt-label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.app-palette-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.app-pal{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;font-size:11px;font-weight:600;color:var(--text);transition:all var(--tr);white-space:nowrap;overflow:hidden}
+.app-pal:hover{border-color:var(--p-primary);background:var(--p-primary-lite)}
+.app-pal.active{border-color:var(--p-primary);background:var(--p-primary-lite);color:var(--p-primary)}
+.app-pal-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.app-opt-group{display:flex;flex-wrap:wrap;gap:6px}
+.app-opt{padding:5px 12px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;font-size:11px;font-weight:600;color:var(--muted);transition:all var(--tr)}
+.app-opt:hover{border-color:var(--p-primary);color:var(--p-primary)}
+.app-opt.active{border-color:var(--p-primary);background:var(--p-primary-lite);color:var(--p-primary)}
+
+
+/* Table row hover */
+.data-table tbody tr{transition:background var(--tr)}
+.data-table tbody tr:hover{background:var(--p-primary-lite)!important}
+.data-table tbody tr:hover td{color:var(--text)}
+
 </style>
 
 <!-- ═══════════════ SIDEBAR ═══════════════ -->
@@ -796,6 +832,21 @@ tr:hover td{background:var(--surface2);}
         <div class="sk sk-kpi"></div><div class="sk sk-kpi"></div>
         <div class="sk sk-kpi"></div><div class="sk sk-kpi"></div>
         <div class="sk sk-kpi"></div>
+      </div>
+      <!-- Trend chart MTD -->
+      <div class="sec mb16" id="ov-trend-sec">
+        <div class="sec-head">
+          <div class="sec-head-left">
+            <div class="sec-dot green"></div>
+            <span class="sec-title" id="ov-trend-title">Tren Harian MTD · IO / RE / PS</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><span style="width:10px;height:3px;background:#22c55e;display:inline-block;border-radius:2px"></span>PS</span>
+            <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><span style="width:10px;height:3px;background:#3b82f6;display:inline-block;border-radius:2px"></span>RE</span>
+            <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><span style="width:10px;height:3px;background:#f59e0b;display:inline-block;border-radius:2px;border-top:2px dashed #f59e0b;height:0"></span>IO</span>
+          </div>
+        </div>
+        <div class="sec-body"><div class="chart-wrap" style="height:220px"><canvas id="chartTrendMTD"></canvas></div></div>
       </div>
       <div class="cluster-grid" id="ov-clusters"></div>
       <div class="g2">
@@ -1132,6 +1183,89 @@ tr:hover td{background:var(--surface2);}
       
     </div>
     <div class="content">
+      <!-- Appearance Panel -->
+      <div class="sec" style="margin-bottom:20px">
+        <div class="sec-head">
+          <div class="sec-head-left"><div class="sec-dot purple"></div><span class="sec-title">Tampilan & Tema</span></div>
+          <button class="btn-sm" onclick="resetAppearance()" style="font-size:10.5px;padding:3px 10px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer">↺ Reset</button>
+        </div>
+        <div class="sec-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px">
+
+          <!-- Palet Warna -->
+          <div>
+            <div class="app-opt-label">Palet Warna</div>
+            <div class="app-palette-grid" id="app-palettes">
+              <button class="app-pal active" data-pal="blue" onclick="setAppearance('palette','blue',this)">
+                <span class="app-pal-dot" style="background:#1D4ED8"></span>
+                <span class="app-pal-dot" style="background:#6366f1"></span>
+                <span>Blue / Professional</span>
+              </button>
+              <button class="app-pal" data-pal="indigo" onclick="setAppearance('palette','indigo',this)">
+                <span class="app-pal-dot" style="background:#4338ca"></span>
+                <span class="app-pal-dot" style="background:#7c3aed"></span>
+                <span>Indigo / Modern</span>
+              </button>
+              <button class="app-pal" data-pal="emerald" onclick="setAppearance('palette','emerald',this)">
+                <span class="app-pal-dot" style="background:#059669"></span>
+                <span class="app-pal-dot" style="background:#0891b2"></span>
+                <span>Emerald / Operations</span>
+              </button>
+              <button class="app-pal" data-pal="teal" onclick="setAppearance('palette','teal',this)">
+                <span class="app-pal-dot" style="background:#0891B2"></span>
+                <span class="app-pal-dot" style="background:#06b6d4"></span>
+                <span>Teal / Clean</span>
+              </button>
+              <button class="app-pal" data-pal="violet" onclick="setAppearance('palette','violet',this)">
+                <span class="app-pal-dot" style="background:#7c3aed"></span>
+                <span class="app-pal-dot" style="background:#c026d3"></span>
+                <span>Violet / Premium</span>
+              </button>
+              <button class="app-pal" data-pal="neutral" onclick="setAppearance('palette','neutral',this)">
+                <span class="app-pal-dot" style="background:#475569"></span>
+                <span class="app-pal-dot" style="background:#64748b"></span>
+                <span>Neutral / Mono</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Font -->
+          <div>
+            <div class="app-opt-label">Font</div>
+            <div class="app-opt-group" id="app-fonts">
+              <button class="app-opt active" data-opt="plus-jakarta" onclick="setAppearance('font','plus-jakarta',this)">Plus Jakarta Sans</button>
+              <button class="app-opt" data-opt="inter" onclick="setAppearance('font','inter',this)">Inter</button>
+              <button class="app-opt" data-opt="roboto" onclick="setAppearance('font','roboto',this)">Roboto</button>
+              <button class="app-opt" data-opt="system" onclick="setAppearance('font','system',this)">System Default</button>
+            </div>
+
+            <div class="app-opt-label" style="margin-top:14px">Kepadatan Tampilan</div>
+            <div class="app-opt-group" id="app-density">
+              <button class="app-opt" data-opt="compact" onclick="setAppearance('density','compact',this)">Compact</button>
+              <button class="app-opt active" data-opt="comfortable" onclick="setAppearance('density','comfortable',this)">Comfortable</button>
+              <button class="app-opt" data-opt="large" onclick="setAppearance('density','large',this)">Large</button>
+            </div>
+          </div>
+
+          <!-- Radius & Efek -->
+          <div>
+            <div class="app-opt-label">Border Radius</div>
+            <div class="app-opt-group" id="app-radius">
+              <button class="app-opt" data-opt="subtle" onclick="setAppearance('radius','subtle',this)">Subtle</button>
+              <button class="app-opt active" data-opt="rounded" onclick="setAppearance('radius','rounded',this)">Rounded</button>
+              <button class="app-opt" data-opt="pill" onclick="setAppearance('radius','pill',this)">More Rounded</button>
+            </div>
+
+            <div class="app-opt-label" style="margin-top:14px">Intensitas Efek</div>
+            <div class="app-opt-group" id="app-effects">
+              <button class="app-opt" data-opt="minimal" onclick="setAppearance('effects','minimal',this)">Minimal</button>
+              <button class="app-opt active" data-opt="balanced" onclick="setAppearance('effects','balanced',this)">Balanced</button>
+              <button class="app-opt" data-opt="enhanced" onclick="setAppearance('effects','enhanced',this)">Enhanced</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <div class="g2">
         <div class="sec">
           <div class="sec-head"><div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Koneksi API</span></div></div>
@@ -1509,11 +1643,69 @@ function mkChart(id, cfg) {
   if (CHARTS[id]) CHARTS[id].destroy();
   const ctx = document.getElementById(id)?.getContext('2d');
   if (!ctx) return;
+
+  const isDark = document.documentElement.dataset.theme === 'dark'
+    || (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  const gridColor = isDark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
+  const tickColor = isDark ? '#64748B' : '#94A3B8';
+  const tooltipBg = isDark ? '#1E293B' : '#0F172A';
+
   const defaults = {
-    plugins: { legend: { labels: { font: { family: 'Inter', size: 11 }, boxWidth: 10, padding: 8 } } },
-    scales: {},
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 350, easing: 'easeOutQuart' },
+    plugins: {
+      legend: {
+        labels: {
+          font: { family: getComputedStyle(document.documentElement).getPropertyValue('--font').trim() || 'Plus Jakarta Sans', size: 11, weight: '600' },
+          boxWidth: 10, padding: 12, color: tickColor,
+          usePointStyle: true, pointStyleWidth: 9,
+        },
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: tooltipBg,
+        titleColor: '#F1F5F9',
+        bodyColor: '#94A3B8',
+        borderColor: 'rgba(255,255,255,.08)',
+        borderWidth: 1,
+        padding: { x: 12, y: 10 },
+        cornerRadius: 8,
+        titleFont: { size: 11, weight: '700' },
+        bodyFont: { size: 11, weight: '500' },
+        callbacks: {},
+        displayColors: true,
+        boxWidth: 8, boxHeight: 8,
+        usePointStyle: true,
+        mode: 'index',
+        intersect: false,
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: gridColor, drawBorder: false },
+        ticks: { color: tickColor, font: { size: 10.5, weight: '500' } },
+      },
+      y: {
+        grid: { color: gridColor, drawBorder: false },
+        ticks: { color: tickColor, font: { size: 10.5, weight: '500' } },
+        border: { dash: [3,3] },
+      },
+    },
   };
-  cfg.options = { ...defaults, ...cfg.options };
+
+  // Deep merge options
+  function deepMerge(target, source) {
+    if (!source) return target;
+    const out = { ...target };
+    for (const k of Object.keys(source)) {
+      if (source[k] && typeof source[k] === 'object' && !Array.isArray(source[k]) && target[k])
+        out[k] = deepMerge(target[k], source[k]);
+      else out[k] = source[k];
+    }
+    return out;
+  }
+  cfg.options = deepMerge(defaults, cfg.options || {});
   CHARTS[id] = new Chart(ctx, cfg);
 }
 
@@ -1656,6 +1848,9 @@ function renderOverview() {
     },
     options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10},maxTicksLimit:8}}}},
   });
+
+  // ── Trend chart harian MTD ─────────────────────────────
+  renderTrendChart();
 
   // Funnel
   if (bi.io > 0) {
@@ -2220,7 +2415,132 @@ function saveConfig() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────
-(function init() {
+(
+/* ════ APPEARANCE SYSTEM ════ */
+const PALETTES = {
+  blue:    {primary:'#1D4ED8', primaryD:'#1e40af', primaryLite:'#DBEAFE', accent:'#6366f1'},
+  indigo:  {primary:'#4338ca', primaryD:'#3730a3', primaryLite:'#EEF2FF', accent:'#7c3aed'},
+  emerald: {primary:'#059669', primaryD:'#047857', primaryLite:'#D1FAE5', accent:'#0891b2'},
+  teal:    {primary:'#0891B2', primaryD:'#0e7490', primaryLite:'#CFFAFE', accent:'#06b6d4'},
+  violet:  {primary:'#7c3aed', primaryD:'#6d28d9', primaryLite:'#EDE9FE', accent:'#c026d3'},
+  neutral: {primary:'#475569', primaryD:'#334155', primaryLite:'#F1F5F9', accent:'#64748b'},
+};
+const FONTS = {
+  'plus-jakarta': '"Plus Jakarta Sans",sans-serif',
+  'inter':        '"Inter",sans-serif',
+  'roboto':       '"Roboto",sans-serif',
+  'system':       '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
+};
+const DENSITY = {
+  compact:     {padContent:'12px 14px 24px', padCard:'10px', fontScale:'.9'},
+  comfortable: {padContent:'18px 20px 36px', padCard:'16px', fontScale:'1'},
+  large:       {padContent:'24px 26px 48px', padCard:'22px', fontScale:'1.08'},
+};
+const RADIUS = {
+  subtle:  {r:'6px',  rSm:'4px',  rLg:'8px'},
+  rounded: {r:'10px', rSm:'7px',  rLg:'14px'},
+  pill:    {r:'16px', rSm:'10px', rLg:'20px'},
+};
+const EFFECTS = {
+  minimal:  {sh:'0 1px 3px rgba(0,0,0,.06)', hoverSh:'0 4px 10px rgba(0,0,0,.07)', tr:'.12s'},
+  balanced: {sh:'0 1px 4px rgba(0,0,0,.08),0 4px 8px rgba(0,0,0,.04)', hoverSh:'0 6px 20px rgba(0,0,0,.09)', tr:'.18s'},
+  enhanced: {sh:'0 2px 8px rgba(0,0,0,.1),0 8px 24px rgba(0,0,0,.06)', hoverSh:'0 10px 30px rgba(0,0,0,.12)', tr:'.22s'},
+};
+
+let _APP = {palette:'blue', font:'plus-jakarta', density:'comfortable', radius:'rounded', effects:'balanced'};
+
+function loadAppearance() {
+  const saved = LS.get('appearance');
+  if (saved) try { _APP = {..._APP, ...JSON.parse(saved)}; } catch(e){}
+  applyAppearance();
+  syncAppearanceUI();
+}
+
+function saveAppearance() {
+  LS.set('appearance', JSON.stringify(_APP));
+}
+
+function applyAppearance() {
+  const r = document.documentElement;
+  const pal = PALETTES[_APP.palette] || PALETTES.blue;
+  r.style.setProperty('--p-primary', pal.primary);
+  r.style.setProperty('--p-primary-d', pal.primaryD);
+  r.style.setProperty('--p-primary-lite', pal.primaryLite);
+  r.style.setProperty('--p-accent', pal.accent);
+  // topbar active color
+  r.style.setProperty('--nav-active', pal.primary);
+
+  const den = DENSITY[_APP.density] || DENSITY.comfortable;
+  r.style.setProperty('--pad-content', den.padContent);
+  r.style.setProperty('--pad-card', den.padCard);
+  r.style.setProperty('--font-scale', den.fontScale);
+
+  const rad = RADIUS[_APP.radius] || RADIUS.rounded;
+  r.style.setProperty('--r', rad.r);
+  r.style.setProperty('--r-sm', rad.rSm);
+  r.style.setProperty('--r-lg', rad.rLg);
+
+  const eff = EFFECTS[_APP.effects] || EFFECTS.balanced;
+  r.style.setProperty('--sh-md', eff.sh);
+  r.style.setProperty('--effect-sh', eff.sh);
+  r.style.setProperty('--effect-hover-sh', eff.hoverSh);
+  r.style.setProperty('--tr', eff.tr);
+
+  // Font
+  const fontStack = FONTS[_APP.font] || FONTS['plus-jakarta'];
+  r.style.setProperty('--font', fontStack);
+  document.body.style.fontFamily = fontStack;
+
+  // Load Google Font if needed
+  if (_APP.font === 'inter' && !document.getElementById('gf-inter')) {
+    const l = document.createElement('link');
+    l.id = 'gf-inter'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+    document.head.appendChild(l);
+  } else if (_APP.font === 'roboto' && !document.getElementById('gf-roboto')) {
+    const l = document.createElement('link');
+    l.id = 'gf-roboto'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap';
+    document.head.appendChild(l);
+  }
+}
+
+function syncAppearanceUI() {
+  const sync = (groupId, val) => {
+    document.querySelectorAll('#'+groupId+' [data-opt],[data-pal]').forEach(b => {
+      const k = b.dataset.opt || b.dataset.pal;
+      b.classList.toggle('active', k === val);
+    });
+  };
+  sync('app-palettes', _APP.palette);
+  sync('app-fonts', _APP.font);
+  sync('app-density', _APP.density);
+  sync('app-radius', _APP.radius);
+  sync('app-effects', _APP.effects);
+}
+
+function setAppearance(type, value, btn) {
+  _APP[type === 'palette' ? 'palette' : type] = value;
+  if (type === 'palette') {
+    document.querySelectorAll('#app-palettes .app-pal').forEach(b => b.classList.remove('active'));
+  } else {
+    btn.closest('.app-opt-group').querySelectorAll('.app-opt').forEach(b => b.classList.remove('active'));
+  }
+  btn.classList.add('active');
+  applyAppearance();
+  saveAppearance();
+}
+
+function resetAppearance() {
+  _APP = {palette:'blue', font:'plus-jakarta', density:'comfortable', radius:'rounded', effects:'balanced'};
+  applyAppearance();
+  syncAppearanceUI();
+  saveAppearance();
+}
+/* ════ END APPEARANCE ════ */
+
+function init() {
+  loadAppearance();
   buildSTOFilter();
   const dsEl = document.getElementById('fDateStart');
   const deEl = document.getElementById('fDateEnd');
