@@ -2517,11 +2517,18 @@ function renderAbsen() {
     '<div class="empty"><div class="icon">📋</div><p>Belum ada yang absen hari ini.</p></div>';
 }
 
-// ─── ROLE-BASED SETTINGS ──────────────────────────────────
+// ─── ROLE-BASED UI ────────────────────────────────────────
 function applyRoleUI(role) {
   const isAdmin = role === 'admin';
-  const adminSec = document.getElementById('settings-admin-section');
-  if (adminSec) adminSec.style.display = isAdmin ? '' : 'none';
+  // Sembunyikan menu Pengaturan untuk viewer
+  document.querySelectorAll('.nav-link[data-page="settings"]').forEach(el => {
+    el.closest('.nav-item').style.display = isAdmin ? '' : 'none';
+  });
+  // Kalau viewer lagi di halaman settings, lempar ke overview
+  if (!isAdmin) {
+    const cur = document.querySelector('.nav-link.active')?.dataset?.page;
+    if (cur === 'settings') navigate('overview');
+  }
 }
 
 // ─── CHANGE PASSWORD ──────────────────────────────────────
