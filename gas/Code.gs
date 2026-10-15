@@ -92,15 +92,25 @@ function calcHariKerja(now) {
   return { total, elapsed, month: mon, year };
 }
 
-// ── YYYYMM string untuk filter ───────────────────────────────
-function getYearMonth(now, offsetMonths) {
+// ── Date range untuk filter (MoM apple-to-apple) ─────────────
+// Returns { start: "YYYYMM01", end: "YYYYMMDD" } untuk bulan tsb s/d tanggal yg sama
+function getDateRange(now, offsetMonths) {
   const tz  = CONFIG.TIMEZONE;
   const y   = parseInt(Utilities.formatDate(now, tz, 'yyyy'));
   const m   = parseInt(Utilities.formatDate(now, tz, 'MM'));
+  const d   = parseInt(Utilities.formatDate(now, tz, 'dd'));
   let yr = y, mo = m + offsetMonths;
   if (mo <= 0) { mo += 12; yr--; }
   if (mo > 12) { mo -= 12; yr++; }
-  return yr.toString() + mo.toString().padStart(2, '0');   // e.g. "202609"
+  // Clamp day to last day of target month
+  const lastDay = new Date(yr, mo, 0).getDate();
+  const endDay  = Math.min(d, lastDay);
+  const pad = n => n.toString().padStart(2, '0');
+  return {
+    start: `${yr}${pad(mo)}01`,
+    end:   `${yr}${pad(mo)}${pad(endDay)}`,
+    ym:    `${yr}${pad(mo)}`,
+  };
 }
 
 // ── Master SF ────────────────────────────────────────────────
@@ -149,12 +159,12 @@ function getPerformance() {
   const sfMap = {};
   sfList.forEach(sf => { sfMap[sf.kode.toLowerCase()] = sf; });
 
-  const thisYM = getYearMonth(now, 0);   // bulan ini, e.g. "202610"
-  const lastYM = getYearMonth(now, -1);  // bulan lalu, e.g. "202609"
+  // Apple-to-apple: bulan ini day 1–N vs bulan lalu day 1–N
+  const rangeIni  = getDateRange(now,  0);
+  const rangeLalu = getDateRange(now, -1);
 
-  // Semua data dari sheet Bulan_Ini, difilter per bulan
-  const ini  = parseBulan('Bulan_Ini', sfMap, thisYM);
-  const lalu = parseBulan('Bulan_Ini', sfMap, lastYM);
+  const ini  = parseBulan('Bulan_Ini', sfMap, rangeIni.start,  rangeIni.end);
+  const lalu = parseBulan('Bulan_Ini', sfMap, rangeLalu.start, rangeLalu.end);
 
   const hariKerja = calcHariKerja(now);
   const wsa       = calcWSATSA(sfMap);
@@ -220,9 +230,9 @@ function getPerformance() {
   };
 }
 
-// ── Parse Sheet dengan filter bulan (YYYYMM) ─────────────────
-function parseBulan(sheetName, sfMap, yearMonth) {
-  // yearMonth: string "202609" – filter by Tanggal IO (YYYYMMDD, kolom BW)
+// ── Parse Sheet dengan filter rentang tanggal (YYYYMMDD) ─────
+// startStr & endStr: "YYYYMMDD" – apple-to-apple MoM comparison
+function parseBulan(sheetName, sfMap, startStr, endStr) {
   const ws = ss().getSheetByName(sheetName);
   if (!ws) return {
     bySF:    {},
@@ -271,10 +281,10 @@ function parseBulan(sheetName, sfMap, yearMonth) {
     const r = rows[i];
     if (!r[C.status]) continue;
 
-    // Filter bulan berdasarkan Tanggal IO (format YYYYMMDD)
-    if (yearMonth && C.tanggalIO !== -1) {
-      const tgl = r[C.tanggalIO] ? r[C.tanggalIO].toString().replace(/-/g, '').substring(0, 6) : '';
-      if (!tgl || tgl !== yearMonth) continue;
+    // Filter rentang tanggal berdasarkan Tanggal IO (format YYYYMMDD)
+    if (startStr && C.tanggalIO !== -1) {
+      const tgl = r[C.tanggalIO] ? r[C.tanggalIO].toString().replace(/-/g, '').substring(0, 8) : '';
+      if (!tgl || tgl < startStr || tgl > endStr) continue;
     }
 
     const ch       = (C.channel2 !== -1 ? r[C.channel2] : '').toString().trim().toLowerCase();
