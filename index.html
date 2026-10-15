@@ -1062,8 +1062,9 @@ function handleTopSearch(val) {
 
 // ─── DATA HELPERS ─────────────────────────────────────────
 function filteredSF() {
-  if (!S.perf?.sfList) return [];
-  return S.perf.sfList.filter(sf => {
+  const list = S.perf?.sfPerformance || S.perf?.sfList || [];
+  if (!list.length) return [];
+  return list.filter(sf => {
     if (S.filter.cluster && sf.cluster !== S.filter.cluster) return false;
     if (S.filter.sto && sf.sto !== S.filter.sto) return false;
     return true;
