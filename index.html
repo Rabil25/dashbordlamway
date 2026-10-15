@@ -440,11 +440,22 @@ tr:hover td{background:var(--surface2);}
 .filter-group-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
 
 /* ─── MAP ─────────────────────────────────────────────────────── */
-#map-container{height:460px;border-radius:0 0 var(--r) var(--r);overflow:hidden;position:relative;}
+.peta-statsbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--border);
+}
+#peta-sec{width:100%;}
+#map-container{
+  width:100%;
+  height:calc(100vh - 164px);min-height:480px;max-height:760px;
+  overflow:hidden;position:relative;
+}
 .map-legend{
-  position:absolute;bottom:20px;right:12px;z-index:800;
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  position:absolute;bottom:24px;right:16px;z-index:800;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+  border:1px solid rgba(0,0,0,.1);border-radius:var(--r-sm);
   padding:8px 12px;font-size:11px;box-shadow:var(--sh-md);
+  color:#0F172A;
 }
 .map-legend-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
 .map-legend-row:last-child{margin-bottom:0;}
@@ -478,7 +489,7 @@ tr:hover td{background:var(--surface2);}
   .target-grid{grid-template-columns:1fr;}
   .tb-search-wrap{display:none;}
   .ph-sub{display:none;}
-  #map-container{height:320px;}
+  #map-container{height:60vh;min-height:300px;}
 }
 </style>
 
@@ -824,22 +835,24 @@ tr:hover td{background:var(--surface2);}
         <button class="btn-ph btn-ph-outline" onclick="S.orders=null;loadOrders(true).then(renderPeta)">↻ Muat Data</button>
       </div>
     </div>
-    <div class="content">
-      <div class="sec" id="peta-loading-sec" style="display:none">
-        <div class="sec-body"><div class="sk sk-row"></div><div class="sk sk-row"></div></div>
-      </div>
-      <div class="sec" id="peta-sec">
-        <div class="sec-head">
-          <div class="sec-head-left"><div class="sec-dot green"></div><span class="sec-title" id="peta-title">Peta Lokasi Orders</span></div>
-          <div class="map-stats" id="peta-stats" style="padding:0;border:none;font-size:11px;gap:10px;"></div>
+    <!-- peta stats bar -->
+    <div class="peta-statsbar" id="peta-statsbar">
+      <div class="sec-head-left" style="flex:1"><div class="sec-dot green"></div><span class="sec-title" id="peta-title">Peta Lokasi Orders</span></div>
+      <div class="map-stats" id="peta-stats" style="padding:0;border:none;font-size:11px;gap:10px;"></div>
+    </div>
+    <!-- skeleton loading -->
+    <div id="peta-loading-sec" style="display:none;padding:16px 20px">
+      <div class="sec" style="margin-bottom:0"><div class="sec-body"><div class="sk sk-row"></div><div class="sk sk-row"></div></div></div>
+    </div>
+    <!-- full-width map -->
+    <div id="peta-sec">
+        <div id="map-container">
+          <div class="map-legend">
+            <div class="map-legend-row"><div class="map-dot" style="background:#16A34A"></div>PS (Put In Service)</div>
+            <div class="map-legend-row"><div class="map-dot" style="background:#1D4ED8"></div>RE (Register)</div>
+            <div class="map-legend-row"><div class="map-dot" style="background:#D97706"></div>IO saja</div>
+          </div>
         </div>
-        <div id="map-container"></div>
-        <div class="map-legend">
-          <div class="map-legend-row"><div class="map-dot" style="background:#16A34A"></div>PS (Put In Service)</div>
-          <div class="map-legend-row"><div class="map-dot" style="background:#1D4ED8"></div>RE (Register)</div>
-          <div class="map-legend-row"><div class="map-dot" style="background:#D97706"></div>IO saja</div>
-        </div>
-      </div>
     </div>
   </div>
 
