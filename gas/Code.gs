@@ -68,27 +68,18 @@ function fmtDate(d) {
   return Utilities.formatDate(new Date(d), CONFIG.TIMEZONE, 'yyyy-MM-dd');
 }
 
-// ── Hitung Hari Kerja (Senin-Jumat) ─────────────────────────
-function calcHariKerja(now) {
-  const tz   = CONFIG.TIMEZONE;
-  const year = parseInt(Utilities.formatDate(now, tz, 'yyyy'));
-  const mon  = parseInt(Utilities.formatDate(now, tz, 'MM'));
-  const day  = parseInt(Utilities.formatDate(now, tz, 'dd'));
-
-  // Hari kerja senin-jumat
-  function isHK(d) { const w = d.getDay(); return w >= 1 && w <= 5; }
-
-  const firstDay = new Date(year, mon - 1, 1);
-  const lastDay  = new Date(year, mon, 0); // last day of month
-
-  let total = 0, elapsed = 0;
-  for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-    if (isHK(d)) {
-      total++;
-      if (d.getDate() <= day) elapsed++;
-    }
-  }
-  return { total, elapsed, month: mon, year };
+// ── Hitung Hari berdasarkan rentang filter (semua hari kalender) ──
+function calcHariRange(startStr, endStr) {
+  // startStr / endStr: "YYYYMMDD"
+  const y  = parseInt(startStr.substring(0, 4));
+  const m  = parseInt(startStr.substring(4, 6));
+  const d1 = new Date(y, m - 1, parseInt(startStr.substring(6, 8)));
+  const d2 = new Date(parseInt(endStr.substring(0, 4)),
+                      parseInt(endStr.substring(4, 6)) - 1,
+                      parseInt(endStr.substring(6, 8)));
+  const elapsed  = Math.round((d2 - d1) / 86400000) + 1;  // inklusif
+  const total    = new Date(y, m, 0).getDate();            // total hari di bulan
+  return { total, elapsed, month: m, year: y };
 }
 
 // ── Date range untuk filter (MoM apple-to-apple) ─────────────
@@ -204,7 +195,7 @@ function getPerformance(params) {
   const ini  = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter, stoFilter, kabFilter);
   const lalu = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter, kabFilter);
 
-  const hariKerja = calcHariKerja(now);
+  const hariKerja = calcHariRange(startIni, endIni);
   const wsa       = calcWSATSA(sfMap);
 
   const allKodes = new Set([

@@ -1504,9 +1504,9 @@ function renderWokPerf() {
 
   document.getElementById('wok-hk-info').innerHTML = `
     <div class="hk-pill"><span>Bulan</span>${hk.month}/${hk.year}</div>
-    <div class="hk-pill"><span>HK Berjalan</span>${hk.elapsed}</div>
-    <div class="hk-pill"><span>Total HK</span>${hk.total}</div>
-    <div class="hk-pill"><span>Sisa HK</span>${(hk.total||0)-(hk.elapsed||0)}</div>`;
+    <div class="hk-pill"><span>Hari Range</span>${hk.elapsed}</div>
+    <div class="hk-pill"><span>Total Hari</span>${hk.total}</div>
+    <div class="hk-pill"><span>Sisa Hari</span>${(hk.total||0)-(hk.elapsed||0)}</div>`;
 
   const CLUSTERS = {
     'Lampung Barat':{ kabs:['TANGGAMUS','LAMPUNG BARAT','PESISIR BARAT'],cls:'lb' },
