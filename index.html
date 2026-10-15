@@ -1309,14 +1309,14 @@ function renderOverview() {
   const sfs = filteredSF();
   const targets = getTargets();
 
-  const bi = sfs.reduce((a, sf) => ({
-    io:a.io+sf.bulanIni.io, ps:a.ps+sf.bulanIni.ps,
-    wsa:a.wsa+sf.bulanIni.wsa, re:a.re+sf.bulanIni.re,
-  }), {io:0,ps:0,wsa:0,re:0});
-  const bl = sfs.reduce((a, sf) => ({
-    io:a.io+sf.bulanLalu.io, ps:a.ps+sf.bulanLalu.ps,
-    wsa:a.wsa+sf.bulanLalu.wsa, re:a.re+sf.bulanLalu.re,
-  }), {io:0,ps:0,wsa:0,re:0});
+  const bi = sfs.reduce((a, sf) => {
+    const x = sf.bulanIni || {};
+    return {io:a.io+(x.io||0), ps:a.ps+(x.ps||0), wsa:a.wsa+(x.wsa||0), re:a.re+(x.re||0)};
+  }, {io:0,ps:0,wsa:0,re:0});
+  const bl = sfs.reduce((a, sf) => {
+    const x = sf.bulanLalu || {};
+    return {io:a.io+(x.io||0), ps:a.ps+(x.ps||0), wsa:a.wsa+(x.wsa||0), re:a.re+(x.re||0)};
+  }, {io:0,ps:0,wsa:0,re:0});
 
   // Compute targets
   const hk = d.hariKerja || {};
@@ -1375,8 +1375,8 @@ function renderOverview() {
     .filter(([n]) => !S.filter.cluster || n === S.filter.cluster)
     .map(([clName, cfg]) => {
       const clSF = sfs.filter(sf => sf.cluster === clName);
-      const cBi = clSF.reduce((a,sf) => ({io:a.io+sf.bulanIni.io,ps:a.ps+sf.bulanIni.ps,wsa:a.wsa+sf.bulanIni.wsa,re:a.re+sf.bulanIni.re}),{io:0,ps:0,wsa:0,re:0});
-      const cBl = clSF.reduce((a,sf) => ({io:a.io+sf.bulanLalu.io,ps:a.ps+sf.bulanLalu.ps,wsa:a.wsa+sf.bulanLalu.wsa}),{io:0,ps:0,wsa:0});
+      const cBi = clSF.reduce((a,sf) => { const x=sf.bulanIni||{}; return {io:a.io+(x.io||0),ps:a.ps+(x.ps||0),wsa:a.wsa+(x.wsa||0),re:a.re+(x.re||0)}; },{io:0,ps:0,wsa:0,re:0});
+      const cBl = clSF.reduce((a,sf) => { const x=sf.bulanLalu||{}; return {io:a.io+(x.io||0),ps:a.ps+(x.ps||0),wsa:a.wsa+(x.wsa||0)}; },{io:0,ps:0,wsa:0});
       const ck = cBi.io ? Math.round(cBi.ps/cBi.io*100) : 0;
       const cTgt = cfg.kabs.reduce((a,k)=>a+(tgts[k]||0),0);
       const cPct = cTgt ? Math.min(Math.round(cBi.ps/cTgt*100),100) : 0;
@@ -1398,7 +1398,7 @@ function renderOverview() {
     data:{
       labels:kabData.map(k=>k.kabupaten.charAt(0)+k.kabupaten.slice(1).toLowerCase()),
       datasets:[{
-        label:'PS',data:kabData.map(k=>k.bulanIni.ps),
+        label:'PS',data:kabData.map(k=>(k.bulanIni||{}).ps||0),
         backgroundColor:kabData.map(k=>k.cluster==='Lampung Barat'?CC.blue:CC.amber),
         borderRadius:4,
       }],
