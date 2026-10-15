@@ -2414,8 +2414,6 @@ function saveConfig() {
   navigate('overview'); loadPerformance();
 }
 
-// ─── INIT ─────────────────────────────────────────────────
-(
 /* ════ APPEARANCE SYSTEM ════ */
 const PALETTES = {
   blue:    {primary:'#1D4ED8', primaryD:'#1e40af', primaryLite:'#DBEAFE', accent:'#6366f1'},
@@ -2539,6 +2537,8 @@ function resetAppearance() {
 }
 /* ════ END APPEARANCE ════ */
 
+// ─── INIT ─────────────────────────────────────────────────
+(
 function init() {
   loadAppearance();
   buildSTOFilter();
