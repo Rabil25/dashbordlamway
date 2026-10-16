@@ -447,8 +447,9 @@ tbody tr:hover td{background:var(--surface2);}
   background:var(--surface2);color:var(--text2);font-weight:600;font-size:9.5px;
   text-align:center;position:sticky;top:0;z-index:2;
 }
-/* --- First-row group header (RE per Hari / PS per Hari) --- */
-.sf-scorecard-wrap .grp-head th{background:var(--sb-bg);color:var(--text2);font-size:9px;letter-spacing:.03em;}
+/* --- First-row group header: rowspan cells keep surface2, only span cells get colored --- */
+.sf-scorecard-wrap .grp-hdr-re{background:rgba(32,107,196,.09)!important;border-bottom:2px solid rgba(32,107,196,.3)!important;color:#2060b8;font-weight:700;}
+.sf-scorecard-wrap .grp-hdr-ps{background:rgba(12,166,120,.09)!important;border-bottom:2px solid rgba(12,166,120,.3)!important;color:#0ca678;font-weight:700;}
 
 /* --- Sticky frozen columns — td --- */
 .sf-scorecard-wrap td.fr{
@@ -487,8 +488,10 @@ tbody tr:hover td{background:var(--surface2);}
 
 .sf-scorecard-wrap .day-val {color:var(--text1);}
 .sf-scorecard-wrap .day-zero{opacity:.3;}
-.sf-scorecard-wrap .s-re{background:rgba(32,107,196,.05);}
-.sf-scorecard-wrap .s-ps{background:rgba(12,166,120,.05);}
+.sf-scorecard-wrap .s-re{background:rgba(32,107,196,.07);}
+.sf-scorecard-wrap .s-ps{background:rgba(12,166,120,.07);}
+.sf-scorecard-wrap .re-cell{background:rgba(32,107,196,.04);}
+.sf-scorecard-wrap .ps-cell{background:rgba(12,166,120,.04);}
 .sf-scorecard-wrap tbody tr:hover .c-day,.sf-scorecard-wrap tbody tr:hover .c-ttl{filter:brightness(1.06);}
 .sf-scorecard-wrap .sf-sc-name{font-size:10.5px;font-weight:600;color:var(--text1);line-height:1.3;}
 .sf-scorecard-wrap .sf-sc-kode{font-size:9px;color:var(--text2);line-height:1.2;}
@@ -2616,11 +2619,11 @@ function renderSFScorecard(sfs) {
 
     const reCells = days.map(d => {
       const v = dailyRE[d] || 0;
-      return `<td class="c-day s-re${v ? ' day-val' : ' day-zero'}">${v || '·'}</td>`;
+      return `<td class="c-day re-cell${v ? ' day-val' : ' day-zero'}">${v || '·'}</td>`;
     }).join('');
     const psCells = days.map(d => {
       const v = dailyPS[d] || 0;
-      return `<td class="c-day s-ps${v ? ' day-val' : ' day-zero'}">${v || '·'}</td>`;
+      return `<td class="c-day ps-cell${v ? ' day-val' : ' day-zero'}">${v || '·'}</td>`;
     }).join('');
 
     return `<tr>
@@ -2634,9 +2637,9 @@ function renderSFScorecard(sfs) {
       <td class="c-lvlm"><span class="sf-level-badge ${lvLM.cls}">${lvLM.level}</span></td>
       <td class="c-tgt tnum">${target}</td>
       ${reCells}
-      <td class="c-ttl s-re tnum">${totalRE}</td>
+      <td class="c-ttl re-cell tnum">${totalRE}</td>
       ${psCells}
-      <td class="c-ttl s-ps tnum">${totalPS}</td>
+      <td class="c-ttl ps-cell tnum">${totalPS}</td>
       <td class="c-ach tnum"><span class="${achCls}">${achPct}%</span></td>
       <td class="c-grw tnum"><span class="${growCls}">${growStr}</span></td>
       <td class="c-nlv"><span class="sf-level-badge ${newLv.cls}">${newLv.level}</span></td>
@@ -2644,29 +2647,22 @@ function renderSFScorecard(sfs) {
     </tr>`;
   }).join('');
 
-  const nRE = days.length + 1; // RE days + Total
-  const nPS = days.length + 1; // PS days + Total
+  const nRE = days.length + 1;
+  const nPS = days.length + 1;
 
   document.getElementById('tbl-sf').innerHTML = `
     <div class="sf-scorecard-wrap">
       <table>
-        <colgroup>
-          <col class="c-no"><col class="c-sf">
-          <col class="c-tl"><col class="c-m1"><col class="c-lvlm"><col class="c-tgt">
-          ${days.map(() => '<col class="c-day">').join('')}<col class="c-ttl">
-          ${days.map(() => '<col class="c-day">').join('')}<col class="c-ttl">
-          <col class="c-ach"><col class="c-grw"><col class="c-nlv"><col class="c-aksi">
-        </colgroup>
         <thead>
-          <tr class="grp-head">
+          <tr>
             <th class="fr c-no" rowspan="2">#</th>
             <th class="fr c-sf" rowspan="2">Nama SF</th>
-            <th class="c-tl"  rowspan="2">TL</th>
-            <th class="c-m1"  rowspan="2">M-1</th>
+            <th class="c-tl"   rowspan="2">TL</th>
+            <th class="c-m1"   rowspan="2">M-1</th>
             <th class="c-lvlm" rowspan="2">Level LM</th>
             <th class="c-tgt"  rowspan="2">Target</th>
-            <th colspan="${nRE}" class="s-re" style="border-bottom:2px solid rgba(32,107,196,.25)">RE per Hari</th>
-            <th colspan="${nPS}" class="s-ps" style="border-bottom:2px solid rgba(12,166,120,.25)">PS per Hari</th>
+            <th colspan="${nRE}" class="grp-hdr-re">RE per Hari</th>
+            <th colspan="${nPS}" class="grp-hdr-ps">PS per Hari</th>
             <th class="c-ach"  rowspan="2">Ach%</th>
             <th class="c-grw"  rowspan="2">Growth%</th>
             <th class="c-nlv"  rowspan="2">New Level</th>
