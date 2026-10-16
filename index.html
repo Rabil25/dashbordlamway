@@ -2604,6 +2604,14 @@ function renderSFScorecard(sfs) {
     const achPct  = target ? Math.round(totalPS / target * 100) : 0;
     const newLv   = sfLevel(totalPS);
 
+    // Konseling: berdasarkan pace vs target proporsional (bukan level)
+    // targetHarian = target / totalHariKerja; expectedPS = targetHarian * elapsed
+    const totalHK  = hk.total || elapsed || 1;
+    const expectedPS = elapsed > 0 ? (target * elapsed / totalHK) : target;
+    const paceRatio  = expectedPS > 0 ? totalPS / expectedPS : (totalPS > 0 ? 1 : 0);
+    const aksiLabel  = paceRatio >= 0.9 ? 'On Track' : paceRatio >= 0.6 ? 'Couching' : 'Counseling';
+    const aksiCls    = aksiLabel === 'On Track' ? 'sf-act-ok' : aksiLabel === 'Couching' ? 'sf-act-coach' : 'sf-act-counsel';
+
     let growStr = '—';
     if (m1 > 0) {
       const g = Math.round((totalPS - m1) / m1 * 100);
@@ -2612,7 +2620,6 @@ function renderSFScorecard(sfs) {
 
     const achCls  = achPct >= 100 ? 'sf-act-ok' : achPct >= 60 ? 'sf-act-coach' : 'sf-act-counsel';
     const growCls = (growStr === '—' || growStr.startsWith('+')) ? 'sf-act-ok' : 'sf-act-counsel';
-    const aksiCls = newLv.action === 'On Track' ? 'sf-act-ok' : newLv.action === 'Couching' ? 'sf-act-coach' : 'sf-act-counsel';
 
     const dailyRE = bi.dailyRE || {};
     const dailyPS = bi.dailyPS || {};
@@ -2643,7 +2650,7 @@ function renderSFScorecard(sfs) {
       <td class="c-ach tnum"><span class="${achCls}">${achPct}%</span></td>
       <td class="c-grw tnum"><span class="${growCls}">${growStr}</span></td>
       <td class="c-nlv"><span class="sf-level-badge ${newLv.cls}">${newLv.level}</span></td>
-      <td class="c-aksi"><span class="sf-action ${aksiCls}">${newLv.action}</span></td>
+      <td class="c-aksi"><span class="sf-action ${aksiCls}">${aksiLabel}</span></td>
     </tr>`;
   }).join('');
 
