@@ -504,9 +504,15 @@ function getPerformance(params) {
     endIni   = def.end;
   }
 
-  // MoM: same day-range, previous month
-  const startLalu = shiftMonthStr(startIni, -1);
-  const endLalu   = shiftMonthStr(endIni,   -1);
+  // MoM: FULL previous month (hari 1 s/d akhir bulan lalu)
+  // — bukan sekadar shift range, karena Level LM & growth harus pakai data penuh
+  const prevMonthBase = shiftMonthStr(startIni, -1);          // geser ke bulan lalu
+  const prevY = parseInt(prevMonthBase.substring(0, 4));
+  const prevM = parseInt(prevMonthBase.substring(4, 6));
+  const prevLastDay = new Date(prevY, prevM, 0).getDate();    // akhir bulan lalu
+  const pad2 = n => n.toString().padStart(2, '0');
+  const startLalu = `${prevY}${pad2(prevM)}01`;
+  const endLalu   = `${prevY}${pad2(prevM)}${pad2(prevLastDay)}`;
 
   const rangeIni  = { start: startIni, end: endIni };
   const rangeLalu = { start: startLalu, end: endLalu };
