@@ -412,6 +412,24 @@ tbody tr:hover td{background:var(--surface2);}
 .rank{font-size:11px;color:var(--muted);font-weight:600;text-align:right;width:24px;font-variant-numeric:tabular-nums;}
 .sf-name{font-weight:600;font-size:12.5px;color:var(--fg);}
 .sf-kode{font-size:10.5px;color:var(--muted);}
+
+/* ── SF LEVEL BADGES ──────────────────────────────────────── */
+.sf-level-badge{
+  display:inline-block;font-size:10px;font-weight:700;
+  padding:2px 8px;border-radius:10px;letter-spacing:.02em;
+  white-space:nowrap;cursor:default;
+}
+.sf-lvl-black   {background:#2d3748;color:#a0aec0;}
+.sf-lvl-bronze  {background:rgba(180,83,9,.12);color:#b45309;border:1px solid rgba(180,83,9,.2);}
+.sf-lvl-silver  {background:rgba(113,128,150,.12);color:#718096;border:1px solid rgba(113,128,150,.25);}
+.sf-lvl-gold    {background:rgba(245,158,11,.12);color:#d97706;border:1px solid rgba(245,158,11,.25);}
+.sf-lvl-platinum{background:rgba(32,107,196,.12);color:#206bc4;border:1px solid rgba(32,107,196,.2);}
+.sf-lvl-diamond {background:rgba(12,166,120,.12);color:#0ca678;border:1px solid rgba(12,166,120,.2);}
+/* SF Action text */
+.sf-action{font-size:10.5px;font-weight:500;white-space:nowrap;}
+.sf-act-ok      {color:var(--green);}
+.sf-act-coach   {color:var(--amber);}
+.sf-act-counsel {color:var(--red);font-weight:600;}
 .conv-wrap{display:flex;align-items:center;gap:6px;}
 .conv-track{flex:1;min-width:40px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
 .conv-fill{height:100%;background:var(--blue);border-radius:2px;}
@@ -2456,6 +2474,20 @@ function renderPerformance() {
   renderSF();
 }
 
+// ─── SF LEVEL CLASSIFICATION ─────────────────────────────
+function sfLevel(ps) {
+  if (ps <= 0)  return { level:'Black',    cls:'sf-lvl-black',    action:'Counseling' };
+  if (ps <= 9)  return { level:'Bronze',   cls:'sf-lvl-bronze',   action:'Couching'   };
+  if (ps <= 15) return { level:'Silver',   cls:'sf-lvl-silver',   action:'Couching'   };
+  if (ps <= 25) return { level:'Gold',     cls:'sf-lvl-gold',     action:'On Track'   };
+  if (ps <= 50) return { level:'Platinum', cls:'sf-lvl-platinum', action:'On Track'   };
+  return         { level:'Diamond',  cls:'sf-lvl-diamond',  action:'On Track'   };
+}
+function sfLevelRatio(ps, days) {
+  if (!days) return '—';
+  return (ps / days * 100).toFixed(0) + '%';
+}
+
 function renderSF() {
   const q = (document.getElementById('sfSearch')?.value||'').toLowerCase();
   let sfs = filteredSF().filter(sf => {
@@ -2468,12 +2500,23 @@ function renderSF() {
   if (S.sfPage > maxPage) S.sfPage = maxPage;
   const slice = sfs.slice(S.sfPage*PAGE,(S.sfPage+1)*PAGE);
 
+  // Days elapsed — from hariKerja of current data
+  const days = (S.perf?.hariKerja?.elapsed) || 0;
+
   document.getElementById('tbl-sf').innerHTML = `
     <table>
-      <thead><tr><th>#</th><th>Nama SF</th><th>STO</th><th class="text-right">IO</th><th class="text-right">RE</th><th class="text-right">PS</th><th class="text-right">WSA</th><th class="text-right">Konv.</th><th class="text-right">Δ PS</th></tr></thead>
+      <thead><tr>
+        <th>#</th><th>Nama SF</th><th>STO</th>
+        <th class="text-right">IO</th><th class="text-right">RE</th>
+        <th class="text-right">PS</th><th class="text-right">WSA</th>
+        <th class="text-right">Konv.</th><th class="text-right">Δ PS</th>
+        <th style="text-align:center">Level</th><th style="text-align:center">Aksi</th>
+      </tr></thead>
       <tbody>${slice.map((sf,i)=>{
         const konv=sf.bulanIni.io?Math.round(sf.bulanIni.ps/sf.bulanIni.io*100):0;
         const konvCls=konv>=60?'green':konv>=30?'amber':'red';
+        const lv = sfLevel(sf.bulanIni.ps);
+        const ratio = sfLevelRatio(sf.bulanIni.ps, days);
         return `<tr>
           <td class="rank">${S.sfPage*PAGE+i+1}</td>
           <td><div class="sf-name">${sf.nama}</div><div class="sf-kode">${sf.kode}</div></td>
@@ -2484,6 +2527,8 @@ function renderSF() {
           <td class="text-right tnum">${fmt(sf.bulanIni.wsa)}</td>
           <td><div class="conv-wrap"><div class="conv-track"><div class="conv-fill" style="width:${konv}%;background:var(--${konvCls})"></div></div><span style="font-size:10.5px;min-width:28px;text-align:right">${konv}%</span></div></td>
           <td class="text-right">${delta(sf.bulanIni.ps,sf.bulanLalu.ps)}</td>
+          <td style="text-align:center"><span class="sf-level-badge ${lv.cls}" title="Rasio ${ratio}">${lv.level}</span></td>
+          <td style="text-align:center"><span class="sf-action ${lv.action==='On Track'?'sf-act-ok':lv.action==='Couching'?'sf-act-coach':'sf-act-counsel'}">${lv.action}</span></td>
         </tr>`;
       }).join('')}</tbody>
     </table>`;
