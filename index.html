@@ -438,31 +438,60 @@ tbody tr:hover td{background:var(--surface2);}
 .sf-tab-active{background:var(--card-bg)!important;color:var(--text1)!important;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12);}
 
 /* SF Scorecard Table */
-.sf-scorecard-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;}
-.sf-scorecard-wrap table{border-collapse:collapse;font-size:11px;min-width:max-content;width:100%;}
-.sf-scorecard-wrap th,.sf-scorecard-wrap td{padding:5px 6px;border:1px solid var(--border-color);white-space:nowrap;vertical-align:middle;}
-.sf-scorecard-wrap th{background:var(--surface2);color:var(--text2);font-weight:600;font-size:10px;text-align:center;position:sticky;top:0;z-index:2;}
-.sf-scorecard-wrap th.sticky-col{position:sticky;z-index:3;background:var(--surface2);}
-.sf-scorecard-wrap td.sticky-col{position:sticky;z-index:1;background:var(--card-bg);}
-.sf-scorecard-wrap .col-no   {left:0;   min-width:28px;width:28px;text-align:center;}
-.sf-scorecard-wrap .col-kode {left:28px;min-width:70px;width:70px;}
-.sf-scorecard-wrap .col-nama {left:98px;min-width:130px;width:130px;}
-.sf-scorecard-wrap .col-tl   {left:228px;min-width:70px;width:70px;}
-.sf-scorecard-wrap .col-m1   {min-width:38px;text-align:right;}
-.sf-scorecard-wrap .col-lvlm {min-width:60px;text-align:center;}
-.sf-scorecard-wrap .col-tgt  {min-width:38px;text-align:right;}
-.sf-scorecard-wrap .col-day  {min-width:24px;text-align:center;font-size:10px;}
-.sf-scorecard-wrap .col-total{min-width:38px;text-align:right;font-weight:700;}
-.sf-scorecard-wrap .col-ach  {min-width:50px;text-align:right;}
-.sf-scorecard-wrap .col-grow {min-width:50px;text-align:right;}
-.sf-scorecard-wrap .col-newlv{min-width:62px;text-align:center;}
-.sf-scorecard-wrap .col-aksi {min-width:72px;text-align:center;}
-.sf-scorecard-wrap .day-val  {color:var(--text1);}
-.sf-scorecard-wrap .day-zero {color:var(--text3,var(--text2));opacity:.35;}
-.sf-scorecard-wrap .section-re{background:rgba(32,107,196,.04);}
-.sf-scorecard-wrap .section-ps{background:rgba(12,166,120,.04);}
-.sf-scorecard-wrap tr:hover td{filter:brightness(1.04);}
-.sf-scorecard-wrap .grp-head th{background:var(--sb-bg);color:var(--text2);font-size:10px;letter-spacing:.04em;}
+.sf-scorecard-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border-color);}
+.sf-scorecard-wrap table{border-collapse:collapse;font-size:10px;min-width:max-content;table-layout:fixed;}
+.sf-scorecard-wrap th,.sf-scorecard-wrap td{padding:4px 5px;border:1px solid var(--border-color);white-space:nowrap;vertical-align:middle;box-sizing:border-box;}
+
+/* --- Header: sticky vertically --- */
+.sf-scorecard-wrap thead th{
+  background:var(--surface2);color:var(--text2);font-weight:600;font-size:9.5px;
+  text-align:center;position:sticky;top:0;z-index:2;
+}
+/* --- First-row group header (RE per Hari / PS per Hari) --- */
+.sf-scorecard-wrap .grp-head th{background:var(--sb-bg);color:var(--text2);font-size:9px;letter-spacing:.03em;}
+
+/* --- Sticky frozen columns — td --- */
+.sf-scorecard-wrap td.fr{
+  position:sticky;z-index:1;
+  background:var(--card-bg);  /* solid, overrides section-re/ps */
+}
+/* dark override so sticky bg stays solid */
+@media(prefers-color-scheme:dark){.sf-scorecard-wrap td.fr{background:var(--card-bg,#1e2130);}}
+[data-theme="dark"]  .sf-scorecard-wrap td.fr{background:var(--card-bg,#1e2130);}
+[data-theme="light"] .sf-scorecard-wrap td.fr{background:var(--card-bg,#fff);}
+
+/* --- Sticky frozen columns — th (corner: sticky both) --- */
+.sf-scorecard-wrap thead th.fr{
+  z-index:4;  /* above normal th (z:2) and td.fr (z:1) */
+  background:var(--surface2);
+  /* top:0 already from thead th rule */
+}
+
+/* Column widths & left offsets */
+.sf-scorecard-wrap .c-no  {left:0;    width:28px;  min-width:28px;  text-align:center;}
+.sf-scorecard-wrap .c-sf  {left:28px; width:155px; min-width:155px;}  /* Nama+Kode merged */
+.sf-scorecard-wrap .c-tl  {min-width:82px;text-align:left;font-size:9.5px;}
+.sf-scorecard-wrap .c-m1  {min-width:34px;text-align:right;}
+.sf-scorecard-wrap .c-lvlm{min-width:56px;text-align:center;}
+.sf-scorecard-wrap .c-tgt {min-width:32px;text-align:right;}
+.sf-scorecard-wrap .c-day {min-width:20px;width:20px;text-align:center;font-size:9px;padding:4px 2px;}
+.sf-scorecard-wrap .c-ttl {min-width:34px;text-align:right;font-weight:700;}
+.sf-scorecard-wrap .c-ach {min-width:42px;text-align:right;}
+.sf-scorecard-wrap .c-grw {min-width:42px;text-align:right;}
+.sf-scorecard-wrap .c-nlv {min-width:56px;text-align:center;}
+.sf-scorecard-wrap .c-aksi{min-width:68px;text-align:center;}
+
+/* last frozen col gets a stronger right border as visual divider */
+.sf-scorecard-wrap .c-sf{border-right:2px solid var(--border-color)!important;}
+.sf-scorecard-wrap thead th.c-sf{border-right:2px solid var(--border-color)!important;}
+
+.sf-scorecard-wrap .day-val {color:var(--text1);}
+.sf-scorecard-wrap .day-zero{opacity:.3;}
+.sf-scorecard-wrap .s-re{background:rgba(32,107,196,.05);}
+.sf-scorecard-wrap .s-ps{background:rgba(12,166,120,.05);}
+.sf-scorecard-wrap tbody tr:hover .c-day,.sf-scorecard-wrap tbody tr:hover .c-ttl{filter:brightness(1.06);}
+.sf-scorecard-wrap .sf-sc-name{font-size:10.5px;font-weight:600;color:var(--text1);line-height:1.3;}
+.sf-scorecard-wrap .sf-sc-kode{font-size:9px;color:var(--text2);line-height:1.2;}
 
 .conv-wrap{display:flex;align-items:center;gap:6px;}
 .conv-track{flex:1;min-width:40px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
@@ -2552,84 +2581,100 @@ function renderSF() {
 }
 
 function renderSFScorecard(sfs) {
-  const hk    = S.perf?.hariKerja || {};
-  const elapsed = hk.elapsed || 0;          // hari berjalan, e.g. 16
+  const hk      = S.perf?.hariKerja || {};
+  const elapsed = hk.elapsed || 0;
   const maxDay  = elapsed > 0 ? elapsed : 31;
-  const days    = Array.from({length: maxDay}, (_,i) => i+1); // [1,2,...,maxDay]
+  const days    = Array.from({length: maxDay}, (_, i) => i + 1);
 
-  // Build header rows
-  const reHeaders = days.map(d=>`<th class="col-day section-re">${d}</th>`).join('');
-  const psHeaders = days.map(d=>`<th class="col-day section-ps">${d}</th>`).join('');
+  // Header day cells
+  const reHdrs = days.map(d => `<th class="c-day s-re">${d}</th>`).join('');
+  const psHdrs = days.map(d => `<th class="c-day s-ps">${d}</th>`).join('');
 
   const rows = sfs.map((sf, idx) => {
     const bi  = sf.bulanIni  || {};
     const bl  = sf.bulanLalu || {};
     const m1  = bl.ps || 0;
-    const lvLM    = sfLevel(m1);
-    const target  = LEVEL_TARGET[lvLM.level] || 5;
+    const lvLM   = sfLevel(m1);
+    const target = LEVEL_TARGET[lvLM.level] || 5;
     const totalRE = bi.re || 0;
     const totalPS = bi.ps || 0;
     const achPct  = target ? Math.round(totalPS / target * 100) : 0;
-    const growPct = m1 > 0 ? ((totalPS - m1) / m1 * 100).toFixed(0) : (totalPS > 0 ? '+∞' : '0');
     const newLv   = sfLevel(totalPS);
+
+    let growStr = '—';
+    if (m1 > 0) {
+      const g = Math.round((totalPS - m1) / m1 * 100);
+      growStr = (g >= 0 ? '+' : '') + g + '%';
+    } else if (totalPS > 0) { growStr = '+∞'; }
+
     const achCls  = achPct >= 100 ? 'sf-act-ok' : achPct >= 60 ? 'sf-act-coach' : 'sf-act-counsel';
-    const growNum = parseFloat(growPct);
-    const growCls = !isNaN(growNum) ? (growNum >= 0 ? 'sf-act-ok' : 'sf-act-counsel') : 'sf-act-ok';
-    const aksiCls = newLv.action==='On Track' ? 'sf-act-ok' : newLv.action==='Couching' ? 'sf-act-coach' : 'sf-act-counsel';
+    const growCls = (growStr === '—' || growStr.startsWith('+')) ? 'sf-act-ok' : 'sf-act-counsel';
+    const aksiCls = newLv.action === 'On Track' ? 'sf-act-ok' : newLv.action === 'Couching' ? 'sf-act-coach' : 'sf-act-counsel';
 
     const dailyRE = bi.dailyRE || {};
     const dailyPS = bi.dailyPS || {};
 
     const reCells = days.map(d => {
       const v = dailyRE[d] || 0;
-      return `<td class="col-day section-re ${v?'day-val':'day-zero'}">${v||'·'}</td>`;
+      return `<td class="c-day s-re${v ? ' day-val' : ' day-zero'}">${v || '·'}</td>`;
     }).join('');
     const psCells = days.map(d => {
       const v = dailyPS[d] || 0;
-      return `<td class="col-day section-ps ${v?'day-val':'day-zero'}">${v||'·'}</td>`;
+      return `<td class="c-day s-ps${v ? ' day-val' : ' day-zero'}">${v || '·'}</td>`;
     }).join('');
 
     return `<tr>
-      <td class="sticky-col col-no">${idx+1}</td>
-      <td class="sticky-col col-kode"><div class="sf-kode" style="font-size:11px">${sf.kode}</div></td>
-      <td class="sticky-col col-nama"><div class="sf-name" style="font-size:11px">${sf.nama}</div></td>
-      <td class="sticky-col col-tl" style="font-size:10.5px">${sf.tl||'—'}</td>
-      <td class="col-m1 tnum">${m1}</td>
-      <td class="col-lvlm"><span class="sf-level-badge ${lvLM.cls}">${lvLM.level}</span></td>
-      <td class="col-tgt tnum">${target}</td>
+      <td class="fr c-no tnum">${idx + 1}</td>
+      <td class="fr c-sf">
+        <div class="sf-sc-name">${sf.nama}</div>
+        <div class="sf-sc-kode">${sf.kode} · ${sf.sto}</div>
+      </td>
+      <td class="c-tl">${sf.tl || '—'}</td>
+      <td class="c-m1 tnum">${m1}</td>
+      <td class="c-lvlm"><span class="sf-level-badge ${lvLM.cls}">${lvLM.level}</span></td>
+      <td class="c-tgt tnum">${target}</td>
       ${reCells}
-      <td class="col-total tnum section-re">${totalRE}</td>
+      <td class="c-ttl s-re tnum">${totalRE}</td>
       ${psCells}
-      <td class="col-total tnum section-ps">${totalPS}</td>
-      <td class="col-ach tnum"><span class="${achCls}">${achPct}%</span></td>
-      <td class="col-grow tnum"><span class="${growCls}">${typeof growPct==='string'&&growPct.includes('∞')?growPct:(growNum>=0?'+':'')+growPct+'%'}</span></td>
-      <td class="col-newlv"><span class="sf-level-badge ${newLv.cls}">${newLv.level}</span></td>
-      <td class="col-aksi"><span class="sf-action ${aksiCls}">${newLv.action}</span></td>
+      <td class="c-ttl s-ps tnum">${totalPS}</td>
+      <td class="c-ach tnum"><span class="${achCls}">${achPct}%</span></td>
+      <td class="c-grw tnum"><span class="${growCls}">${growStr}</span></td>
+      <td class="c-nlv"><span class="sf-level-badge ${newLv.cls}">${newLv.level}</span></td>
+      <td class="c-aksi"><span class="sf-action ${aksiCls}">${newLv.action}</span></td>
     </tr>`;
   }).join('');
+
+  const nRE = days.length + 1; // RE days + Total
+  const nPS = days.length + 1; // PS days + Total
 
   document.getElementById('tbl-sf').innerHTML = `
     <div class="sf-scorecard-wrap">
       <table>
+        <colgroup>
+          <col class="c-no"><col class="c-sf">
+          <col class="c-tl"><col class="c-m1"><col class="c-lvlm"><col class="c-tgt">
+          ${days.map(() => '<col class="c-day">').join('')}<col class="c-ttl">
+          ${days.map(() => '<col class="c-day">').join('')}<col class="c-ttl">
+          <col class="c-ach"><col class="c-grw"><col class="c-nlv"><col class="c-aksi">
+        </colgroup>
         <thead>
           <tr class="grp-head">
-            <th class="sticky-col col-no" rowspan="2">#</th>
-            <th class="sticky-col col-kode" rowspan="2">Kode SF</th>
-            <th class="sticky-col col-nama" rowspan="2">Nama SF</th>
-            <th class="sticky-col col-tl" rowspan="2">TL</th>
-            <th class="col-m1" rowspan="2">M-1</th>
-            <th class="col-lvlm" rowspan="2">Level LM</th>
-            <th class="col-tgt" rowspan="2">Target</th>
-            <th colspan="${days.length+1}" class="section-re" style="border-bottom:2px solid rgba(32,107,196,.3)">RE per Hari</th>
-            <th colspan="${days.length+1}" class="section-ps" style="border-bottom:2px solid rgba(12,166,120,.3)">PS per Hari</th>
-            <th class="col-ach" rowspan="2">Ach%</th>
-            <th class="col-grow" rowspan="2">Growth%</th>
-            <th class="col-newlv" rowspan="2">New Level</th>
-            <th class="col-aksi" rowspan="2">Konseling</th>
+            <th class="fr c-no" rowspan="2">#</th>
+            <th class="fr c-sf" rowspan="2">Nama SF</th>
+            <th class="c-tl"  rowspan="2">TL</th>
+            <th class="c-m1"  rowspan="2">M-1</th>
+            <th class="c-lvlm" rowspan="2">Level LM</th>
+            <th class="c-tgt"  rowspan="2">Target</th>
+            <th colspan="${nRE}" class="s-re" style="border-bottom:2px solid rgba(32,107,196,.25)">RE per Hari</th>
+            <th colspan="${nPS}" class="s-ps" style="border-bottom:2px solid rgba(12,166,120,.25)">PS per Hari</th>
+            <th class="c-ach"  rowspan="2">Ach%</th>
+            <th class="c-grw"  rowspan="2">Growth%</th>
+            <th class="c-nlv"  rowspan="2">New Level</th>
+            <th class="c-aksi" rowspan="2">Konseling</th>
           </tr>
           <tr>
-            ${reHeaders}<th class="col-total section-re">Total</th>
-            ${psHeaders}<th class="col-total section-ps">Total</th>
+            ${reHdrs}<th class="c-ttl s-re">∑RE</th>
+            ${psHdrs}<th class="c-ttl s-ps">∑PS</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
