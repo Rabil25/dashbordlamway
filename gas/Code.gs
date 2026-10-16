@@ -542,7 +542,7 @@ function getPerformance(params) {
   const sfPerf = [];
   allKodes.forEach(kode => {
     const info = sfMap[kode] || {};
-    const i    = ini.bySF[kode]  || { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {} };
+    const i    = ini.bySF[kode]  || { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {}, dailyRE: {}, dailyPS: {} };
     const l    = lalu.bySF[kode] || { io: 0, re: 0, ps: 0, kendala: 0, produk: {} };
     const w    = wsa.bySF[kode]  || { bulanIni: 0, bulanLalu: 0 };
 
@@ -562,6 +562,8 @@ function getPerformance(params) {
         kendala: i.kendala,
         produk:  i.produk,
         kab:     i.kab,
+        dailyRE: i.dailyRE || {},
+        dailyPS: i.dailyPS || {},
       },
       bulanLalu: {
         io:  l.io,
@@ -767,12 +769,18 @@ function parseBulan(sheetName, sfMap, startStr, endStr, produkFilter, channelFil
     const kode    = rawKode.toString().trim().toLowerCase();
     if (!kode || kode === '#n/a') continue;
 
-    if (!bySF[kode]) bySF[kode] = { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {} };
+    if (!bySF[kode]) bySF[kode] = { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {}, dailyRE: {}, dailyPS: {} };
 
     if (countIO && valIO.includes('valid io')) bySF[kode].io++;
-    if (countRE && valRE.includes('valid re')) bySF[kode].re++;
+    if (countRE && valRE.includes('valid re')) {
+      bySF[kode].re++;
+      const dayRE = tglRE ? parseInt(tglRE.substring(6, 8)) : 0;
+      if (dayRE) bySF[kode].dailyRE[dayRE] = (bySF[kode].dailyRE[dayRE] || 0) + 1;
+    }
     if (countPS && valPS.includes('put in service')) {
       bySF[kode].ps++;
+      const dayPS = tglPS ? parseInt(tglPS.substring(6, 8)) : 0;
+      if (dayPS) bySF[kode].dailyPS[dayPS] = (bySF[kode].dailyPS[dayPS] || 0) + 1;
       if (kabRaw) bySF[kode].kab[kabRaw] = (bySF[kode].kab[kabRaw] || 0) + 1;
     }
     if (C.kendala !== -1 && r[C.kendala]) bySF[kode].kendala++;

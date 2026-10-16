@@ -430,6 +430,40 @@ tbody tr:hover td{background:var(--surface2);}
 .sf-act-ok      {color:var(--green);}
 .sf-act-coach   {color:var(--amber);}
 .sf-act-counsel {color:var(--red);font-weight:600;}
+
+/* SF View Tabs */
+.sf-view-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:7px;padding:3px;}
+.sf-tab-btn{border:none;background:transparent;color:var(--text2);font-size:12px;font-weight:500;padding:5px 12px;border-radius:5px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
+.sf-tab-btn:hover{background:var(--surface3);}
+.sf-tab-active{background:var(--card-bg)!important;color:var(--text1)!important;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+/* SF Scorecard Table */
+.sf-scorecard-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;}
+.sf-scorecard-wrap table{border-collapse:collapse;font-size:11px;min-width:max-content;width:100%;}
+.sf-scorecard-wrap th,.sf-scorecard-wrap td{padding:5px 6px;border:1px solid var(--border-color);white-space:nowrap;vertical-align:middle;}
+.sf-scorecard-wrap th{background:var(--surface2);color:var(--text2);font-weight:600;font-size:10px;text-align:center;position:sticky;top:0;z-index:2;}
+.sf-scorecard-wrap th.sticky-col{position:sticky;z-index:3;background:var(--surface2);}
+.sf-scorecard-wrap td.sticky-col{position:sticky;z-index:1;background:var(--card-bg);}
+.sf-scorecard-wrap .col-no   {left:0;   min-width:28px;width:28px;text-align:center;}
+.sf-scorecard-wrap .col-kode {left:28px;min-width:70px;width:70px;}
+.sf-scorecard-wrap .col-nama {left:98px;min-width:130px;width:130px;}
+.sf-scorecard-wrap .col-tl   {left:228px;min-width:70px;width:70px;}
+.sf-scorecard-wrap .col-m1   {min-width:38px;text-align:right;}
+.sf-scorecard-wrap .col-lvlm {min-width:60px;text-align:center;}
+.sf-scorecard-wrap .col-tgt  {min-width:38px;text-align:right;}
+.sf-scorecard-wrap .col-day  {min-width:24px;text-align:center;font-size:10px;}
+.sf-scorecard-wrap .col-total{min-width:38px;text-align:right;font-weight:700;}
+.sf-scorecard-wrap .col-ach  {min-width:50px;text-align:right;}
+.sf-scorecard-wrap .col-grow {min-width:50px;text-align:right;}
+.sf-scorecard-wrap .col-newlv{min-width:62px;text-align:center;}
+.sf-scorecard-wrap .col-aksi {min-width:72px;text-align:center;}
+.sf-scorecard-wrap .day-val  {color:var(--text1);}
+.sf-scorecard-wrap .day-zero {color:var(--text3,var(--text2));opacity:.35;}
+.sf-scorecard-wrap .section-re{background:rgba(32,107,196,.04);}
+.sf-scorecard-wrap .section-ps{background:rgba(12,166,120,.04);}
+.sf-scorecard-wrap tr:hover td{filter:brightness(1.04);}
+.sf-scorecard-wrap .grp-head th{background:var(--sb-bg);color:var(--text2);font-size:10px;letter-spacing:.04em;}
+
 .conv-wrap{display:flex;align-items:center;gap:6px;}
 .conv-track{flex:1;min-width:40px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;}
 .conv-fill{height:100%;background:var(--blue);border-radius:2px;}
@@ -1056,15 +1090,19 @@ tbody tr:hover td{background:var(--surface2);}
       </div>
       <div class="sec">
         <div class="sec-head">
-          <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Ranking SF</span></div>
+          <div class="sec-head-left"><div class="sec-dot blue"></div><span class="sec-title">Performance SF</span></div>
           <span class="count-badge" id="sf-count-label"></span>
         </div>
         <div class="sec-body">
-          <div class="search-row" style="display:flex;gap:8px;align-items:center;">
-            <input class="search-input" id="sfSearch" type="search" placeholder="Cari nama / kode / STO…" oninput="renderSF()" style="flex:1;">
+          <div class="search-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input class="search-input" id="sfSearch" type="search" placeholder="Cari nama / kode / STO…" oninput="renderSF()" style="flex:1;min-width:160px;">
+            <div class="sf-view-tabs">
+              <button id="sf-tab-scorecard" class="sf-tab-btn sf-tab-active" onclick="setSFView('scorecard')">📊 Scorecard</button>
+              <button id="sf-tab-ringkasan" class="sf-tab-btn" onclick="setSFView('ringkasan')">📋 Ringkasan</button>
+            </div>
             <button class="btn-refresh" onclick="exportSFCSV()">⬇ CSV</button>
           </div>
-          <div class="tbl-wrap" id="tbl-sf"></div>
+          <div id="tbl-sf"></div>
           <div class="pager" id="sf-pager"></div>
         </div>
       </div>
@@ -2488,22 +2526,126 @@ function sfLevelRatio(ps, days) {
   return (ps / days * 100).toFixed(0) + '%';
 }
 
+const LEVEL_TARGET = { Black:5, Bronze:15, Silver:20, Gold:30, Platinum:50, Diamond:65 };
+
+function setSFView(view) {
+  S.sfView = view;
+  document.getElementById('sf-tab-scorecard').classList.toggle('sf-tab-active', view==='scorecard');
+  document.getElementById('sf-tab-ringkasan').classList.toggle('sf-tab-active', view==='ringkasan');
+  S.sfPage = 0;
+  renderSF();
+}
+
 function renderSF() {
+  if (!S.sfView) S.sfView = 'scorecard';
   const q = (document.getElementById('sfSearch')?.value||'').toLowerCase();
-  let sfs = filteredSF().filter(sf => {
+  const sfs = filteredSF().filter(sf => {
     if (!q) return true;
     return sf.nama.toLowerCase().includes(q)||sf.kode.toLowerCase().includes(q)||sf.sto.toLowerCase().includes(q);
   });
-  const total = sfs.length;
-  document.getElementById('sf-count-label').textContent = `${total} SF`;
-  const PAGE = 20, maxPage = Math.max(0,Math.ceil(total/PAGE)-1);
+  document.getElementById('sf-count-label').textContent = `${sfs.length} SF`;
+  if (S.sfView === 'scorecard') {
+    renderSFScorecard(sfs);
+  } else {
+    renderSFRingkasan(sfs);
+  }
+}
+
+function renderSFScorecard(sfs) {
+  const hk    = S.perf?.hariKerja || {};
+  const elapsed = hk.elapsed || 0;          // hari berjalan, e.g. 16
+  const maxDay  = elapsed > 0 ? elapsed : 31;
+  const days    = Array.from({length: maxDay}, (_,i) => i+1); // [1,2,...,maxDay]
+
+  // Build header rows
+  const reHeaders = days.map(d=>`<th class="col-day section-re">${d}</th>`).join('');
+  const psHeaders = days.map(d=>`<th class="col-day section-ps">${d}</th>`).join('');
+
+  const rows = sfs.map((sf, idx) => {
+    const bi  = sf.bulanIni  || {};
+    const bl  = sf.bulanLalu || {};
+    const m1  = bl.ps || 0;
+    const lvLM    = sfLevel(m1);
+    const target  = LEVEL_TARGET[lvLM.level] || 5;
+    const totalRE = bi.re || 0;
+    const totalPS = bi.ps || 0;
+    const achPct  = target ? Math.round(totalPS / target * 100) : 0;
+    const growPct = m1 > 0 ? ((totalPS - m1) / m1 * 100).toFixed(0) : (totalPS > 0 ? '+∞' : '0');
+    const newLv   = sfLevel(totalPS);
+    const achCls  = achPct >= 100 ? 'sf-act-ok' : achPct >= 60 ? 'sf-act-coach' : 'sf-act-counsel';
+    const growNum = parseFloat(growPct);
+    const growCls = !isNaN(growNum) ? (growNum >= 0 ? 'sf-act-ok' : 'sf-act-counsel') : 'sf-act-ok';
+    const aksiCls = newLv.action==='On Track' ? 'sf-act-ok' : newLv.action==='Couching' ? 'sf-act-coach' : 'sf-act-counsel';
+
+    const dailyRE = bi.dailyRE || {};
+    const dailyPS = bi.dailyPS || {};
+
+    const reCells = days.map(d => {
+      const v = dailyRE[d] || 0;
+      return `<td class="col-day section-re ${v?'day-val':'day-zero'}">${v||'·'}</td>`;
+    }).join('');
+    const psCells = days.map(d => {
+      const v = dailyPS[d] || 0;
+      return `<td class="col-day section-ps ${v?'day-val':'day-zero'}">${v||'·'}</td>`;
+    }).join('');
+
+    return `<tr>
+      <td class="sticky-col col-no">${idx+1}</td>
+      <td class="sticky-col col-kode"><div class="sf-kode" style="font-size:11px">${sf.kode}</div></td>
+      <td class="sticky-col col-nama"><div class="sf-name" style="font-size:11px">${sf.nama}</div></td>
+      <td class="sticky-col col-tl" style="font-size:10.5px">${sf.tl||'—'}</td>
+      <td class="col-m1 tnum">${m1}</td>
+      <td class="col-lvlm"><span class="sf-level-badge ${lvLM.cls}">${lvLM.level}</span></td>
+      <td class="col-tgt tnum">${target}</td>
+      ${reCells}
+      <td class="col-total tnum section-re">${totalRE}</td>
+      ${psCells}
+      <td class="col-total tnum section-ps">${totalPS}</td>
+      <td class="col-ach tnum"><span class="${achCls}">${achPct}%</span></td>
+      <td class="col-grow tnum"><span class="${growCls}">${typeof growPct==='string'&&growPct.includes('∞')?growPct:(growNum>=0?'+':'')+growPct+'%'}</span></td>
+      <td class="col-newlv"><span class="sf-level-badge ${newLv.cls}">${newLv.level}</span></td>
+      <td class="col-aksi"><span class="sf-action ${aksiCls}">${newLv.action}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tbl-sf').innerHTML = `
+    <div class="sf-scorecard-wrap">
+      <table>
+        <thead>
+          <tr class="grp-head">
+            <th class="sticky-col col-no" rowspan="2">#</th>
+            <th class="sticky-col col-kode" rowspan="2">Kode SF</th>
+            <th class="sticky-col col-nama" rowspan="2">Nama SF</th>
+            <th class="sticky-col col-tl" rowspan="2">TL</th>
+            <th class="col-m1" rowspan="2">M-1</th>
+            <th class="col-lvlm" rowspan="2">Level LM</th>
+            <th class="col-tgt" rowspan="2">Target</th>
+            <th colspan="${days.length+1}" class="section-re" style="border-bottom:2px solid rgba(32,107,196,.3)">RE per Hari</th>
+            <th colspan="${days.length+1}" class="section-ps" style="border-bottom:2px solid rgba(12,166,120,.3)">PS per Hari</th>
+            <th class="col-ach" rowspan="2">Ach%</th>
+            <th class="col-grow" rowspan="2">Growth%</th>
+            <th class="col-newlv" rowspan="2">New Level</th>
+            <th class="col-aksi" rowspan="2">Konseling</th>
+          </tr>
+          <tr>
+            ${reHeaders}<th class="col-total section-re">Total</th>
+            ${psHeaders}<th class="col-total section-ps">Total</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  document.getElementById('sf-pager').innerHTML = '';
+}
+
+function renderSFRingkasan(sfs) {
+  const days = (S.perf?.hariKerja?.elapsed) || 0;
+  const PAGE = 20, maxPage = Math.max(0,Math.ceil(sfs.length/PAGE)-1);
   if (S.sfPage > maxPage) S.sfPage = maxPage;
   const slice = sfs.slice(S.sfPage*PAGE,(S.sfPage+1)*PAGE);
 
-  // Days elapsed — from hariKerja of current data
-  const days = (S.perf?.hariKerja?.elapsed) || 0;
-
   document.getElementById('tbl-sf').innerHTML = `
+    <div class="tbl-wrap">
     <table>
       <thead><tr>
         <th>#</th><th>Nama SF</th><th>STO</th>
@@ -2531,13 +2673,14 @@ function renderSF() {
           <td style="text-align:center"><span class="sf-action ${lv.action==='On Track'?'sf-act-ok':lv.action==='Couching'?'sf-act-coach':'sf-act-counsel'}">${lv.action}</span></td>
         </tr>`;
       }).join('')}</tbody>
-    </table>`;
+    </table></div>`;
 
-  document.getElementById('sf-pager').innerHTML = `
+  document.getElementById('sf-pager').innerHTML = maxPage > 0 ? `
     <button class="pg-btn" onclick="sfNav(-1)" ${S.sfPage===0?'disabled':''}>‹ Prev</button>
     <span>${S.sfPage+1} / ${maxPage+1}</span>
-    <button class="pg-btn" onclick="sfNav(1)" ${S.sfPage>=maxPage?'disabled':''}>Next ›</button>`;
+    <button class="pg-btn" onclick="sfNav(1)" ${S.sfPage>=maxPage?'disabled':''}>Next ›</button>` : '';
 }
+
 function sfNav(d){ S.sfPage+=d; renderSF(); }
 
 // ─── EXPORT CSV ──────────────────────────────────────────
