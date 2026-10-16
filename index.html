@@ -2469,10 +2469,10 @@ function exportSFCSV() {
 function exportOrdersCSV() {
   const orders = S.orders || [];
   if (!orders.length) { showToast('Belum ada data orders', 'warn'); return; }
-  const header = ['No','Tanggal IO','No Order','Nama Pelanggan','Alamat','Kab/Kota','STO','Kode SF','Nama SF','Produk','Channel','Status','Tanggal PS'];
+  const header = ['No','Tanggal IO','No Order','Kab/Kota','STO','Kode SF','Nama SF','Produk','Channel','Status','Tanggal PS'];
   const rows = orders.map((o, i) => [
-    i+1, o.tglIO||'', o.orderId||o.noOrder||'', o.nama||o.namaPelanggan||'', o.alamat||'', o.kabupaten||'',
-    o.sto||'', o.codeSF||o.kodeSF||'', o.namaSF||'', o.produk||'', o.channel||'',
+    i+1, o.tglIO||'', o.orderId||'', o.kabupaten||'',
+    o.sto||'', o.codeSF||'', o.namaSF||'', o.produk||'', o.channel||'',
     o.status||'', o.tglPS||''
   ]);
   const now = new Date().toISOString().slice(0,10);
