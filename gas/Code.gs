@@ -1248,4 +1248,3 @@ function getODP() {
 
   return { odp: result };
 }
-}
