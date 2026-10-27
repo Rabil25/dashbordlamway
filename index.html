@@ -6,6 +6,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════════
    IndiHome Dashboard — Tabler / Grafana inspired
@@ -1261,6 +1264,16 @@ tbody tr:hover td{background:var(--surface2);}
           <button class="pfp-sto" data-status="io" onclick="setPetaStatus(this,'io')">IO</button>
         </div>
         <button class="pfp-reload" onclick="S.orders=null;loadOrders(true).then(renderPeta)">↻ Muat Ulang</button>
+        <!-- ODP toggle -->
+        <div class="pfp-section-label" style="margin-top:10px">Layer ODP</div>
+        <div class="pfp-legend" style="padding:6px 0">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:var(--text)">
+            <input type="checkbox" id="odp-toggle" onchange="toggleODPLayer(this.checked)" style="width:14px;height:14px;cursor:pointer">
+            <span class="pfp-dot" style="background:#0ea5e9;width:10px;height:10px;border-radius:2px;flex-shrink:0"></span>
+            <span>Titik ODP</span>
+            <span class="pfp-leg-count" id="peta-ct-odp">—</span>
+          </label>
+        </div>
       </div>
       <!-- map area -->
       <div class="peta-map-area">
@@ -2863,7 +2876,10 @@ function renderPeta() {
   if (!mapEl || typeof L === 'undefined') return;
 
   // Init or reset map
-  if (_mapInstance) { _mapInstance.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.LayerGroup) _mapInstance.removeLayer(l); }); }
+  // reset ODP cluster reference agar renderODPLayer bisa re-add
+  if (_odpCluster && _mapInstance) { _mapInstance.removeLayer(_odpCluster); _odpCluster = null; }
+
+  if (_mapInstance) { _mapInstance.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.LayerGroup || (l._clustered !== undefined)) _mapInstance.removeLayer(l); }); }
   else {
     _mapInstance = L.map('map-container').setView([-4.85, 104.5], 9);
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -2910,6 +2926,81 @@ function renderPeta() {
     try { _mapInstance.fitBounds(bounds, { padding: [24, 24], maxZoom: 13 }); } catch(e) {}
   }
   setTimeout(() => _mapInstance && _mapInstance.invalidateSize(), 200);
+
+  // re-render ODP layer jika toggle aktif
+  const odpChk = document.getElementById('odp-toggle');
+  if (odpChk && odpChk.checked && _odpData) renderODPLayer(_odpData);
+}
+
+// ─── ODP LAYER ───────────────────────────────────────────
+let _odpData     = null;   // cache data ODP
+let _odpCluster  = null;   // MarkerCluster layer
+
+// Warna marker ODP berdasarkan OCC2
+function odpColor(occ2) {
+  // BLACK = kapasitas habis (0%), GREEN = ada slot tersedia
+  if (occ2 === 'BLACK') return '#1e293b';
+  if (occ2 === 'GREEN') return '#16a34a';
+  return '#0ea5e9'; // default biru untuk status lain
+}
+
+async function loadODP() {
+  if (_odpData) return _odpData;
+  try {
+    const res = await fetch(API + '?action=odp');
+    const json = await res.json();
+    _odpData = json.odp || [];
+    document.getElementById('peta-ct-odp').textContent = _odpData.length.toLocaleString('id');
+    return _odpData;
+  } catch(e) {
+    console.error('Gagal load ODP:', e);
+    return [];
+  }
+}
+
+function renderODPLayer(data) {
+  if (!_mapInstance) return;
+  // hapus layer lama jika ada
+  if (_odpCluster) { _mapInstance.removeLayer(_odpCluster); _odpCluster = null; }
+
+  _odpCluster = L.markerClusterGroup({
+    maxClusterRadius: 40,
+    iconCreateFunction: function(cluster) {
+      const cnt = cluster.getChildCount();
+      return L.divIcon({
+        html: `<div style="background:#0ea5e9;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)">${cnt}</div>`,
+        className: '', iconSize: [28, 28], iconAnchor: [14, 14]
+      });
+    }
+  });
+
+  data.forEach(o => {
+    const color = odpColor(o.occ2);
+    const icon = L.divIcon({
+      html: `<div style="width:8px;height:8px;background:${color};border:1.5px solid #fff;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,.5)"></div>`,
+      className: '', iconSize: [8, 8], iconAnchor: [4, 4]
+    });
+    const popup = `<div style="font-size:11px;line-height:1.5">
+      <strong>${o.odp || '—'}</strong><br>
+      Status: <b style="color:${color}">${o.occ2 || '—'}</b><br>
+      Avai: ${o.avai}<br>
+      ${o.desa ? o.desa + ', ' : ''}${o.kec ? o.kec + ', ' : ''}${o.kab || ''}
+    </div>`;
+    L.marker([o.lat, o.lng], { icon }).bindPopup(popup).addTo(_odpCluster);
+  });
+
+  _odpCluster.addTo(_mapInstance);
+}
+
+async function toggleODPLayer(show) {
+  if (!show) {
+    if (_odpCluster && _mapInstance) { _mapInstance.removeLayer(_odpCluster); _odpCluster = null; }
+    return;
+  }
+  // pastikan peta sudah ada
+  if (!_mapInstance) { renderPeta(); await new Promise(r => setTimeout(r, 300)); }
+  const data = await loadODP();
+  renderODPLayer(data);
 }
 
 // ─── PETA FILTER STATE ───────────────────────────────────

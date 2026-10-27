@@ -59,6 +59,7 @@ function doGet(e) {
       case 'kendala':       data = getKendala();                     break;
       case 'wilayah':       data = { wilayah: WILAYAH };             break;
       case 'orders':        data = getOrders(params);                break;
+      case 'odp':           data = getODP();                         break;
       case 'getUserList':   data = getUserList(params);              break;
       case 'getPendingCount': data = getPendingCount(params);        break;
       case 'getTargets':    data = getTargetsGAS();                  break;
@@ -1202,4 +1203,49 @@ function getAbsen() {
     .map(([date, count]) => ({ date, count }));
 
   return { today, trend: trendArr, count: today.length };
+}
+
+// ── ODP Layer — titik ODP dari sheet Update_ODP ─────────────────────────────
+function getODP() {
+  const ws = ss().getSheetByName('Update_ODP');
+  if (!ws) return { odp: [] };
+
+  const rows = ws.getDataRange().getValues();
+  if (rows.length < 2) return { odp: [] };
+
+  const hdr = rows[0].map(h => h.toString().trim().toUpperCase());
+  const col = name => hdr.indexOf(name);
+
+  const C = {
+    odp:  col('ODP'),
+    lat:  col('LATITUDE'),
+    lng:  col('LONGITUDE'),
+    occ2: col('OCC2'),
+    avai: col('AVAI'),
+    kab:  col('KAB'),
+    kec:  col('KEC'),
+    desa: col('DESA'),
+  };
+
+  const result = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const lat = parseFloat(r[C.lat]);
+    const lng = parseFloat(r[C.lng]);
+    if (isNaN(lat) || isNaN(lng)) continue;
+
+    result.push({
+      odp:  (r[C.odp]  || '').toString().trim(),
+      lat,
+      lng,
+      occ2: (r[C.occ2] || '').toString().trim().toUpperCase(),
+      avai: parseInt(r[C.avai]) || 0,
+      kab:  (r[C.kab]  || '').toString().trim(),
+      kec:  (r[C.kec]  || '').toString().trim(),
+      desa: (r[C.desa] || '').toString().trim(),
+    });
+  }
+
+  return { odp: result };
+}
 }
