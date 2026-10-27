@@ -504,18 +504,22 @@ function getPerformance(params) {
     endIni   = def.end;
   }
 
-  // MoM: FULL previous month (hari 1 s/d akhir bulan lalu)
-  // — bukan sekadar shift range, karena Level LM & growth harus pakai data penuh
-  const prevMonthBase = shiftMonthStr(startIni, -1);          // geser ke bulan lalu
+  // MoM: same day-range, previous month (untuk perbandingan WOK apples-to-apples)
+  const startLalu = shiftMonthStr(startIni, -1);
+  const endLalu   = shiftMonthStr(endIni,   -1);
+
+  // Full previous month — khusus untuk Level LM & M-1 SF scorecard
+  const prevMonthBase = shiftMonthStr(startIni, -1);
   const prevY = parseInt(prevMonthBase.substring(0, 4));
   const prevM = parseInt(prevMonthBase.substring(4, 6));
-  const prevLastDay = new Date(prevY, prevM, 0).getDate();    // akhir bulan lalu
+  const prevLastDay = new Date(prevY, prevM, 0).getDate();
   const pad2 = n => n.toString().padStart(2, '0');
-  const startLalu = `${prevY}${pad2(prevM)}01`;
-  const endLalu   = `${prevY}${pad2(prevM)}${pad2(prevLastDay)}`;
+  const startLaluFull = `${prevY}${pad2(prevM)}01`;
+  const endLaluFull   = `${prevY}${pad2(prevM)}${pad2(prevLastDay)}`;
 
-  const rangeIni  = { start: startIni, end: endIni };
-  const rangeLalu = { start: startLalu, end: endLalu };
+  const rangeIni      = { start: startIni,      end: endIni      };
+  const rangeLalu     = { start: startLalu,      end: endLalu     };
+  const rangeLaluFull = { start: startLaluFull,  end: endLaluFull };
 
   const produkFilter  = (params.produk  || '').toString().trim().toLowerCase();
   const channelFilter = (params.channel || '').toString().trim().toLowerCase();
@@ -527,8 +531,9 @@ function getPerformance(params) {
                           ? WILAYAH[clusterFilter].kabupaten
                           : [];
 
-  const ini  = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,  rangeIni.end,  produkFilter, channelFilter, stoFilter, kabFilter, kendalaFilter);
-  const lalu = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start, rangeLalu.end, produkFilter, channelFilter, stoFilter, kabFilter, kendalaFilter);
+  const ini      = parseBulan('Bulan_Ini',  sfMap, rangeIni.start,      rangeIni.end,      produkFilter, channelFilter, stoFilter, kabFilter, kendalaFilter);
+  const lalu     = parseBulan('Bulan_Lalu', sfMap, rangeLalu.start,     rangeLalu.end,     produkFilter, channelFilter, stoFilter, kabFilter, kendalaFilter);
+  const laluFull = parseBulan('Bulan_Lalu', sfMap, rangeLaluFull.start, rangeLaluFull.end, produkFilter, channelFilter, stoFilter, kabFilter, kendalaFilter);
 
   const hariKerja = calcHariRange(startIni, endIni);
   const wsa       = calcWSATSA(sfMap);
@@ -548,8 +553,9 @@ function getPerformance(params) {
   const sfPerf = [];
   allKodes.forEach(kode => {
     const info = sfMap[kode] || {};
-    const i    = ini.bySF[kode]  || { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {}, dailyRE: {}, dailyPS: {} };
-    const l    = lalu.bySF[kode] || { io: 0, re: 0, ps: 0, kendala: 0, produk: {} };
+    const i    = ini.bySF[kode]      || { io: 0, re: 0, ps: 0, kendala: 0, produk: {}, kab: {}, dailyRE: {}, dailyPS: {} };
+    const l    = lalu.bySF[kode]     || { io: 0, re: 0, ps: 0, kendala: 0, produk: {} };
+    const lf   = laluFull.bySF[kode] || { io: 0, re: 0, ps: 0 };
     const w    = wsa.bySF[kode]  || { bulanIni: 0, bulanLalu: 0 };
 
     sfPerf.push({
@@ -577,6 +583,7 @@ function getPerformance(params) {
         ps:  l.ps,
         wsa: w.bulanLalu,
       },
+      m1ps: lf.ps,  // full previous month PS — untuk Level LM & growth% di scorecard
     });
   });
 

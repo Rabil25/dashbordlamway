@@ -2596,7 +2596,7 @@ function renderSFScorecard(sfs) {
   const rows = sfs.map((sf, idx) => {
     const bi  = sf.bulanIni  || {};
     const bl  = sf.bulanLalu || {};
-    const m1  = bl.ps || 0;
+    const m1  = sf.m1ps ?? bl.ps ?? 0;  // full prev month PS (dari GAS), fallback ke bulanLalu
     const lvLM   = sfLevel(m1);
     const target = LEVEL_TARGET[lvLM.level] || 5;
     const totalRE = bi.re || 0;
