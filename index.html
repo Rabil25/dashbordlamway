@@ -131,7 +131,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
   overflow:hidden;
   border-right:1px solid rgba(255,255,255,.04);
 }
-.sidebar.closed{transform:translateX(-100%)}
+/* sidebar selalu visible di desktop; mobile: hidden by default, shown with .open */
 
 /* Sidebar brand — tiger-eyes gradient header */
 .sb-brand{
@@ -201,7 +201,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
   display:none;position:fixed;inset:0;z-index:199;
   background:rgba(0,0,0,.55);backdrop-filter:blur(2px);
 }
-.overlay.active{display:block}
+.overlay.active{display:block}.overlay.show{display:block}
 
 /* ── SHELL (content area) ──────────────────────────────────── */
 .shell{
@@ -772,6 +772,10 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* Theme toggle */
 #themeBtn{font-size:16px}
+
+/* ── PAGE VISIBILITY ─────────────────────────────────────────── */
+.page{display:none}
+.page.active{display:block}
 
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media(max-width:768px){
