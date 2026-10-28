@@ -62,6 +62,136 @@
   --ease:            cubic-bezier(.22,.68,0,1.2);
 }
 
+/* ══ LIGHT THEME ══ */
+[data-theme="light"] {
+  --surface-base:    #f0f4ff;
+  --surface-card:    #ffffff;
+  --surface-elevated:#e8eef8;
+  --surface-input:   #edf1fa;
+  --surface-border:  #c8d5ea;
+  --surface-hover:   #dde6f6;
+
+  --brand:           #0077cc;
+  --brand-hover:     #005fa3;
+  --brand-glow:      rgba(0,119,204,.14);
+  --brand-dim:       rgba(0,119,204,.07);
+
+  --accent:          #7c3aed;
+  --accent-glow:     rgba(124,58,237,.14);
+
+  --success:         #16a34a;
+  --success-dim:     rgba(22,163,74,.10);
+  --warning:         #d97706;
+  --warning-dim:     rgba(217,119,6,.10);
+  --danger:          #dc2626;
+  --danger-dim:      rgba(220,38,38,.10);
+
+  --series-1:        #0077cc;
+  --series-2:        #7c3aed;
+  --series-3:        #16a34a;
+  --series-4:        #d97706;
+  --series-5:        #db2777;
+  --series-6:        #0891b2;
+
+  --text-1:          #0f172a;
+  --text-2:          #475569;
+  --text-3:          #94a3b8;
+}
+
+/* Light theme body */
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse 80% 40% at 20% 0%, rgba(0,119,204,.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(124,58,237,.04) 0%, transparent 60%);
+}
+
+/* Light sidebar */
+[data-theme="light"] .sidebar {
+  background: linear-gradient(180deg, #e8f0ff 0%, #dce8ff 100%);
+}
+[data-theme="light"] .sidebar::before {
+  background: linear-gradient(180deg, #0077cc 0%, #7c3aed 100%);
+}
+
+/* Light topbar */
+[data-theme="light"] .topbar {
+  background: linear-gradient(90deg, #e8f0ff 0%, #dce8ff 100%);
+  box-shadow: 0 1px 0 rgba(0,119,204,.12);
+}
+
+/* Light stat cards */
+[data-theme="light"] .stat-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f8ff 100%);
+  box-shadow: 0 1px 4px rgba(0,50,150,.06);
+}
+[data-theme="light"] .stat-card:hover {
+  box-shadow: 0 0 0 1px var(--brand), 0 4px 20px rgba(0,119,204,.12);
+}
+[data-theme="light"] .stat-card::after {
+  background: radial-gradient(ellipse at 50% 100%, rgba(0,119,204,.04) 0%, transparent 70%);
+}
+
+/* Light cards */
+[data-theme="light"] .card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+  box-shadow: 0 1px 4px rgba(0,50,150,.05);
+}
+[data-theme="light"] .card:hover {
+  border-color: rgba(0,119,204,.3);
+}
+
+/* Light modal */
+[data-theme="light"] .modal {
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(0,50,150,.15);
+}
+[data-theme="light"] .modal-bg {
+  background: rgba(15,23,42,.4);
+}
+
+/* Light heatmap */
+[data-theme="light"] .hm-lo  { background: rgba(0,119,204,.10); color: #0077cc; }
+[data-theme="light"] .hm-md  { background: rgba(0,119,204,.28); color: #005fa3; }
+[data-theme="light"] .hm-hi  { background: rgba(0,119,204,.55); color: #fff; }
+[data-theme="light"] .hm-vhi { background: rgba(0,119,204,.85); color: #fff; font-weight:700; }
+
+/* Light nav active */
+[data-theme="light"] .nav-item.active {
+  background: linear-gradient(90deg, rgba(0,119,204,.12) 0%, rgba(124,58,237,.06) 100%);
+  color: #0077cc;
+  border-left: 2px solid #0077cc;
+}
+[data-theme="light"] .nav-item:hover { background: rgba(0,119,204,.06); }
+
+/* Light cluster btn */
+[data-theme="light"] .cluster-toggle { background: #e8eef8; border-color: #c8d5ea; }
+[data-theme="light"] .cluster-btn.active {
+  background: linear-gradient(90deg, #0077cc, #7c3aed);
+  box-shadow: 0 0 10px rgba(0,119,204,.2);
+}
+
+/* Light tables */
+[data-theme="light"] table thead th { background: #e8eef8; color: #0f172a; }
+[data-theme="light"] table tbody tr:hover td { background: #f0f4ff; }
+
+/* Light tier badges */
+[data-theme="light"] .tier-black    { background: rgba(100,100,110,.10); color: #475569; border-color: rgba(100,100,110,.25); }
+[data-theme="light"] .tier-bronze   { background: rgba(200,130,50,.12);  color: #c26a10; border-color: rgba(200,130,50,.3); }
+[data-theme="light"] .tier-silver   { background: rgba(100,120,160,.12); color: #475569; border-color: rgba(100,120,160,.3); }
+[data-theme="light"] .tier-gold     { background: rgba(200,150,0,.12);   color: #9a6700; border-color: rgba(200,150,0,.3); }
+[data-theme="light"] .tier-platinum { background: rgba(0,119,204,.12);   color: #0077cc; border-color: rgba(0,119,204,.3); }
+[data-theme="light"] .tier-diamond  { background: rgba(124,58,237,.12);  color: #7c3aed; border-color: rgba(124,58,237,.3); }
+
+/* Theme toggle button */
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: var(--r);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-elevated); color: var(--text-2);
+  font-size: 15px; transition: all var(--dur); cursor: pointer;
+}
+.theme-toggle:hover { color: var(--brand); border-color: var(--brand); }
+
 /* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
@@ -785,6 +915,9 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <button class="btn" @click="loadData()" :disabled="loading">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23,4 23,11 16,11"/><polyline points="1,20 1,13 8,13"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 11M1 13l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         <span x-text="loading ? 'Memuat...' : 'Refresh'"></span>
+      </button>
+      <button class="theme-toggle" @click="toggleTheme()" :title="themeMode==='dark' ? 'Light Mode' : 'Dark Mode'">
+        <span x-text="themeMode==='dark' ? '☀️' : '🌙'"></span>
       </button>
       <button class="btn" @click="showConfig=true">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1825,8 +1958,10 @@ const ECHARTS_THEME = {
     itemWidth:12, itemHeight:8,
   },
   tooltip: {
-    backgroundColor:'#1c2128', borderColor:'#30363d', borderWidth:1,
-    textStyle:{ color:'#e6edf3', fontFamily:"'Poppins',sans-serif", fontSize:12 },
+    backgroundColor: () => document.documentElement.getAttribute('data-theme')==='light' ? '#ffffff' : '#1c2128',
+    borderColor: () => document.documentElement.getAttribute('data-theme')==='light' ? '#c8d5ea' : '#30363d',
+    borderWidth:1,
+    textStyle:{ color: () => document.documentElement.getAttribute('data-theme')==='light' ? '#0f172a' : '#e6edf3', fontFamily:"'Poppins',sans-serif", fontSize:12 },
     padding:[8,12],
   },
   xAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58'}, splitLine:{show:false} },
@@ -1863,6 +1998,7 @@ function app() {
     cluster: 'Lampung Barat',
     loading: false,
     showConfig: false,
+    themeMode: localStorage.getItem('dashTheme') || 'dark',
     rows: [],         // raw rows from GAS
     lastUpdate: '',
     TIER_CONFIG,      // expose to template
@@ -1892,6 +2028,8 @@ function app() {
 
     // ── Init ──
     init() {
+      // Apply saved theme
+      document.documentElement.setAttribute('data-theme', this.themeMode);
       if (this.cfg.gasUrl) {
         this.loadData();
       } else {
@@ -1900,6 +2038,17 @@ function app() {
       window.addEventListener('resize', () => {
         Object.values(this._charts).forEach(c => c && c.resize && c.resize());
       });
+    },
+
+    toggleTheme() {
+      this.themeMode = this.themeMode === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', this.themeMode);
+      localStorage.setItem('dashTheme', this.themeMode);
+      // Re-render charts after a short delay for CSS to settle
+      setTimeout(() => {
+        Object.values(this._charts).forEach(c => { if (c && c.resize) c.resize(); });
+        this.renderCharts && this.renderCharts();
+      }, 150);
     },
 
     // ── Nav ──
