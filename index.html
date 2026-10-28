@@ -1949,28 +1949,45 @@ const CLUSTER = {
   'Way Kanan':     { kab: ['LAMPUNG UTARA','WAY KANAN'] },
 };
 
-// ECharts theme — dark + Poppins
-const ECHARTS_THEME = {
-  backgroundColor: 'transparent',
-  textStyle: { fontFamily: "'Poppins',sans-serif", fontSize: 11, color: '#8b949e' },
-  color: ['#00c2ff','#22d972','#ff4d4d','#fbbf24','#f472b6','#a855f7'],
-  grid: { left:10, right:10, top:30, bottom:10, containLabel:true },
-  legend: {
-    textStyle: { color:'#8b949e', fontFamily:"'Poppins',sans-serif", fontSize:11 },
-    itemWidth:12, itemHeight:8,
-  },
-  tooltip: {
-    backgroundColor: () => document.documentElement.getAttribute('data-theme')==='light' ? '#ffffff' : '#1c2128',
-    borderColor: () => document.documentElement.getAttribute('data-theme')==='light' ? '#c8d5ea' : '#30363d',
-    borderWidth:1,
-    textStyle:{ color: () => document.documentElement.getAttribute('data-theme')==='light' ? '#0f172a' : '#e6edf3', fontFamily:"'Poppins',sans-serif", fontSize:12 },
-    padding:[8,12],
-  },
-  xAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58', fontFamily:"'Poppins',sans-serif", fontSize:11}, splitLine:{show:false} },
-  yAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58', fontFamily:"'Poppins',sans-serif", fontSize:11}, splitLine:{lineStyle:{color:'#21262d'}} },
-};
-// Theme for pie/donut charts — excludes xAxis/yAxis to prevent ECharts TypeError
-const PIE_THEME = (function(){const {xAxis,yAxis,grid,...t}=ECHARTS_THEME; return t;})();
+// ── ECharts theme helpers ──────────────────────────────────────
+function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+
+function getChartTheme() {
+  const light = isLight();
+  return {
+    backgroundColor: 'transparent',
+    textStyle: { fontFamily:"'Poppins',sans-serif", fontSize:11, color: light ? '#6b4f42' : '#8b949e' },
+    color: light
+      ? ['#c93c20','#27863a','#0e7a9e','#d97020','#9b2563','#6b5e00']
+      : ['#00c2ff','#22d972','#ff4d4d','#fbbf24','#f472b6','#a855f7'],
+    grid: { left:10, right:10, top:30, bottom:10, containLabel:true },
+    legend: {
+      textStyle: { color: light ? '#6b4f42' : '#8b949e', fontFamily:"'Poppins',sans-serif", fontSize:11 },
+      itemWidth:12, itemHeight:8,
+    },
+    tooltip: {
+      backgroundColor: light ? '#fff8f5' : '#1c2128',
+      borderColor:     light ? '#e8d0c5' : '#30363d',
+      borderWidth:1,
+      textStyle:{ color: light ? '#1c0e08' : '#e6edf3', fontFamily:"'Poppins',sans-serif", fontSize:12 },
+      padding:[8,12],
+    },
+    xAxis: {
+      axisLine:{show:false}, axisTick:{show:false},
+      axisLabel:{ color: light ? '#8a6050' : '#484f58', fontFamily:"'Poppins',sans-serif", fontSize:11 },
+      splitLine:{show:false}
+    },
+    yAxis: {
+      axisLine:{show:false}, axisTick:{show:false},
+      axisLabel:{ color: light ? '#8a6050' : '#484f58', fontFamily:"'Poppins',sans-serif", fontSize:11 },
+      splitLine:{ lineStyle:{ color: light ? 'rgba(180,120,90,.14)' : '#21262d' } }
+    },
+  };
+}
+
+// Static refs kept for compatibility — will be overridden per render
+const ECHARTS_THEME = getChartTheme();
+const PIE_THEME = (function(){const {xAxis,yAxis,grid,...t}=getChartTheme(); return t;})();
 
 // ── SF TIER CONFIG ──────────────────────────────────────────
 const TIER_CONFIG = [
@@ -2046,11 +2063,11 @@ function app() {
       this.themeMode = this.themeMode === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', this.themeMode);
       localStorage.setItem('dashTheme', this.themeMode);
-      // Re-render charts after a short delay for CSS to settle
+      // Dispose all charts so they reinit with new theme colors on next render
       setTimeout(() => {
-        Object.values(this._charts).forEach(c => { if (c && c.resize) c.resize(); });
-        this.renderCharts && this.renderCharts();
-      }, 150);
+        this.disposeCharts();
+        this.renderCharts();
+      }, 80);
     },
 
     // ── Nav ──
@@ -2631,13 +2648,18 @@ function app() {
       }
     },
 
-    getOrInit(id) {
+    getOrInit(id, forPie) {
       const el = document.getElementById(id);
       if (!el) return null;
       if (!this._charts[id]) {
         this._charts[id] = echarts.init(el, null, { renderer: 'svg' });
       }
       return this._charts[id];
+    },
+
+    disposeCharts() {
+      Object.values(this._charts).forEach(c => { try { c && c.dispose && c.dispose(); } catch(e){} });
+      this._charts = {};
     },
 
     renderTren() {
@@ -2654,16 +2676,16 @@ function app() {
         if ((r[C.BLN_RE]||'').toString()===bulan) { const d=parseInt(r[C.TGL_RE]||0)-1; if(d>=0&&d<dayCount) re[d]++; }
         if ((r[C.BLN_PS]||'').toString()===bulan) { const d=parseInt(r[C.TGL_PS]||0)-1; if(d>=0&&d<dayCount) ps[d]++; }
       });
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        legend: { data:['IO','RE','PS'], top: 0, ...ECHARTS_THEME.legend },
-        xAxis: { ...ECHARTS_THEME.xAxis, type:'category', data: days.map(d=>d) },
-        yAxis: { ...ECHARTS_THEME.yAxis, type:'value' },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        legend: { data:['IO','RE','PS'], top: 0, ...getChartTheme().legend },
+        xAxis: { ...getChartTheme().xAxis, type:'category', data: days.map(d=>d) },
+        yAxis: { ...getChartTheme().yAxis, type:'value' },
         series: [
           { name:'IO', type:'line', data:io, smooth:true, lineStyle:{width:2}, color:'#fbbf24', symbol:'none' },
           { name:'RE', type:'line', data:re, smooth:true, lineStyle:{width:2}, color:'#58a6ff', symbol:'none' },
           { name:'PS', type:'line', data:ps, smooth:true, lineStyle:{width:2,color:'#22d972'}, areaStyle:{color:'rgba(34,217,114,.08)'}, color:'#22d972', symbol:'none' },
         ],
-        tooltip: { ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'cross'} },
+        tooltip: { ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'cross'} },
       }));
     },
 
@@ -2681,9 +2703,9 @@ function app() {
       let data = sorted.slice(0, TOP).map(([n,v])=>({name:n, value:v}));
       const rest = sorted.slice(TOP).reduce((s,[,v])=>s+v, 0);
       if (rest > 0) data.push({name:'Lainnya', value:rest});
-      chart.setOption(Object.assign({}, PIE_THEME, {
+      chart.setOption(Object.assign({}, (function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()), {
         legend: { type:'scroll', orient:'vertical', right:4, top:'middle', textStyle:{color:'#8b949e',fontSize:10}, pageTextStyle:{color:'#8b949e'} },
-        tooltip: { ...PIE_THEME.tooltip, trigger:'item', formatter:'{b}: {c} ({d}%)' },
+        tooltip: { ...(function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()).tooltip, trigger:'item', formatter:'{b}: {c} ({d}%)' },
         series: [{
           type:'pie', radius:['45%','70%'], center:['40%','52%'],
           data,
@@ -2701,10 +2723,10 @@ function app() {
       const map = {};
       this.filteredRows.forEach(r => { const v=r[C.CHANNEL2]||'Lainnya'; map[v]=(map[v]||0)+1; });
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        tooltip: { ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
-        xAxis: { ...ECHARTS_THEME.xAxis, type:'value' },
-        yAxis: { ...ECHARTS_THEME.yAxis, type:'category', data: entries.map(e=>e[0]) },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        tooltip: { ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
+        xAxis: { ...getChartTheme().xAxis, type:'value' },
+        yAxis: { ...getChartTheme().yAxis, type:'category', data: entries.map(e=>e[0]) },
         series: [{ type:'bar', data: entries.map(e=>e[1]), barMaxWidth:20, itemStyle:{borderRadius:[0,4,4,0], color:'#00c2ff'} }],
         grid: { left:80, right:20, top:10, bottom:10 },
       }));
@@ -2717,10 +2739,10 @@ function app() {
       this.filteredRows.forEach(r => { const v=r[C.TIME_RANGE]||'Lainnya'; map[v]=(map[v]||0)+1; });
       const order = ['07:00-09:59','10:00-11:59','12:00-13:59','14:00-15:59','16:00-17:59','18:00-20:59','21:00-23:59'];
       const cats = order.filter(k=>map[k]).concat(Object.keys(map).filter(k=>!order.includes(k)));
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        tooltip: { ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
-        xAxis: { ...ECHARTS_THEME.xAxis, type:'category', data: cats },
-        yAxis: { ...ECHARTS_THEME.yAxis, type:'value' },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        tooltip: { ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
+        xAxis: { ...getChartTheme().xAxis, type:'category', data: cats },
+        yAxis: { ...getChartTheme().yAxis, type:'value' },
         series: [{ type:'bar', data: cats.map(c=>map[c]||0), barMaxWidth:24, itemStyle:{borderRadius:[4,4,0,0], color:'#a855f7'} }],
         grid: { left:30, right:10, top:10, bottom:30, containLabel:true },
       }));
@@ -2731,8 +2753,8 @@ function app() {
       if (!chart) return;
       let hp=0, nonHp=0;
       this.filteredRows.forEach(r => { (r[C.HOMEPASS]==='Homepass' ? hp++ : nonHp++); });
-      chart.setOption(Object.assign({}, PIE_THEME, {
-        tooltip: { ...PIE_THEME.tooltip, trigger:'item' },
+      chart.setOption(Object.assign({}, (function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()), {
+        tooltip: { ...(function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()).tooltip, trigger:'item' },
         series: [{
           type:'pie', radius:['45%','70%'], center:['50%','50%'],
           data:[{name:'Homepass',value:hp},{name:'Non-HP',value:nonHp}],
@@ -2741,7 +2763,7 @@ function app() {
           labelLine:{ lineStyle:{color:'#484f58'} },
           itemStyle:{ borderColor:'#0d1117', borderWidth:2 },
         }],
-        legend:{ bottom:0, ...PIE_THEME.legend },
+        legend:{ bottom:0, ...(function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()).legend },
       }));
     },
 
@@ -2751,10 +2773,10 @@ function app() {
       const map = {};
       this.filteredRows.forEach(r => { const v=r[C.KENDALA_CAT]; if(v) map[v]=(map[v]||0)+1; });
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        tooltip: { ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
-        xAxis: { ...ECHARTS_THEME.xAxis, type:'value' },
-        yAxis: { ...ECHARTS_THEME.yAxis, type:'category', data:entries.map(e=>e[0]) },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        tooltip: { ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
+        xAxis: { ...getChartTheme().xAxis, type:'value' },
+        yAxis: { ...getChartTheme().yAxis, type:'category', data:entries.map(e=>e[0]) },
         series:[{ type:'bar', data:entries.map(e=>e[1]), barMaxWidth:20, itemStyle:{borderRadius:[0,4,4,0], color:'#ff4d4d'} }],
         grid:{ left:130, right:20, top:10, bottom:10 },
       }));
@@ -2769,10 +2791,10 @@ function app() {
         if (d && cat) { const key=d.toString().slice(0,8); map[key]=(map[key]||0)+1; }
       });
       const keys = Object.keys(map).sort();
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis' },
-        xAxis:{ ...ECHARTS_THEME.xAxis, type:'category', data:keys.map(k=>k.slice(6)) },
-        yAxis:{ ...ECHARTS_THEME.yAxis, type:'value' },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        tooltip:{ ...getChartTheme().tooltip, trigger:'axis' },
+        xAxis:{ ...getChartTheme().xAxis, type:'category', data:keys.map(k=>k.slice(6)) },
+        yAxis:{ ...getChartTheme().yAxis, type:'value' },
         series:[{ type:'bar', data:keys.map(k=>map[k]), barMaxWidth:20, itemStyle:{borderRadius:[4,4,0,0], color:'#ff4d4d'} }],
         grid:{ left:30, right:10, top:10, bottom:30, containLabel:true },
       }));
@@ -2796,7 +2818,7 @@ function app() {
       chart.setOption({
         backgroundColor:'transparent',
         tooltip: {
-          ...ECHARTS_THEME.tooltip,
+          ...getChartTheme().tooltip,
           trigger:'item',
           formatter: p => `<div style="font-size:11px">${p.data.name}<br>${p.data.sf}<br>${p.data.status}</div>`,
         },
@@ -2832,11 +2854,11 @@ function app() {
         }
       });
       for (let i=0;i<dayCount;i++) { running+=ps[i]; cum[i]=running; }
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        legend:{ data:['PS Harian','Kumulatif'], top:0, ...ECHARTS_THEME.legend },
-        xAxis:{ ...ECHARTS_THEME.xAxis, type:'category', data:days },
-        yAxis:{ ...ECHARTS_THEME.yAxis, type:'value' },
-        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'cross'} },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        legend:{ data:['PS Harian','Kumulatif'], top:0, ...getChartTheme().legend },
+        xAxis:{ ...getChartTheme().xAxis, type:'category', data:days },
+        yAxis:{ ...getChartTheme().yAxis, type:'value' },
+        tooltip:{ ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'cross'} },
         series:[
           { name:'PS Harian', type:'bar', data:ps, barMaxWidth:16, itemStyle:{borderRadius:[3,3,0,0], color:'rgba(34,217,114,.6)'} },
           { name:'Kumulatif', type:'line', data:cum, smooth:true, lineStyle:{width:2,color:'#22d972'}, symbol:'none', yAxisIndex:0, color:'#22d972' },
@@ -2850,12 +2872,12 @@ function app() {
       if (!chart) return;
       const data = this.ddActiveData;
       const names = data.map(d=>d.name);
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        legend:{ data:['IO','RE','PS'], top:0, ...ECHARTS_THEME.legend },
-        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        legend:{ data:['IO','RE','PS'], top:0, ...getChartTheme().legend },
+        tooltip:{ ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
         grid:{ left:90, right:20, top:30, bottom:10, containLabel:false },
-        xAxis:{ ...ECHARTS_THEME.xAxis, type:'value' },
-        yAxis:{ ...ECHARTS_THEME.yAxis, type:'category', data:names.slice().reverse() },
+        xAxis:{ ...getChartTheme().xAxis, type:'value' },
+        yAxis:{ ...getChartTheme().yAxis, type:'category', data:names.slice().reverse() },
         series:[
           { name:'IO', type:'bar', data:names.slice().reverse().map(n=>{const d=data.find(x=>x.name===n);return d?d.io:0;}), barMaxWidth:12, itemStyle:{borderRadius:[0,4,4,0], color:'#fbbf24'} },
           { name:'RE', type:'bar', data:names.slice().reverse().map(n=>{const d=data.find(x=>x.name===n);return d?d.re:0;}), barMaxWidth:12, itemStyle:{borderRadius:[0,4,4,0], color:'#58a6ff'} },
@@ -2892,11 +2914,11 @@ function app() {
       for (let i = hariPS-1; i < daysInMonth; i++) {
         proj[i] = Math.round(running + drr * (i - hariPS + 1));
       }
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        legend:{ data:['PS Kumulatif','Proyeksi EOM'], top:0, ...ECHARTS_THEME.legend },
-        xAxis:{ ...ECHARTS_THEME.xAxis, type:'category', data:days },
-        yAxis:{ ...ECHARTS_THEME.yAxis, type:'value' },
-        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'cross'} },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        legend:{ data:['PS Kumulatif','Proyeksi EOM'], top:0, ...getChartTheme().legend },
+        xAxis:{ ...getChartTheme().xAxis, type:'category', data:days },
+        yAxis:{ ...getChartTheme().yAxis, type:'value' },
+        tooltip:{ ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'cross'} },
         series:[
           { name:'PS Kumulatif', type:'line', data:cum, smooth:false, lineStyle:{width:2,color:'#22d972'}, symbol:'none', color:'#22d972', areaStyle:{color:'rgba(34,217,114,.08)'} },
           { name:'Proyeksi EOM', type:'line', data:proj, smooth:false, lineStyle:{width:2,color:'#58a6ff',type:'dashed'}, symbol:'none', color:'#58a6ff' },
@@ -2911,10 +2933,10 @@ function app() {
       const dist = this.sfperfTierDist;
       const tiers = TIER_CONFIG.map(t=>t.name);
       const colors = { Black:'#6b7280', Bronze:'#f0a060', Silver:'#cdd6e8', Gold:'#fcd34d', Platinum:'#00d4ff', Diamond:'#c084fc' };
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
-        xAxis:{ ...ECHARTS_THEME.xAxis, type:'category', data:tiers },
-        yAxis:{ ...ECHARTS_THEME.yAxis, type:'value' },
+      chart.setOption(Object.assign({}, getChartTheme(), {
+        tooltip:{ ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
+        xAxis:{ ...getChartTheme().xAxis, type:'category', data:tiers },
+        yAxis:{ ...getChartTheme().yAxis, type:'value' },
         series:[{
           type:'bar', barMaxWidth:40,
           data: tiers.map(t=>({ value: dist[t]||0, itemStyle:{ color:colors[t]||'#00c2ff', borderRadius:[4,4,0,0] } })),
