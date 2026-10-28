@@ -830,6 +830,8 @@ const ECHARTS_THEME = {
   xAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58'}, splitLine:{show:false} },
   yAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58'}, splitLine:{lineStyle:{color:'#21262d'}} },
 };
+// Theme for pie/donut charts — excludes xAxis/yAxis to prevent ECharts TypeError
+const PIE_THEME = (function(){const {xAxis,yAxis,grid,...t}=ECHARTS_THEME; return t;})();
 
 // ============================================================
 //  ALPINE APP
@@ -962,7 +964,7 @@ function app() {
         const blnPS = (r[C.BLN_PS]||'').toString();
         if (blnPS === bulan) ps++;
         const fx = (r[C.STATUS_FNL]||'').toUpperCase();
-        if (fx.includes('CANCEL') || fx.includes('BATAL')) cancel++;
+        if (blnIO === bulan && (fx.includes('CANCEL') || fx.includes('BATAL'))) cancel++;
       });
 
       return {
@@ -989,11 +991,12 @@ function app() {
           kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0,
         };
         const m = map[code];
-        if ((r[C.BLN_IO]||'').toString()===bulan) m.io++;
+        const blnIOsf = (r[C.BLN_IO]||'').toString();
+        if (blnIOsf===bulan) m.io++;
         if ((r[C.BLN_RE]||'').toString()===bulan) m.re++;
         if ((r[C.BLN_PS]||'').toString()===bulan) m.ps++;
         const fx = (r[C.STATUS_FNL]||'').toUpperCase();
-        if (fx.includes('CANCEL') || fx.includes('BATAL')) m.cancel++;
+        if (blnIOsf===bulan && (fx.includes('CANCEL') || fx.includes('BATAL'))) m.cancel++;
       });
       const arr = Object.values(map);
       arr.forEach(sf => {
@@ -1155,14 +1158,22 @@ function app() {
         const v = r[C.SPEED] || r[C.PRODUK_KAT] || 'Lainnya';
         map[v] = (map[v]||0) + 1;
       });
-      const data = Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([n,v])=>({name:n, value:v}));
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        legend: { show: false },
-        tooltip: { ...ECHARTS_THEME.tooltip, trigger:'item', formatter:'{b}: {c} ({d}%)' },
+      // Limit to top 7 + group Lainnya to avoid label collision
+      const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+      const TOP = 7;
+      let data = sorted.slice(0, TOP).map(([n,v])=>({name:n, value:v}));
+      const rest = sorted.slice(TOP).reduce((s,[,v])=>s+v, 0);
+      if (rest > 0) data.push({name:'Lainnya', value:rest});
+      chart.setOption(Object.assign({}, PIE_THEME, {
+        legend: { type:'scroll', orient:'vertical', right:4, top:'middle', textStyle:{color:'#8b949e',fontSize:10}, pageTextStyle:{color:'#8b949e'} },
+        tooltip: { ...PIE_THEME.tooltip, trigger:'item', formatter:'{b}: {c} ({d}%)' },
         series: [{
-          type:'pie', radius:['50%','75%'], center:['50%','55%'],
-          data, label:{ show:true, fontSize:10, formatter:'{b}\n{c}', color:'#8b949e' },
+          type:'pie', radius:['45%','70%'], center:['40%','52%'],
+          data,
+          label:{ show:false },
+          labelLine:{ show:false },
           itemStyle: { borderColor:'#0d1117', borderWidth:2 },
+          emphasis:{ label:{ show:true, fontSize:11, formatter:'{b}\n{c} ({d}%)', color:'#e6edf3' } },
         }],
       }));
     },
@@ -1203,16 +1214,17 @@ function app() {
       if (!chart) return;
       let hp=0, nonHp=0;
       this.filteredRows.forEach(r => { (r[C.HOMEPASS]==='Homepass' ? hp++ : nonHp++); });
-      chart.setOption(Object.assign({}, ECHARTS_THEME, {
-        tooltip: { ...ECHARTS_THEME.tooltip, trigger:'item' },
+      chart.setOption(Object.assign({}, PIE_THEME, {
+        tooltip: { ...PIE_THEME.tooltip, trigger:'item' },
         series: [{
-          type:'pie', radius:['45%','70%'], center:['50%','55%'],
+          type:'pie', radius:['45%','70%'], center:['50%','50%'],
           data:[{name:'Homepass',value:hp},{name:'Non-HP',value:nonHp}],
           color:['#58a6ff','#30363d'],
-          label:{ show:true, fontSize:10, color:'#8b949e', formatter:'{b}\n{c}' },
+          label:{ show:true, fontSize:10, color:'#8b949e', formatter:'{b}\n{c} ({d}%)' },
+          labelLine:{ lineStyle:{color:'#484f58'} },
           itemStyle:{ borderColor:'#0d1117', borderWidth:2 },
         }],
-        legend:{ bottom:0, ...ECHARTS_THEME.legend },
+        legend:{ bottom:0, ...PIE_THEME.legend },
       }));
     },
 
