@@ -766,9 +766,8 @@ tbody tr:hover td { background: var(--surface-hover); }
 // ============================================================
 //  CONFIG — ganti sesuai kebutuhan
 // ============================================================
-const DEFAULT_SHEET_ID = '1IhU91CyYKQRDLysUYgpPn258ieoADixO30Cl5YS3YeM';
-const RANGE_BULAN      = 'Bulan_Ini!CE2:DT';
-const RANGE_SF         = 'Update%20SF!A2:AG';
+const DEFAULT_GAS_URL  = 'https://script.google.com/macros/s/AKfycbzBskwSjBBScoZPdwkZxKNJ9PcN5Yihb-8rVAwq26O2dodfraHxxClqlL379ryM04jupA/exec';
+const GAS_TOKEN        = 'lpgLampung2026';
 
 // Kolom index dalam array (CE=0, CF=1, ...)
 const C = {
@@ -847,7 +846,7 @@ function app() {
 
     // Config
     cfg: {
-      gasUrl: localStorage.getItem('wok_gas_url') || '',
+      gasUrl: localStorage.getItem('wok_gas_url') || DEFAULT_GAS_URL,
       bulan: '10',
     },
 
@@ -927,7 +926,7 @@ function app() {
     // ── Fetch dari Google Apps Script Web App ──
     async fetchGAS(type) {
       const base = this.cfg.gasUrl;
-      const url  = `${base}?token=lpgLampung2026&type=${type}`;
+      const url  = `${base}?token=${GAS_TOKEN}&type=${type}`;
       const res  = await fetch(url);
       if (!res.ok) throw new Error('HTTP ' + res.status + ' saat fetch ' + type);
       const json = await res.json();
