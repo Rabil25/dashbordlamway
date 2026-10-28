@@ -2,6 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -851,6 +852,231 @@ tbody tr:hover td{background:var(--surface2);}
   text-align:center;font-size:14px;font-weight:600;color:var(--fg);
   box-shadow:var(--sh-lg);
 }
+
+/* TIGER-EYES RESKIN START */
+
+/* ══════════════════════════════════════════════════════════════
+   TIGER-EYES RESKIN — CSS override only, zero JS touched
+   Injected on top of existing Tabler/Grafana base styles
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── TOKEN OVERRIDES ──────────────────────────────────────── */
+:root {
+  /* Tiger-eyes accent: deep red → orange */
+  --te-a: #8b0000;
+  --te-b: #c62828;
+  --te-c: #e65100;
+  --te-grad: linear-gradient(135deg, var(--te-a) 0%, var(--te-b) 45%, var(--te-c) 100%);
+
+  /* Override primary to orange */
+  --p-primary: #e65100;
+  --p-primary-d: #bf360c;
+  --p-primary-lite: rgba(230,81,0,.1);
+  --p-accent: #e65100;
+
+  /* Sidebar active: orange instead of blue */
+  --sb-active-bg: rgba(230,81,0,.15);
+  --sb-active-fg: #ff9100;
+
+  /* KPI card transitions smoother */
+  --tr: .2s cubic-bezier(.4,0,.2,1);
+
+  /* Font: Plus Jakarta Sans jika tersedia */
+  --font: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Dark mode token overrides */
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --p-primary: #ff6d00;
+  --p-primary-lite: rgba(255,109,0,.15);
+}}
+:root[data-theme="dark"]{
+  --p-primary: #ff6d00;
+  --p-primary-lite: rgba(255,109,0,.15);
+}
+
+/* ── TOPBAR → GRADIENT HEADER ─────────────────────────────── */
+.topbar {
+  background: var(--te-grad) !important;
+  border-bottom: none !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,.4) !important;
+}
+
+/* Text on topbar → white */
+.tb-bc-super { color: rgba(255,255,255,.65) !important; }
+.tb-bc-title { color: #ffffff !important; }
+.tb-breadcrumb .tb-bc-title { font-weight: 800 !important; }
+
+/* Topbar icons */
+.btn-icon {
+  background: rgba(255,255,255,.12) !important;
+  border-color: rgba(255,255,255,.15) !important;
+  color: #ffffff !important;
+}
+.btn-icon:hover {
+  background: rgba(255,255,255,.22) !important;
+  border-color: rgba(255,255,255,.25) !important;
+  color: #ffffff !important;
+}
+
+/* LIVE badge on topbar */
+.live-badge {
+  background: rgba(255,255,255,.15) !important;
+  border-color: rgba(255,255,255,.2) !important;
+  color: #fff !important;
+}
+.live-dot { background: #69f0ae !important; box-shadow: 0 0 6px #69f0ae; }
+
+/* Avatar on topbar */
+.tb-avatar {
+  background: rgba(255,255,255,.25) !important;
+  border: 2px solid rgba(255,255,255,.4);
+}
+
+/* Topbar logo image — keep visible on dark bg */
+.tb-logo-img { filter: brightness(0) invert(1); }
+
+/* Menu hamburger button */
+.menu-btn { color: #ffffff !important; }
+.menu-btn:hover { background: rgba(255,255,255,.15) !important; }
+
+/* Topbar search box */
+.tb-search {
+  background: rgba(255,255,255,.12) !important;
+  border-color: rgba(255,255,255,.15) !important;
+  color: #fff !important;
+}
+.tb-search::placeholder { color: rgba(255,255,255,.5) !important; }
+.tb-search:focus {
+  border-color: rgba(255,255,255,.5) !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.1) !important;
+}
+.tb-search-wrap svg { color: rgba(255,255,255,.5) !important; }
+
+/* ── SIDEBAR BRAND → GRADIENT TOP ────────────────────────── */
+.sb-brand {
+  background: var(--te-grad) !important;
+  border-bottom: none !important;
+}
+.sb-name { color: #ffffff !important; font-weight: 800 !important; }
+.sb-sub  { color: rgba(255,255,255,.65) !important; }
+.sb-logo { background: rgba(255,255,255,.2) !important; }
+
+/* Sidebar top border — remove the thin red line, let gradient do it */
+.sidebar { border-top: none !important; }
+
+/* Sidebar active nav item — orange */
+.nav-link.active {
+  background: rgba(255,109,0,.15) !important;
+  color: #ffb74d !important;
+  font-weight: 600 !important;
+}
+.nav-link.active::before {
+  background: #ff6d00 !important;
+}
+.nav-link.active .nav-icon { color: #ff9100 !important; }
+
+/* ── PAGE GREETING → red accent word stays, subtle upgrade ── */
+.pg-title span { color: #e65100 !important; }
+.btn-refresh:hover {
+  background: rgba(230,81,0,.08) !important;
+  color: var(--p-primary) !important;
+  border-color: var(--p-primary) !important;
+}
+
+/* ── KPI CARDS → add left border, sharper hover ──────────── */
+.kpi-card {
+  border-top: 1px solid var(--border) !important; /* reset top to thin */
+  border-left: 3px solid transparent;
+  transition: transform .2s cubic-bezier(.4,0,.2,1), box-shadow .2s ease !important;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.15) !important;
+}
+/* Move color indicator: top → left border */
+.kpi-card.green { border-left-color: var(--green) !important; border-top-color: var(--border) !important; }
+.kpi-card.blue  { border-left-color: #2196f3 !important; border-top-color: var(--border) !important; }
+.kpi-card.amber { border-left-color: var(--amber) !important; border-top-color: var(--border) !important; }
+.kpi-card.red   { border-left-color: var(--red) !important; border-top-color: var(--border) !important; }
+.kpi-card.purple{ border-left-color: var(--purple) !important; border-top-color: var(--border) !important; }
+.kpi-card.teal  { border-left-color: var(--teal) !important; border-top-color: var(--border) !important; }
+
+/* Restore kpi-icon as visible emoji/icon (tiger-eyes shows them) */
+.kpi-icon {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 7px !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.kpi-icon.green  { background: rgba(47,179,68,.12) !important; }
+.kpi-icon.blue   { background: rgba(33,150,243,.12) !important; }
+.kpi-icon.amber  { background: rgba(245,159,0,.12) !important; }
+.kpi-icon.red    { background: rgba(200,16,46,.12) !important; }
+.kpi-icon.purple { background: rgba(174,62,201,.12) !important; }
+.kpi-icon.teal   { background: rgba(12,166,120,.12) !important; }
+
+/* KPI value — slightly larger, tabular nums */
+.kpi-value { font-size: 28px !important; font-weight: 800 !important; letter-spacing: -.03em !important; }
+
+/* ── PROGRESS TRACK → thicker, rounder ───────────────────── */
+.kpi-progress-track { height: 4px !important; border-radius: 4px !important; }
+
+/* ── FILTER BAR → accent focus ring orange ───────────────── */
+.filter-select:focus { border-color: var(--p-primary) !important; box-shadow: 0 0 0 3px rgba(230,81,0,.15) !important; }
+.filter-active { border-color: var(--p-primary) !important; background: rgba(230,81,0,.08) !important; color: var(--p-primary) !important; }
+.filter-reset:hover { color: var(--p-primary) !important; border-color: var(--p-primary) !important; }
+
+/* ── SEC HEADER ACTION BUTTONS ────────────────────────────── */
+.btn-ph-primary { background: var(--te-grad) !important; border: none !important; }
+.btn-ph-primary:hover { filter: brightness(1.1); }
+
+/* ── PILL TOGGLE (MtD/OL if any) ─────────────────────────── */
+.mode-toggle button.active,
+.toggle-btn.active { background: var(--te-grad) !important; color: #fff !important; border-color: transparent !important; }
+
+/* ── SECTION CARD HEAD ────────────────────────────────────── */
+.sec-head { border-bottom: 1px solid var(--border); }
+
+/* ── NAV BADGE ─────────────────────────────────────────────── */
+.nav-badge { background: #e65100 !important; }
+
+/* ── AUTH CARD BRAND ──────────────────────────────────────── */
+.auth-btn { background: var(--te-grad) !important; border: none !important; }
+.auth-btn:hover { filter: brightness(1.12); }
+.auth-field input:focus { border-color: var(--p-primary) !important; box-shadow: 0 0 0 3px rgba(230,81,0,.15) !important; }
+
+/* ── FONT SMOOTHING ────────────────────────────────────────── */
+body { -webkit-font-smoothing: antialiased; letter-spacing: -.01em; }
+h1,h2,h3,.kpi-value,.kpi-label,.pg-title,.tb-bc-title,.sb-name { font-family: var(--font) !important; }
+
+/* ── ANIMATE KPI CARDS IN ─────────────────────────────────── */
+@media(prefers-reduced-motion: no-preference) {
+  .kpi-grid .kpi-card {
+    animation: teSlideUp .35s both;
+  }
+  .kpi-grid .kpi-card:nth-child(1){ animation-delay:.04s }
+  .kpi-grid .kpi-card:nth-child(2){ animation-delay:.08s }
+  .kpi-grid .kpi-card:nth-child(3){ animation-delay:.12s }
+  .kpi-grid .kpi-card:nth-child(4){ animation-delay:.16s }
+  .kpi-grid .kpi-card:nth-child(5){ animation-delay:.20s }
+  .kpi-grid .kpi-card:nth-child(6){ animation-delay:.24s }
+  @keyframes teSlideUp {
+    from { opacity:0; transform:translateY(10px) }
+    to   { opacity:1; transform:none }
+  }
+}
+
+/* ── SCROLLBAR → match dark feel ─────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* TIGER-EYES RESKIN END */
 </style>
 
 <!-- ═══════════════ SIDEBAR ═══════════════ -->
