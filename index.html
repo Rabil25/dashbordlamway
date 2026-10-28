@@ -271,17 +271,55 @@ tbody tr:hover td { background: var(--surface-hover); }
 /* ── CONFIG MODAL ── */
 .modal-bg {
   position: fixed; inset: 0; background: rgba(0,0,0,.7);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 100;
+  display: flex; align-items: flex-start; justify-content: center;
+  z-index: 100; overflow-y: auto; padding: 20px 0;
 }
 .modal {
   background: var(--surface-card); border: 1px solid var(--surface-border);
-  border-radius: var(--r-lg); padding: 28px; width: 440px; max-width: 95vw;
+  border-radius: var(--r-lg); padding: 28px; width: 560px; max-width: 95vw;
+  margin: auto;
 }
 .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
 .modal-sub { font-size: 12px; color: var(--text-2); margin-bottom: 20px; }
 .modal-fields { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-section-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-2); padding: 4px 0 2px;
+  border-bottom: 1px solid var(--surface-border); margin-bottom: 4px;
+}
+.target-grid {
+  display: grid; grid-template-columns: 1fr 80px 80px 80px;
+  gap: 6px; align-items: center;
+}
+.target-grid-hdr {
+  display: grid; grid-template-columns: 1fr 80px 80px 80px;
+  gap: 6px; margin-bottom: 2px;
+}
+.target-grid-hdr span { font-size: 10px; color: var(--text-2); text-align: right; }
+.target-grid-hdr span:first-child { text-align: left; }
+.target-kab-label { font-size: 12px; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.target-input { background: var(--surface-input); border: 1px solid var(--surface-border); border-radius: 6px; color: var(--text-1); font-size: 12px; padding: 5px 8px; text-align: right; width: 100%; }
+.target-input:focus { outline: none; border-color: var(--brand); }
+
+/* ── TIER BADGES ── */
+.tier-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600;
+  white-space: nowrap;
+}
+.tier-black    { background: rgba(100,100,100,.2); color: #9ca3af; border: 1px solid rgba(100,100,100,.3); }
+.tier-bronze   { background: rgba(180,120,60,.2);  color: #cd7f32; border: 1px solid rgba(180,120,60,.3); }
+.tier-silver   { background: rgba(160,170,180,.2); color: #c0c8d4; border: 1px solid rgba(160,170,180,.3); }
+.tier-gold     { background: rgba(212,175,55,.2);  color: #f5c542; border: 1px solid rgba(212,175,55,.3); }
+.tier-platinum { background: rgba(100,180,220,.2); color: #67c5e8; border: 1px solid rgba(100,180,220,.3); }
+.tier-diamond  { background: rgba(130,120,255,.2); color: #a78bfa; border: 1px solid rgba(130,120,255,.3); }
+
+/* ── ACHIEVEMENT BAR ── */
+.ach-wrap { display: flex; align-items: center; gap: 6px; }
+.ach-bar  { flex: 1; height: 6px; background: var(--surface-input); border-radius: 999px; overflow: hidden; min-width: 50px; }
+.ach-fill { height: 100%; border-radius: 999px; transition: width .5s var(--ease); }
+.ach-pct  { font-size: 11px; min-width: 34px; text-align: right; font-weight: 600; }
 
 /* ── MAP ── */
 .map-placeholder {
@@ -301,21 +339,79 @@ tbody tr:hover td { background: var(--surface-hover); }
      ══════════════════════════════════════════════════════════ -->
 <div class="modal-bg" x-show="showConfig" x-transition style="display:none">
   <div class="modal">
-    <div class="modal-title">⚙ Konfigurasi GAS URL</div>
-    <div class="modal-sub">Masukkan URL Web App Google Apps Script yang sudah di-deploy. Tidak perlu API Key.</div>
+    <div class="modal-title">⚙ Konfigurasi Dashboard</div>
+    <div class="modal-sub">Pengaturan koneksi GAS, bulan aktif, dan target per kabupaten.</div>
     <div class="modal-fields">
+
+      <!-- GAS URL -->
       <div class="input-grp">
         <label class="input-lbl">GAS Web App URL</label>
         <input class="input" x-model="cfg.gasUrl" placeholder="https://script.google.com/macros/s/AKfy.../exec">
       </div>
+
+      <!-- Bulan -->
       <div class="input-grp">
-        <label class="input-lbl">Bulan</label>
+        <label class="input-lbl">Bulan Aktif</label>
         <select class="select" x-model="cfg.bulan">
-          <option value="10">Oktober 2026</option>
+          <option value="1">Januari 2026</option>
+          <option value="2">Februari 2026</option>
+          <option value="3">Maret 2026</option>
+          <option value="4">April 2026</option>
+          <option value="5">Mei 2026</option>
+          <option value="6">Juni 2026</option>
+          <option value="7">Juli 2026</option>
+          <option value="8">Agustus 2026</option>
           <option value="9">September 2026</option>
+          <option value="10">Oktober 2026</option>
           <option value="11">November 2026</option>
+          <option value="12">Desember 2026</option>
         </select>
       </div>
+
+      <!-- Target Lampung Barat cluster -->
+      <div>
+        <div class="modal-section-title">🎯 Target Lampung Barat</div>
+        <div class="target-grid-hdr">
+          <span>Kabupaten</span><span>IO</span><span>RE</span><span>PS</span>
+        </div>
+        <template x-for="kab in ['LAMPUNG BARAT','TANGGAMUS','PESISIR BARAT']" :key="kab">
+          <div class="target-grid" style="margin-bottom:4px">
+            <span class="target-kab-label" x-text="kab"></span>
+            <input class="target-input" type="number" min="0"
+              :value="cfg.targets[kab]?.io||0"
+              @input="setTarget(kab,'io',$event.target.value)">
+            <input class="target-input" type="number" min="0"
+              :value="cfg.targets[kab]?.re||0"
+              @input="setTarget(kab,'re',$event.target.value)">
+            <input class="target-input" type="number" min="0"
+              :value="cfg.targets[kab]?.ps||0"
+              @input="setTarget(kab,'ps',$event.target.value)">
+          </div>
+        </template>
+      </div>
+
+      <!-- Target Way Kanan cluster -->
+      <div>
+        <div class="modal-section-title">🎯 Target Way Kanan</div>
+        <div class="target-grid-hdr">
+          <span>Kabupaten</span><span>IO</span><span>RE</span><span>PS</span>
+        </div>
+        <template x-for="kab in ['LAMPUNG UTARA','WAY KANAN']" :key="kab">
+          <div class="target-grid" style="margin-bottom:4px">
+            <span class="target-kab-label" x-text="kab"></span>
+            <input class="target-input" type="number" min="0"
+              :value="cfg.targets[kab]?.io||0"
+              @input="setTarget(kab,'io',$event.target.value)">
+            <input class="target-input" type="number" min="0"
+              :value="cfg.targets[kab]?.re||0"
+              @input="setTarget(kab,'re',$event.target.value)">
+            <input class="target-input" type="number" min="0"
+              :value="cfg.targets[kab]?.ps||0"
+              @input="setTarget(kab,'ps',$event.target.value)">
+          </div>
+        </template>
+      </div>
+
       <div style="background:var(--surface-input);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text-2);line-height:1.6">
         <b style="color:var(--text-1)">Cara deploy GAS:</b><br>
         1. Buka Google Sheets → Extensions → Apps Script<br>
@@ -550,9 +646,28 @@ tbody tr:hover td { background: var(--surface-hover); }
         <div class="section-hdr">
           <div>
             <div class="section-title">Performa SF</div>
-            <div class="section-sub" x-text="cluster + ' · ' + sfTable.length + ' SF aktif'"></div>
+            <div class="section-sub" x-text="cluster + ' · ' + sfTable.length + ' SF aktif · Bulan prev: PS ' + prevBulanLabel"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="select" x-model="sfSort" style="font-size:11px;padding:5px 8px">
+              <option value="ps">Sort: PS Bulan Ini</option>
+              <option value="ach">Sort: Achievement %</option>
+              <option value="tier">Sort: Tier</option>
+              <option value="prev">Sort: PS Prev</option>
+            </select>
           </div>
         </div>
+
+        <!-- Tier legend -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+          <template x-for="t in TIER_CONFIG" :key="t.name">
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2)">
+              <span class="tier-badge" :class="'tier-'+t.name.toLowerCase()" x-text="t.icon+' '+t.name"></span>
+              <span x-text="'PS prev: '+t.rangeLabel+' · Target: '+t.target"></span>
+            </div>
+          </template>
+        </div>
+
         <div class="tbl-wrap">
           <div class="tbl-toolbar">
             <input class="tbl-search" placeholder="Cari kode atau nama SF..." x-model="sfSearch">
@@ -567,38 +682,59 @@ tbody tr:hover td { background: var(--surface-hover); }
             <table>
               <thead>
                 <tr>
-                  <th>Kode SF</th><th>Nama SF</th><th>Kabupaten</th>
-                  <th>Channel</th>
-                  <th style="text-align:right">IO</th>
-                  <th style="text-align:right">RE</th>
+                  <th>#</th>
+                  <th>SF</th>
+                  <th>Kab</th>
+                  <th>Tier</th>
+                  <th style="text-align:right">PS Prev</th>
+                  <th style="text-align:right">Target</th>
                   <th style="text-align:right">PS</th>
-                  <th style="min-width:100px">LOS %</th>
-                  <th style="text-align:right">Batal</th>
+                  <th style="min-width:110px">Achievement</th>
+                  <th style="text-align:right">IO</th>
+                  <th style="text-align:right">LOS%</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                <template x-for="sf in filteredSF" :key="sf.code">
+                <template x-for="(sf, idx) in filteredSF" :key="sf.code">
                   <tr>
-                    <td class="mono" x-text="sf.code"></td>
-                    <td x-text="sf.nama"></td>
-                    <td style="font-size:11px;color:var(--text-2)" x-text="sf.kab"></td>
-                    <td><span class="badge" :class="sf.channel==='Digital' ? 'b-info' : 'b-warning'" x-text="sf.channel||'—'"></span></td>
-                    <td style="text-align:right;color:var(--warning)" x-text="sf.io"></td>
-                    <td style="text-align:right;color:var(--info)"    x-text="sf.re"></td>
-                    <td style="text-align:right;color:var(--success);font-weight:600" x-text="sf.ps"></td>
+                    <td style="color:var(--text-3);font-size:11px" x-text="idx+1"></td>
                     <td>
-                      <div style="display:flex;align-items:center;gap:6px">
-                        <div class="pb" style="flex:1">
-                          <div class="pb-fill" :style="'width:'+sf.los+'%;background:' + (sf.los>=60 ? 'var(--success)' : sf.los>=30 ? 'var(--warning)' : 'var(--danger)')"></div>
+                      <div style="font-weight:500;font-size:12px" x-text="sf.nama||sf.code"></div>
+                      <div class="mono" style="font-size:10px;color:var(--text-2)" x-text="sf.code"></div>
+                    </td>
+                    <td style="font-size:11px;color:var(--text-2)" x-text="sf.kab"></td>
+                    <td>
+                      <span class="tier-badge" :class="'tier-'+sf.tier.toLowerCase()" x-text="sf.tierIcon+' '+sf.tier"></span>
+                    </td>
+                    <td style="text-align:right;color:var(--text-2)" x-text="sf.prevPS"></td>
+                    <td style="text-align:right;color:var(--text-2);font-weight:600" x-text="sf.target"></td>
+                    <td style="text-align:right;color:var(--success);font-weight:700;font-size:14px" x-text="sf.ps"></td>
+                    <td>
+                      <div class="ach-wrap">
+                        <div class="ach-bar">
+                          <div class="ach-fill"
+                            :style="'width:'+Math.min(sf.ach,100)+'%;background:'+(sf.ach>=100?'var(--success)':sf.ach>=60?'var(--warning)':'var(--danger)')">
+                          </div>
                         </div>
-                        <span style="font-size:11px;color:var(--text-2);min-width:30px;text-align:right" x-text="sf.los+'%'"></span>
+                        <span class="ach-pct"
+                          :style="'color:'+(sf.ach>=100?'var(--success)':sf.ach>=60?'var(--warning)':'var(--danger)')"
+                          x-text="sf.ach+'%'"></span>
                       </div>
                     </td>
-                    <td style="text-align:right;color:var(--danger)" x-text="sf.cancel"></td>
+                    <td style="text-align:right;color:var(--warning)" x-text="sf.io"></td>
+                    <td style="text-align:right;font-size:11px"
+                      :style="'color:'+(sf.los>=60?'var(--success)':sf.los>=30?'var(--warning)':'var(--danger)')"
+                      x-text="sf.los+'%'"></td>
+                    <td>
+                      <span class="badge"
+                        :class="sf.action==='Counseling'?'b-danger':(sf.action==='Couching'?'b-warning':'b-success')"
+                        x-text="sf.action"></span>
+                    </td>
                   </tr>
                 </template>
                 <tr x-show="filteredSF.length===0">
-                  <td colspan="9" class="empty">Tidak ada SF ditemukan</td>
+                  <td colspan="11" class="empty">Tidak ada SF ditemukan</td>
                 </tr>
               </tbody>
             </table>
@@ -606,6 +742,9 @@ tbody tr:hover td { background: var(--surface-hover); }
           <div class="tbl-foot">
             <span x-text="filteredSF.length + ' SF'"></span>
             <span>Total PS: <strong style="color:var(--success)" x-text="filteredSF.reduce((a,b)=>a+b.ps,0)"></strong></span>
+            <span>Avg Achievement: <strong
+              :style="'color:'+(avgAch>=100?'var(--success)':avgAch>=60?'var(--warning)':'var(--danger)')"
+              x-text="avgAch+'%'"></strong></span>
           </div>
         </div>
       </div>
@@ -833,6 +972,24 @@ const ECHARTS_THEME = {
 // Theme for pie/donut charts — excludes xAxis/yAxis to prevent ECharts TypeError
 const PIE_THEME = (function(){const {xAxis,yAxis,grid,...t}=ECHARTS_THEME; return t;})();
 
+// ── SF TIER CONFIG ──────────────────────────────────────────
+const TIER_CONFIG = [
+  { name:'Black',    icon:'⬛', minPS:0,  maxPS:0,  target:5,  action:'Counseling', rangeLabel:'0'    },
+  { name:'Bronze',   icon:'🥉', minPS:1,  maxPS:9,  target:15, action:'Couching',   rangeLabel:'1–9'  },
+  { name:'Silver',   icon:'🥈', minPS:10, maxPS:15, target:20, action:'On Track',   rangeLabel:'10–15'},
+  { name:'Gold',     icon:'🥇', minPS:16, maxPS:25, target:30, action:'On Track',   rangeLabel:'16–25'},
+  { name:'Platinum', icon:'💎', minPS:26, maxPS:50, target:50, action:'On Track',   rangeLabel:'26–50'},
+  { name:'Diamond',  icon:'💠', minPS:51, maxPS:Infinity, target:65, action:'On Track', rangeLabel:'>50'},
+];
+
+function getSFTier(prevPS) {
+  for (const t of TIER_CONFIG) {
+    if (prevPS >= t.minPS && prevPS <= t.maxPS) return t;
+  }
+  return TIER_CONFIG[0];
+}
+
+
 // ============================================================
 //  ALPINE APP
 // ============================================================
@@ -845,14 +1002,17 @@ function app() {
     showConfig: false,
     rows: [],         // raw rows from GAS
     lastUpdate: '',
+    TIER_CONFIG,      // expose to template
 
     // Config
     cfg: {
       gasUrl: localStorage.getItem('wok_gas_url') || DEFAULT_GAS_URL,
       bulan: '10',
+      targets: JSON.parse(localStorage.getItem('wok_targets') || '{}'),
     },
 
     // Filters
+    sfSort: 'ps',
     sfSearch: '', sfKabFilter: '',
     orderSearch: '', orderStatus: '', orderKab: '', orderProduk: '',
     orderPage: 0,
@@ -901,8 +1061,24 @@ function app() {
     // ── Config ──
     saveConfig() {
       localStorage.setItem('wok_gas_url', this.cfg.gasUrl);
+      localStorage.setItem('wok_targets', JSON.stringify(this.cfg.targets));
       this.showConfig = false;
       this.loadData();
+    },
+
+    setTarget(kab, field, val) {
+      if (!this.cfg.targets[kab]) this.cfg.targets[kab] = {io:0,re:0,ps:0};
+      this.cfg.targets[kab][field] = parseInt(val)||0;
+    },
+
+    get prevBulan() {
+      const b = parseInt(this.cfg.bulan);
+      return b <= 1 ? 12 : b - 1;
+    },
+
+    get prevBulanLabel() {
+      const names = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      return names[this.prevBulan] || this.prevBulan;
     },
 
     // ── Load Data via GAS ──
@@ -983,25 +1159,38 @@ function app() {
       const map = {};
       const rows = this.filteredRows;
       const bulan = this.cfg.bulan;
+      const prevBulan = this.prevBulan.toString();
+
       rows.forEach(r => {
         const code = (r[C.CODE_SF]||'').trim();
         if (!code) return;
         if (!map[code]) map[code] = {
           code, nama: r[C.NAMA_SF]||'', channel: r[C.CHANNEL2]||'',
-          kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0,
+          kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
         };
         const m = map[code];
         const blnIOsf = (r[C.BLN_IO]||'').toString();
+        const blnPS   = (r[C.BLN_PS]||'').toString();
         if (blnIOsf===bulan) m.io++;
         if ((r[C.BLN_RE]||'').toString()===bulan) m.re++;
-        if ((r[C.BLN_PS]||'').toString()===bulan) m.ps++;
+        if (blnPS===bulan) m.ps++;
+        if (blnPS===prevBulan) m.prevPS++;
         const fx = (r[C.STATUS_FNL]||'').toUpperCase();
         if (blnIOsf===bulan && (fx.includes('CANCEL') || fx.includes('BATAL'))) m.cancel++;
       });
+
       const arr = Object.values(map);
       arr.forEach(sf => {
         sf.los = sf.io > 0 ? Math.round((sf.ps / sf.io) * 100) : 0;
+        // Tier classification based on previous month PS
+        const tierInfo = getSFTier(sf.prevPS);
+        sf.tier     = tierInfo.name;
+        sf.tierIcon = tierInfo.icon;
+        sf.target   = tierInfo.target;
+        sf.action   = tierInfo.action;
+        sf.ach      = sf.target > 0 ? Math.round((sf.ps / sf.target) * 100) : 0;
       });
+
       return arr.sort((a,b) => b.ps - a.ps);
     },
 
@@ -1012,7 +1201,19 @@ function app() {
       const q = this.sfSearch.toLowerCase();
       if (q) arr = arr.filter(sf => sf.code.toLowerCase().includes(q) || sf.nama.toLowerCase().includes(q));
       if (this.sfKabFilter) arr = arr.filter(sf => sf.kab.toUpperCase() === this.sfKabFilter.toUpperCase());
+      // Sort
+      const tierOrder = ['Diamond','Platinum','Gold','Silver','Bronze','Black'];
+      if (this.sfSort === 'ach')  arr = [...arr].sort((a,b) => b.ach - a.ach);
+      else if (this.sfSort === 'tier') arr = [...arr].sort((a,b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier));
+      else if (this.sfSort === 'prev') arr = [...arr].sort((a,b) => b.prevPS - a.prevPS);
+      // default 'ps' is already sorted in buildSFTable
       return arr;
+    },
+
+    get avgAch() {
+      const arr = this.filteredSF;
+      if (!arr.length) return 0;
+      return Math.round(arr.reduce((s,sf) => s + sf.ach, 0) / arr.length);
     },
 
     // ── Orders ──
