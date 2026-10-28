@@ -251,6 +251,104 @@ tbody tr:hover td { background: var(--surface-hover); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty { text-align: center; padding: 40px; color: var(--text-3); font-size: 13px; }
 
+/* ── TIGER EYES: HERO FUNNEL ── */
+.te-hero {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 14px; margin-bottom: 16px;
+}
+@media(max-width:900px){ .te-hero { grid-template-columns: 1fr; } }
+
+.te-ps-block {
+  background: var(--surface-card); border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg); padding: 22px 24px;
+  position: relative; overflow: hidden;
+}
+.te-ps-block::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--success);
+}
+.te-hero-lbl {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-3); margin-bottom: 4px;
+}
+.te-hero-num {
+  font-size: 72px; font-weight: 800; line-height: 1;
+  color: var(--success); letter-spacing: -3px; margin-bottom: 10px;
+}
+.te-delta-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.te-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: .02em;
+}
+.te-pill-up   { background: rgba(63,185,80,.15); color: var(--success); border: 1px solid rgba(63,185,80,.3); }
+.te-pill-down { background: rgba(248,81,73,.15);  color: var(--danger);  border: 1px solid rgba(248,81,73,.3); }
+.te-pill-neu  { background: var(--surface-elevated); color: var(--text-2); border: 1px solid var(--surface-border); }
+
+.te-ach-bar-wrap { margin-bottom: 12px; }
+.te-ach-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-2); margin-bottom: 5px; }
+.te-ach-pct { font-size: 13px; font-weight: 700; }
+.te-bar { height: 8px; background: var(--surface-elevated); border-radius: 999px; overflow: hidden; }
+.te-bar-fill { height: 100%; border-radius: 999px; transition: width .6s var(--ease); }
+
+.te-meta-row { display: flex; gap: 18px; flex-wrap: wrap; }
+.te-meta { font-size: 12px; color: var(--text-2); }
+.te-meta strong { color: var(--text-1); font-weight: 700; }
+
+/* Secondary metric cards (IO/RE) */
+.te-secondary { display: flex; flex-direction: column; gap: 10px; }
+.te-metric-card {
+  background: var(--surface-card); border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg); padding: 14px 16px; flex: 1;
+  position: relative; overflow: hidden;
+}
+.te-metric-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.te-io-card::before  { background: var(--warning); }
+.te-re-card::before  { background: var(--info); }
+.te-mc-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); margin-bottom: 4px; }
+.te-mc-val { font-size: 32px; font-weight: 800; line-height: 1.05; letter-spacing: -1px; margin-bottom: 6px; }
+.te-mc-ach { font-size: 11px; color: var(--text-2); margin-bottom: 5px; }
+.te-mc-bar { height: 4px; background: var(--surface-elevated); border-radius: 999px; overflow: hidden; }
+.te-mc-bar-fill { height: 100%; border-radius: 999px; transition: width .6s var(--ease); }
+
+/* ── TIGER EYES: KAB BREAKDOWN TABLE ── */
+.te-kab-card {
+  background: var(--surface-card); border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg); overflow: hidden; margin-bottom: 16px;
+}
+.te-kab-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--surface-border);
+}
+.te-kab-title { font-size: 13px; font-weight: 700; }
+.te-kab-sub   { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+
+table.te-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.te-tbl thead th {
+  background: var(--surface-elevated); color: var(--text-2);
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; padding: 9px 14px; text-align: right;
+  border-bottom: 1px solid var(--surface-border);
+}
+table.te-tbl thead th:first-child { text-align: left; }
+table.te-tbl tbody td { padding: 10px 14px; border-bottom: 1px solid var(--surface-border); text-align: right; vertical-align: middle; }
+table.te-tbl tbody td:first-child { text-align: left; font-weight: 600; }
+table.te-tbl tbody tr:last-child td { border-bottom: none; }
+table.te-tbl tbody tr:hover td { background: var(--surface-hover); }
+
+.te-mom-cell { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.te-mom-pct { font-weight: 700; }
+.te-mom-frac { font-size: 10px; color: var(--text-3); }
+.te-mini-bar { width: 60px; height: 3px; background: var(--surface-elevated); border-radius: 999px; overflow: hidden; }
+.te-mini-bar-fill { height: 100%; border-radius: 999px; }
+
+.d-up   { color: var(--success); font-weight: 700; }
+.d-down { color: var(--danger);  font-weight: 700; }
+.d-neu  { color: var(--text-3);  font-weight: 500; }
+
 /* ── TOAST ── */
 .toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 999; }
 .toast {
@@ -502,62 +600,200 @@ tbody tr:hover td { background: var(--surface-hover); }
       <!-- ══ PAGE: DASHBOARD ══ -->
       <div class="page" :class="{active:page==='dashboard'}" x-show="!loading && rows.length>0">
 
-        <!-- KPI Row -->
-        <div class="kpi-grid">
-          <div class="stat-card">
-            <div class="stat-card__accent" style="background:var(--warning)"></div>
-            <div class="stat-card__lbl">Total IO</div>
-            <div class="stat-card__val" style="color:var(--warning)" x-text="kpi.io"></div>
-            <div class="stat-card__sub">Input Order bulan ini</div>
+        <!-- ── TIGER EYES HERO ── -->
+        <div class="te-hero">
+
+          <!-- PS HERO BLOCK -->
+          <div class="te-ps-block">
+            <div class="te-hero-lbl">PUT IN SERVICE — BULAN INI</div>
+            <div class="te-hero-num" x-text="kpi.ps"></div>
+
+            <!-- Delta pills: WoW & MoM -->
+            <div class="te-delta-row">
+              <template x-if="kpi.wowPS !== null">
+                <span class="te-pill" :class="kpi.wowPS>=0 ? 'te-pill-up' : 'te-pill-down'">
+                  <span x-text="kpi.wowPS>=0 ? '▲' : '▼'"></span>
+                  <span x-text="'WoW ' + (kpi.wowPS>=0?'+':'') + kpi.wowPS + '%'"></span>
+                </span>
+              </template>
+              <template x-if="kpi.momPSvsLast !== null">
+                <span class="te-pill" :class="kpi.momPSvsLast>=0 ? 'te-pill-up' : 'te-pill-down'">
+                  <span x-text="kpi.momPSvsLast>=0 ? '▲' : '▼'"></span>
+                  <span x-text="'MoM ' + (kpi.momPSvsLast>=0?'+':'') + kpi.momPSvsLast + '%'"></span>
+                </span>
+              </template>
+              <template x-if="kpi.wowPS === null && kpi.momPSvsLast === null">
+                <span class="te-pill te-pill-neu">Belum ada perbandingan</span>
+              </template>
+            </div>
+
+            <!-- MOM Achievement bar -->
+            <div class="te-ach-bar-wrap">
+              <div class="te-ach-label">
+                <span>Target PS: <strong x-text="kpi.tgtPS||'—'"></strong></span>
+                <span class="te-ach-pct"
+                  :style="kpi.momPS !== null ? (kpi.momPS>=100 ? 'color:var(--success)' : kpi.momPS>=70 ? 'color:var(--warning)' : 'color:var(--danger)') : ''"
+                  x-text="kpi.momPS !== null ? kpi.momPS + '% MOM' : 'Target belum diset'">
+                </span>
+              </div>
+              <div class="te-bar">
+                <div class="te-bar-fill"
+                  :style="{
+                    width: kpi.momPS !== null ? Math.min(kpi.momPS,100)+'%' : '0%',
+                    background: kpi.momPS >= 100 ? 'var(--success)' : kpi.momPS >= 70 ? 'var(--warning)' : 'var(--danger)'
+                  }">
+                </div>
+              </div>
+            </div>
+
+            <!-- DRR & PS/RE -->
+            <div class="te-meta-row">
+              <div class="te-meta">DRR <strong x-text="kpi.drr"></strong>/hari</div>
+              <div class="te-meta">PS/RE <strong x-text="kpi.psRE + '%'"></strong></div>
+              <div class="te-meta">Hari berjalan <strong x-text="kpi.hariPS"></strong></div>
+              <template x-if="kpi.psPrev > 0">
+                <div class="te-meta">PS prev <strong x-text="kpi.psPrev"></strong></div>
+              </template>
+              <template x-if="kpi.cancel > 0">
+                <div class="te-meta" style="color:var(--danger)">Batal <strong x-text="kpi.cancel"></strong></div>
+              </template>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card__accent" style="background:var(--info)"></div>
-            <div class="stat-card__lbl">Total RE</div>
-            <div class="stat-card__val" style="color:var(--info)" x-text="kpi.re"></div>
-            <div class="stat-card__sub">Register Engineer bulan ini</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card__accent" style="background:var(--success)"></div>
-            <div class="stat-card__lbl">Total PS</div>
-            <div class="stat-card__val" style="color:var(--success)" x-text="kpi.ps"></div>
-            <div class="stat-card__sub">Put In Service bulan ini</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card__accent" style="background:var(--brand)"></div>
-            <div class="stat-card__lbl">DRR</div>
-            <div class="stat-card__val" style="color:var(--brand)" x-text="kpi.drr"></div>
-            <div class="stat-card__sub">PS/hari × <span x-text="kpi.hariPS"></span> hari</div>
+
+          <!-- IO & RE secondary cards -->
+          <div class="te-secondary">
+            <!-- IO -->
+            <div class="te-metric-card te-io-card">
+              <div class="te-mc-lbl">INPUT ORDER</div>
+              <div class="te-mc-val" style="color:var(--warning)" x-text="kpi.io"></div>
+              <div class="te-mc-ach">
+                <template x-if="kpi.momIO !== null">
+                  <span>Target <span x-text="kpi.tgtIO"></span> · <strong
+                    :style="kpi.momIO>=100?'color:var(--success)':kpi.momIO>=70?'color:var(--warning)':'color:var(--danger)'"
+                    x-text="kpi.momIO + '%'"></strong></span>
+                </template>
+                <template x-if="kpi.momIO === null"><span style="color:var(--text-3)">Target belum diset</span></template>
+              </div>
+              <div class="te-mc-bar">
+                <div class="te-mc-bar-fill"
+                  :style="{width: kpi.momIO!==null ? Math.min(kpi.momIO,100)+'%':'0%', background:'var(--warning)'}">
+                </div>
+              </div>
+              <div style="font-size:10px;color:var(--text-3);margin-top:5px"
+                x-text="kpi.io>0 ? 'RE/IO ' + Math.round(kpi.re/kpi.io*100) + '%' : ''">
+              </div>
+            </div>
+
+            <!-- RE -->
+            <div class="te-metric-card te-re-card">
+              <div class="te-mc-lbl">REGISTER ENGINEER</div>
+              <div class="te-mc-val" style="color:var(--info)" x-text="kpi.re"></div>
+              <div class="te-mc-ach">
+                <template x-if="kpi.momRE !== null">
+                  <span>Target <span x-text="kpi.tgtRE"></span> · <strong
+                    :style="kpi.momRE>=100?'color:var(--success)':kpi.momRE>=70?'color:var(--warning)':'color:var(--danger)'"
+                    x-text="kpi.momRE + '%'"></strong></span>
+                </template>
+                <template x-if="kpi.momRE === null"><span style="color:var(--text-3)">Target belum diset</span></template>
+              </div>
+              <div class="te-mc-bar">
+                <div class="te-mc-bar-fill"
+                  :style="{width: kpi.momRE!==null ? Math.min(kpi.momRE,100)+'%':'0%', background:'var(--info)'}">
+                </div>
+              </div>
+              <div style="font-size:10px;color:var(--text-3);margin-top:5px"
+                x-text="kpi.re>0 ? 'PS/RE ' + kpi.psRE + '%' : ''">
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Funnel -->
-        <div class="funnel">
-          <div class="funnel-step">
-            <div class="funnel-val" style="color:var(--warning)" x-text="kpi.io"></div>
-            <div class="funnel-lbl">IO</div>
-            <div class="funnel-rate">—</div>
+        <!-- ── BREAKDOWN PER KABUPATEN ── -->
+        <div class="te-kab-card">
+          <div class="te-kab-hdr">
+            <div>
+              <div class="te-kab-title">Breakdown per Kabupaten</div>
+              <div class="te-kab-sub" x-text="'Cluster ' + cluster + ' · MOM = aktual / target × 100%'"></div>
+            </div>
+            <button class="btn" @click="showTargetModal=true" style="font-size:11px;padding:5px 10px">⚙ Set Target</button>
           </div>
-          <div class="funnel-arrow">›</div>
-          <div class="funnel-step">
-            <div class="funnel-val" style="color:var(--info)" x-text="kpi.re"></div>
-            <div class="funnel-lbl">RE</div>
-            <div class="funnel-rate" x-text="kpi.io>0 ? Math.round(kpi.re/kpi.io*100)+'% convert' : '—'"></div>
-          </div>
-          <div class="funnel-arrow">›</div>
-          <div class="funnel-step">
-            <div class="funnel-val" style="color:var(--success)" x-text="kpi.ps"></div>
-            <div class="funnel-lbl">PS</div>
-            <div class="funnel-rate" x-text="kpi.re>0 ? Math.round(kpi.ps/kpi.re*100)+'% convert' : '—'"></div>
-          </div>
-          <div class="funnel-arrow">›</div>
-          <div class="funnel-step">
-            <div class="funnel-val" style="color:var(--danger)" x-text="kpi.cancel"></div>
-            <div class="funnel-lbl">Batal</div>
-            <div class="funnel-rate" x-text="kpi.io>0 ? Math.round(kpi.cancel/kpi.io*100)+'% dari IO' : '—'" style="color:var(--danger)"></div>
-          </div>
+          <table class="te-tbl">
+            <thead>
+              <tr>
+                <th style="text-align:left">KABUPATEN</th>
+                <th>PS / Target</th>
+                <th>MOM PS</th>
+                <th>RE</th>
+                <th>PS/RE</th>
+                <th>IO</th>
+                <th>Δ MoM</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="row in kabBreakdown" :key="row.kab">
+                <tr>
+                  <td style="font-size:12px;font-weight:600" x-text="row.kab"></td>
+
+                  <!-- PS / Target -->
+                  <td>
+                    <div class="te-mom-cell">
+                      <span style="font-size:13px;font-weight:700;color:var(--success)" x-text="row.ps"></span>
+                      <span class="te-mom-frac" x-text="row.tPS > 0 ? '/ ' + row.tPS : '—'"></span>
+                    </div>
+                  </td>
+
+                  <!-- MOM% with mini bar -->
+                  <td>
+                    <div class="te-mom-cell">
+                      <span class="te-mom-pct"
+                        :style="row.momPS===null ? 'color:var(--text-3)' : row.momPS>=100 ? 'color:var(--success)' : row.momPS>=70 ? 'color:var(--warning)' : 'color:var(--danger)'"
+                        x-text="row.momPS !== null ? row.momPS + '%' : '—'">
+                      </span>
+                      <div class="te-mini-bar" x-show="row.momPS !== null">
+                        <div class="te-mini-bar-fill"
+                          :style="{
+                            width: row.momPS !== null ? Math.min(row.momPS,100)+'%' : '0%',
+                            background: row.momPS>=100 ? 'var(--success)' : row.momPS>=70 ? 'var(--warning)' : 'var(--danger)'
+                          }">
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- RE -->
+                  <td style="color:var(--info);font-weight:600" x-text="row.re"></td>
+
+                  <!-- PS/RE ratio -->
+                  <td>
+                    <span :style="row.psRE>=80?'color:var(--success)':row.psRE>=60?'color:var(--warning)':'color:var(--danger)'"
+                      x-text="row.re>0 ? row.psRE+'%' : '—'">
+                    </span>
+                  </td>
+
+                  <!-- IO -->
+                  <td style="color:var(--warning);font-weight:600" x-text="row.io"></td>
+
+                  <!-- ΔMoM -->
+                  <td>
+                    <template x-if="row.momDelta !== null">
+                      <span :class="row.momDelta>=0 ? 'd-up' : 'd-down'"
+                        x-text="(row.momDelta>=0?'▲ +':'▼ ') + row.momDelta + '%'">
+                      </span>
+                    </template>
+                    <template x-if="row.momDelta === null">
+                      <span class="d-neu">—</span>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+              <tr x-show="kabBreakdown.length===0">
+                <td colspan="7" class="empty">Tidak ada data</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <!-- Charts Row 1 -->
+        <!-- ── CHARTS ── -->
         <div class="charts-grid">
           <div class="card">
             <div class="card-header">
@@ -579,7 +815,6 @@ tbody tr:hover td { background: var(--surface-hover); }
           </div>
         </div>
 
-        <!-- Charts Row 2 -->
         <div class="charts-grid-3">
           <div class="card">
             <div class="card-header"><div class="card-title">Channel</div></div>
@@ -1122,26 +1357,95 @@ function app() {
       const rows = this.filteredRows;
       let io=0, re=0, ps=0, cancel=0;
       const bulan = this.cfg.bulan;
+      const prevBulan = this.prevBulan.toString();
       const today = new Date();
       const hariPS = today.getDate();
-      const psSet = new Set();
+
+      // Weekly buckets for WoW (minggu ini = last 7 days, minggu lalu = 8-14 days ago)
+      const now = today.getTime();
+      const d7  = now - 7*86400000;
+      const d14 = now - 14*86400000;
+      let psWk0=0, psWk1=0, ioPrevTotal=0, rePrevTotal=0, psPrevTotal=0;
 
       rows.forEach(r => {
         const blnIO = (r[C.BLN_IO]||'').toString();
-        if (blnIO === bulan) io++;
         const blnRE = (r[C.BLN_RE]||'').toString();
-        if (blnRE === bulan) re++;
         const blnPS = (r[C.BLN_PS]||'').toString();
-        if (blnPS === bulan) ps++;
+        if (blnIO === bulan) io++;
+        if (blnRE === bulan) re++;
+        if (blnPS === bulan) {
+          ps++;
+          // weekly PS
+          const tgl = r[C.DATE_PS] || r[C.DATE_IO] || '';
+          const ts  = tgl ? new Date(tgl).getTime() : 0;
+          if (ts > d7)       psWk0++;
+          else if (ts > d14) psWk1++;
+        }
+        if (blnPS === prevBulan) psPrevTotal++;
+        if (blnIO === prevBulan) ioPrevTotal++;
+        if (blnRE === prevBulan) rePrevTotal++;
         const fx = (r[C.STATUS_FNL]||'').toUpperCase();
         if (blnIO === bulan && (fx.includes('CANCEL') || fx.includes('BATAL'))) cancel++;
       });
+
+      // Total targets for cluster
+      const kabs = CLUSTER[this.cluster]?.kab || [];
+      let tgtIO=0, tgtRE=0, tgtPS=0;
+      kabs.forEach(k => {
+        const t = this.cfg.targets[k] || {};
+        tgtPS += t.ps||0; tgtRE += t.re||0; tgtIO += t.io||0;
+      });
+
+      const momPS = tgtPS > 0 ? Math.round(ps/tgtPS*100) : null;
+      const momRE = tgtRE > 0 ? Math.round(re/tgtRE*100) : null;
+      const momIO = tgtIO > 0 ? Math.round(io/tgtIO*100) : null;
+      const wowPS = psWk1 > 0 ? Math.round((psWk0-psWk1)/psWk1*100) : null;
+      const momPSvsLast = psPrevTotal > 0 ? Math.round((ps-psPrevTotal)/psPrevTotal*100) : null;
 
       return {
         io, re, ps, cancel,
         hariPS,
         drr: hariPS > 0 ? (ps / hariPS).toFixed(2) : '0',
+        psRE: re > 0 ? (ps/re*100).toFixed(1) : '0',
+        reIO: io > 0 ? (re/io*100).toFixed(1) : '0',
+        tgtPS, tgtRE, tgtIO,
+        momPS, momRE, momIO,
+        wowPS, momPSvsLast,
+        psPrev: psPrevTotal,
       };
+    },
+
+    // ── Breakdown per Kabupaten ──
+    get kabBreakdown() {
+      const rows = this.filteredRows;
+      const bulan = this.cfg.bulan;
+      const prevBulan = this.prevBulan.toString();
+      const kabs = CLUSTER[this.cluster]?.kab || [];
+      const map = {};
+      kabs.forEach(k => { map[k] = { kab:k, io:0, re:0, ps:0, prevPS:0 }; });
+
+      rows.forEach(r => {
+        const kab = (r[C.VAL_KAB]||'').trim().toUpperCase();
+        if (!map[kab]) return;
+        const blnIO = (r[C.BLN_IO]||'').toString();
+        const blnRE = (r[C.BLN_RE]||'').toString();
+        const blnPS = (r[C.BLN_PS]||'').toString();
+        if (blnIO === bulan) map[kab].io++;
+        if (blnRE === bulan) map[kab].re++;
+        if (blnPS === bulan) map[kab].ps++;
+        if (blnPS === prevBulan) map[kab].prevPS++;
+      });
+
+      return kabs.map(k => {
+        const d = map[k];
+        const t = this.cfg.targets[k] || {};
+        const tPS = t.ps||0, tRE = t.re||0, tIO = t.io||0;
+        const momPS = tPS > 0 ? Math.round(d.ps/tPS*100) : null;
+        const momRE = tRE > 0 ? Math.round(d.re/tRE*100) : null;
+        const psRE  = d.re > 0 ? Math.round(d.ps/d.re*100) : 0;
+        const momDelta = d.prevPS > 0 ? Math.round((d.ps - d.prevPS)/d.prevPS*100) : null;
+        return { ...d, tPS, tRE, tIO, momPS, momRE, psRE, momDelta };
+      });
     },
 
     // ── Top SF ──
