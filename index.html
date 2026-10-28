@@ -2804,36 +2804,64 @@ function app() {
       const chart = this.getOrInit('echarts-map');
       if (!chart) return;
       const rows = this.koordinatRows;
-      const data = rows.map(r => ({
-        value: [r.lng, r.lat],
-        name: r.id,
-        status: r.status,
-        sf: r.sf,
-        itemStyle: {
-          color: r.status.includes('Put In Service') ? '#22d972' :
-                 r.status.includes('CANCEL') ? '#ff4d4d' : '#fbbf24',
-          opacity: .7,
-        },
-      }));
+      const light = isLight();
+
+      const mkSeries = (label, color, filter) => ({
+        name: label,
+        type: 'scatter',
+        data: rows.filter(filter).map(r => ({
+          value: [r.lng, r.lat],
+          name: r.id,
+          sf: r.sf,
+          status: r.status,
+        })),
+        symbolSize: 9,
+        itemStyle: { color, opacity: 0.75, borderColor: light ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.3)', borderWidth: 1 },
+        emphasis: { itemStyle: { opacity: 1, borderWidth: 2 } },
+      });
+
+      const th = getChartTheme();
       chart.setOption({
-        backgroundColor:'transparent',
+        backgroundColor: 'transparent',
+        legend: {
+          ...th.legend,
+          top: 4,
+          data: ['Put In Service','IO','Batal'],
+        },
         tooltip: {
-          ...getChartTheme().tooltip,
-          trigger:'item',
-          formatter: p => `<div style="font-size:11px">${p.data.name}<br>${p.data.sf}<br>${p.data.status}</div>`,
+          ...th.tooltip,
+          trigger: 'item',
+          formatter: p => {
+            const d = p.data;
+            return `<div style="font-size:11px;line-height:1.6">
+              <b>${d.name}</b><br>
+              SF: ${d.sf}<br>
+              Status: ${d.status}<br>
+              Lng: ${d.value[0].toFixed(5)}, Lat: ${d.value[1].toFixed(5)}
+            </div>`;
+          },
         },
-        geo: {
-          map: 'lampung',
-          silent: true,
-          label: { show:false },
-          itemStyle: { areaColor:'#1c2128', borderColor:'#30363d' },
+        grid: { left: 50, right: 20, top: 40, bottom: 40 },
+        xAxis: {
+          ...th.xAxis,
+          type: 'value',
+          name: 'Longitude',
+          nameTextStyle: { color: light ? '#8a6050' : '#484f58', fontFamily:"'Poppins',sans-serif", fontSize: 10 },
+          scale: true,
+          splitLine: { lineStyle: { color: light ? 'rgba(180,120,90,.10)' : '#21262d' } },
         },
-        series: [{
-          type:'scatter',
-          coordinateSystem:'geo',
-          data,
-          symbolSize: 8,
-        }],
+        yAxis: {
+          ...th.yAxis,
+          type: 'value',
+          name: 'Latitude',
+          nameTextStyle: { color: light ? '#8a6050' : '#484f58', fontFamily:"'Poppins',sans-serif", fontSize: 10 },
+          scale: true,
+        },
+        series: [
+          mkSeries('Put In Service', '#22d972', r => r.status.includes('Put In Service')),
+          mkSeries('IO',             '#fbbf24', r => !r.status.includes('Put In Service') && !r.status.includes('CANCEL')),
+          mkSeries('Batal',          '#ff4d4d', r => r.status.includes('CANCEL')),
+        ],
       });
     },
 
