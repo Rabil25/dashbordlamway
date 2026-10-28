@@ -289,11 +289,11 @@ tbody tr:hover td { background: var(--surface-hover); }
   border-bottom: 1px solid var(--surface-border); margin-bottom: 4px;
 }
 .target-grid {
-  display: grid; grid-template-columns: 1fr 80px 80px 80px;
+  display: grid; grid-template-columns: 1fr 70px 70px 80px;
   gap: 6px; align-items: center;
 }
 .target-grid-hdr {
-  display: grid; grid-template-columns: 1fr 80px 80px 80px;
+  display: grid; grid-template-columns: 1fr 70px 70px 80px;
   gap: 6px; margin-bottom: 2px;
 }
 .target-grid-hdr span { font-size: 10px; color: var(--text-2); text-align: right; }
@@ -301,6 +301,7 @@ tbody tr:hover td { background: var(--surface-hover); }
 .target-kab-label { font-size: 12px; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .target-input { background: var(--surface-input); border: 1px solid var(--surface-border); border-radius: 6px; color: var(--text-1); font-size: 12px; padding: 5px 8px; text-align: right; width: 100%; }
 .target-input:focus { outline: none; border-color: var(--brand); }
+.target-calc { font-size: 12px; color: var(--text-2); text-align: right; padding: 5px 8px; background: var(--surface-base); border: 1px solid var(--surface-border); border-radius: 6px; }
 
 /* ── TIER BADGES ── */
 .tier-badge {
@@ -372,20 +373,16 @@ tbody tr:hover td { background: var(--surface-hover); }
       <div>
         <div class="modal-section-title">🎯 Target Lampung Barat</div>
         <div class="target-grid-hdr">
-          <span>Kabupaten</span><span>IO</span><span>RE</span><span>PS</span>
+          <span>Kabupaten</span><span style="text-align:right">IO (auto)</span><span style="text-align:right">RE (auto)</span><span style="text-align:right">PS Target</span>
         </div>
         <template x-for="kab in ['LAMPUNG BARAT','TANGGAMUS','PESISIR BARAT']" :key="kab">
           <div class="target-grid" style="margin-bottom:4px">
             <span class="target-kab-label" x-text="kab"></span>
-            <input class="target-input" type="number" min="0"
-              :value="cfg.targets[kab]?.io||0"
-              @input="setTarget(kab,'io',$event.target.value)">
-            <input class="target-input" type="number" min="0"
-              :value="cfg.targets[kab]?.re||0"
-              @input="setTarget(kab,'re',$event.target.value)">
+            <span class="target-calc" x-text="Math.round((cfg.targets[kab]?.ps||0)*1.44)"></span>
+            <span class="target-calc" x-text="Math.round((cfg.targets[kab]?.ps||0)*1.2)"></span>
             <input class="target-input" type="number" min="0"
               :value="cfg.targets[kab]?.ps||0"
-              @input="setTarget(kab,'ps',$event.target.value)">
+              @input="setTarget(kab,$event.target.value)">
           </div>
         </template>
       </div>
@@ -394,20 +391,16 @@ tbody tr:hover td { background: var(--surface-hover); }
       <div>
         <div class="modal-section-title">🎯 Target Way Kanan</div>
         <div class="target-grid-hdr">
-          <span>Kabupaten</span><span>IO</span><span>RE</span><span>PS</span>
+          <span>Kabupaten</span><span style="text-align:right">IO (auto)</span><span style="text-align:right">RE (auto)</span><span style="text-align:right">PS Target</span>
         </div>
         <template x-for="kab in ['LAMPUNG UTARA','WAY KANAN']" :key="kab">
           <div class="target-grid" style="margin-bottom:4px">
             <span class="target-kab-label" x-text="kab"></span>
-            <input class="target-input" type="number" min="0"
-              :value="cfg.targets[kab]?.io||0"
-              @input="setTarget(kab,'io',$event.target.value)">
-            <input class="target-input" type="number" min="0"
-              :value="cfg.targets[kab]?.re||0"
-              @input="setTarget(kab,'re',$event.target.value)">
+            <span class="target-calc" x-text="Math.round((cfg.targets[kab]?.ps||0)*1.44)"></span>
+            <span class="target-calc" x-text="Math.round((cfg.targets[kab]?.ps||0)*1.2)"></span>
             <input class="target-input" type="number" min="0"
               :value="cfg.targets[kab]?.ps||0"
-              @input="setTarget(kab,'ps',$event.target.value)">
+              @input="setTarget(kab,$event.target.value)">
           </div>
         </template>
       </div>
@@ -1066,9 +1059,10 @@ function app() {
       this.loadData();
     },
 
-    setTarget(kab, field, val) {
-      if (!this.cfg.targets[kab]) this.cfg.targets[kab] = {io:0,re:0,ps:0};
-      this.cfg.targets[kab][field] = parseInt(val)||0;
+    setTarget(kab, val) {
+      if (!this.cfg.targets[kab]) this.cfg.targets[kab] = {};
+      const ps = parseInt(val)||0;
+      this.cfg.targets[kab] = { ps, re: Math.round(ps*1.2), io: Math.round(ps*1.44) };
     },
 
     get prevBulan() {
