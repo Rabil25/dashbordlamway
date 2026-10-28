@@ -3217,4 +3217,25 @@ if (document.readyState === 'loading') {
   init();
 }
 
+// ── PATCH: pastikan halaman aktif tampil setelah init ──
+(function patchNavigate() {
+  const _orig = navigate;
+  // Override navigate agar halaman langsung visible
+  window.navigate = function(pageId) {
+    document.querySelectorAll('.page').forEach(p => { p.style.display='none'; p.classList.remove('active'); });
+    const pg = document.getElementById('page-' + pageId);
+    if (pg) { pg.style.display='block'; pg.classList.add('active'); }
+    _orig(pageId);
+  };
+  // Panggil navigate overview setelah init selesai
+  const _origInit = window.init;
+  if (typeof _origInit === 'function') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        const sess = getSession ? getSession() : null;
+        if (sess) { navigate('overview'); }
+      }, 100);
+    });
+  }
+})();
 </script>
