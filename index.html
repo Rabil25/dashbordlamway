@@ -301,24 +301,28 @@ tbody tr:hover td { background: var(--surface-hover); }
      ══════════════════════════════════════════════════════════ -->
 <div class="modal-bg" x-show="showConfig" x-transition style="display:none">
   <div class="modal">
-    <div class="modal-title">⚙ Konfigurasi API</div>
-    <div class="modal-sub">Masukkan Google Sheets API Key dan Sheet ID untuk memuat data.</div>
+    <div class="modal-title">⚙ Konfigurasi GAS URL</div>
+    <div class="modal-sub">Masukkan URL Web App Google Apps Script yang sudah di-deploy. Tidak perlu API Key.</div>
     <div class="modal-fields">
       <div class="input-grp">
-        <label class="input-lbl">Google Sheets API Key</label>
-        <input class="input" type="password" x-model="cfg.apiKey" placeholder="AIzaSy...">
+        <label class="input-lbl">GAS Web App URL</label>
+        <input class="input" x-model="cfg.gasUrl" placeholder="https://script.google.com/macros/s/AKfy.../exec">
       </div>
       <div class="input-grp">
-        <label class="input-lbl">Spreadsheet ID</label>
-        <input class="input" x-model="cfg.sheetId" placeholder="1IhU91CyYKQRDL...">
-      </div>
-      <div class="input-grp">
-        <label class="input-lbl">Bulan (0=Oktober 2026)</label>
+        <label class="input-lbl">Bulan</label>
         <select class="select" x-model="cfg.bulan">
           <option value="10">Oktober 2026</option>
           <option value="9">September 2026</option>
           <option value="11">November 2026</option>
         </select>
+      </div>
+      <div style="background:var(--surface-input);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text-2);line-height:1.6">
+        <b style="color:var(--text-1)">Cara deploy GAS:</b><br>
+        1. Buka Google Sheets → Extensions → Apps Script<br>
+        2. Paste isi file <code>gas/Code.gs</code><br>
+        3. Deploy → New deployment → Web App<br>
+        4. Execute as: Me · Who can access: Anyone<br>
+        5. Copy URL, paste di sini
       </div>
     </div>
     <div class="modal-actions">
@@ -838,13 +842,12 @@ function app() {
     cluster: 'Lampung Barat',
     loading: false,
     showConfig: false,
-    rows: [],         // raw rows from API
+    rows: [],         // raw rows from GAS
     lastUpdate: '',
 
     // Config
     cfg: {
-      apiKey: localStorage.getItem('wok_api_key') || '',
-      sheetId: localStorage.getItem('wok_sheet_id') || DEFAULT_SHEET_ID,
+      gasUrl: localStorage.getItem('wok_gas_url') || '',
       bulan: '10',
     },
 
@@ -859,7 +862,7 @@ function app() {
 
     // ── Init ──
     init() {
-      if (this.cfg.apiKey) {
+      if (this.cfg.gasUrl) {
         this.loadData();
       } else {
         this.showConfig = true;
@@ -896,20 +899,19 @@ function app() {
 
     // ── Config ──
     saveConfig() {
-      localStorage.setItem('wok_api_key',   this.cfg.apiKey);
-      localStorage.setItem('wok_sheet_id',  this.cfg.sheetId);
+      localStorage.setItem('wok_gas_url', this.cfg.gasUrl);
       this.showConfig = false;
       this.loadData();
     },
 
-    // ── Load Data ──
+    // ── Load Data via GAS ──
     async loadData() {
-      if (!this.cfg.apiKey) { this.showConfig = true; return; }
+      if (!this.cfg.gasUrl) { this.showConfig = true; return; }
       this.loading = true;
       try {
         const [bulan, sfData] = await Promise.all([
-          this.fetchSheet(RANGE_BULAN),
-          this.fetchSheet(RANGE_SF),
+          this.fetchGAS('bulan_ini'),
+          this.fetchGAS('update_sf'),
         ]);
         this.rows = bulan || [];
         this.sfMaster = sfData || [];
@@ -922,17 +924,15 @@ function app() {
       this.loading = false;
     },
 
-    async fetchSheet(range) {
-      const id  = this.cfg.sheetId;
-      const key = this.cfg.apiKey;
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${range}?key=${key}&valueRenderOption=FORMATTED_VALUE`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        const err = await res.json().catch(()=>({error:{message:res.statusText}}));
-        throw new Error(err?.error?.message || res.statusText);
-      }
+    // ── Fetch dari Google Apps Script Web App ──
+    async fetchGAS(type) {
+      const base = this.cfg.gasUrl;
+      const url  = `${base}?token=lpgLampung2026&type=${type}`;
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' saat fetch ' + type);
       const json = await res.json();
-      return json.values || [];
+      if (!json.ok) throw new Error(json.error || 'GAS error (' + type + ')');
+      return json.data || [];
     },
 
     // ── Filtered rows (cluster + dedup) ──
