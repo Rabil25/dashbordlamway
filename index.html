@@ -1964,8 +1964,8 @@ const ECHARTS_THEME = {
     textStyle:{ color: () => document.documentElement.getAttribute('data-theme')==='light' ? '#0f172a' : '#e6edf3', fontFamily:"'Poppins',sans-serif", fontSize:12 },
     padding:[8,12],
   },
-  xAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58'}, splitLine:{show:false} },
-  yAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58'}, splitLine:{lineStyle:{color:'#21262d'}} },
+  xAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58', fontFamily:"'Poppins',sans-serif", fontSize:11}, splitLine:{show:false} },
+  yAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#484f58', fontFamily:"'Poppins',sans-serif", fontSize:11}, splitLine:{lineStyle:{color:'#21262d'}} },
 };
 // Theme for pie/donut charts — excludes xAxis/yAxis to prevent ECharts TypeError
 const PIE_THEME = (function(){const {xAxis,yAxis,grid,...t}=ECHARTS_THEME; return t;})();
