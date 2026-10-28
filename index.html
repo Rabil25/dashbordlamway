@@ -349,6 +349,132 @@ table.te-tbl tbody tr:hover td { background: var(--surface-hover); }
 .d-down { color: var(--danger);  font-weight: 700; }
 .d-neu  { color: var(--text-3);  font-weight: 500; }
 
+/* ── NAV GROUPS (Tiger Eyes style) ── */
+.nav-group-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-3); padding: 14px 14px 4px;
+}
+.nav-sub-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 14px 7px 28px; border-radius: 7px; margin: 1px 8px;
+  font-size: 11px; color: var(--text-2); cursor: pointer; border: none;
+  background: none; width: calc(100% - 16px); text-align: left; transition: all .15s;
+}
+.nav-sub-item:hover { background: var(--surface-hover); color: var(--text-1); }
+.nav-sub-item.active { background: var(--surface-active); color: var(--brand); font-weight: 600; }
+.nav-sub-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* ── HEATMAP ── */
+.heatmap-wrap { overflow-x: auto; }
+table.heatmap-tbl { border-collapse: collapse; width: 100%; font-size: 10px; }
+table.heatmap-tbl th {
+  background: var(--surface-elevated); color: var(--text-2); font-size: 9px;
+  font-weight: 700; text-transform: uppercase; padding: 5px 6px; text-align: center;
+  border-bottom: 1px solid var(--surface-border); white-space: nowrap;
+}
+table.heatmap-tbl td {
+  padding: 4px 6px; text-align: center; border: 1px solid rgba(48,54,61,.4);
+  min-width: 28px; font-size: 10px; font-weight: 600; transition: opacity .15s;
+}
+table.heatmap-tbl td:first-child { text-align: left; font-size: 11px; color: var(--text-1); padding-left: 10px; }
+.hm-0   { background: var(--surface-elevated); color: var(--text-3); }
+.hm-lo  { background: rgba(63,185,80,.12); color: #3fb950; }
+.hm-md  { background: rgba(63,185,80,.28); color: #3fb950; }
+.hm-hi  { background: rgba(63,185,80,.50); color: #fff; }
+.hm-vhi { background: rgba(63,185,80,.80); color: #fff; }
+
+/* ── DEEPDIVE TABS ── */
+.dd-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--surface-border); padding-bottom: 0; }
+.dd-tab {
+  padding: 7px 16px; font-size: 12px; font-weight: 600; border: none; background: none;
+  color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all .15s;
+}
+.dd-tab:hover { color: var(--text-1); }
+.dd-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+.dd-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.dd-card {
+  background: var(--surface-card); border: 1px solid var(--surface-border);
+  border-radius: var(--r); padding: 12px 14px;
+}
+.dd-card-lbl { font-size: 10px; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd-card-num { font-size: 22px; font-weight: 700; color: var(--text-1); }
+.dd-card-sub { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+/* ── OUTLOOK ── */
+.ol-header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.ol-hari-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-elevated); border: 1px solid var(--surface-border);
+  border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--text-1);
+}
+.ol-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--surface-border); }
+.ol-tab {
+  padding: 7px 16px; font-size: 12px; font-weight: 600; border: none; background: none;
+  color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all .15s;
+}
+.ol-tab:hover { color: var(--text-1); }
+.ol-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+table.ol-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.ol-tbl thead th {
+  background: var(--surface-elevated); color: var(--text-2); font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  padding: 9px 14px; text-align: right; border-bottom: 1px solid var(--surface-border);
+}
+table.ol-tbl thead th:first-child { text-align: left; }
+table.ol-tbl tbody td { padding: 10px 14px; border-bottom: 1px solid var(--surface-border); text-align: right; }
+table.ol-tbl tbody td:first-child { text-align: left; font-weight: 600; }
+table.ol-tbl tbody tr:last-child td { border-bottom: none; }
+table.ol-tbl tbody tr:hover td { background: var(--surface-hover); }
+.ol-eom-num { font-weight: 700; color: var(--brand); }
+.sim-input { background: var(--surface-input); border: 1px solid var(--surface-border); border-radius: 6px; color: var(--text-1); font-size: 13px; padding: 6px 10px; width: 80px; text-align: center; }
+.sim-input:focus { outline: none; border-color: var(--brand); }
+
+/* ── SF PERF PAGE ── */
+.sfp-kpi-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.sfp-kpi-card {
+  flex: 1; min-width: 120px;
+  background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--r);
+  padding: 14px 16px;
+}
+.sfp-kpi-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); margin-bottom: 4px; }
+.sfp-kpi-num { font-size: 28px; font-weight: 700; color: var(--text-1); }
+.sfp-kpi-sub { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+.sfp-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--surface-border); }
+.sfp-tab {
+  padding: 7px 16px; font-size: 12px; font-weight: 600; border: none; background: none;
+  color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all .15s;
+}
+.sfp-tab:hover { color: var(--text-1); }
+.sfp-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+table.sfp-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.sfp-tbl thead th {
+  background: var(--surface-elevated); color: var(--text-2); font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  padding: 9px 14px; text-align: right; border-bottom: 1px solid var(--surface-border);
+}
+table.sfp-tbl thead th:first-child { text-align: left; }
+table.sfp-tbl tbody td { padding: 10px 14px; border-bottom: 1px solid var(--surface-border); text-align: right; vertical-align: middle; }
+table.sfp-tbl tbody td:first-child { text-align: left; font-weight: 600; }
+table.sfp-tbl tbody tr:last-child td { border-bottom: none; }
+table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
+.delta-up   { color: var(--success); font-size: 10px; }
+.delta-down { color: var(--danger);  font-size: 10px; }
+.delta-neu  { color: var(--text-3);  font-size: 10px; }
+
+/* ── D2D KPI row ── */
+.d2d-kpi-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.d2d-kpi-card {
+  flex: 1; min-width: 110px;
+  background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--r);
+  padding: 12px 14px;
+}
+.d2d-kpi-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); margin-bottom: 4px; }
+.d2d-kpi-num { font-size: 24px; font-weight: 700; color: var(--text-1); }
+.d2d-kpi-sub { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
 /* ── TOAST ── */
 .toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 999; }
 .toast {
@@ -531,25 +657,45 @@ table.te-tbl tbody tr:hover td { background: var(--surface-hover); }
       <div class="brand-sub">Lampung Barat · Way Kanan</div>
     </div>
 
-    <nav class="nav-section">
-      <div class="nav-section-lbl">Menu</div>
-      <button class="nav-item" :class="{active:page==='dashboard'}" @click="nav('dashboard')">
+    <nav class="nav-section" style="padding:0">
+      <!-- NEW SALES GROUP -->
+      <div class="nav-group-lbl">New Sales</div>
+      <button class="nav-sub-item" :class="{active:page==='dashboard'}" @click="nav('dashboard')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Dashboard
+        Sales Dashboard
       </button>
-      <button class="nav-item" :class="{active:page==='sf'}" @click="nav('sf')">
+      <button class="nav-sub-item" :class="{active:page==='d2d'}" @click="nav('d2d')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+        D2D Sales
+      </button>
+      <button class="nav-sub-item" :class="{active:page==='deepdive'}" @click="nav('deepdive')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        Deepdive
+      </button>
+      <button class="nav-sub-item" :class="{active:page==='outlook'}" @click="nav('outlook')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Outlook
+      </button>
+      <button class="nav-sub-item" :class="{active:page==='sfperf'}" @click="nav('sfperf')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        SF Performance
+      </button>
+
+      <!-- LAINNYA GROUP -->
+      <div class="nav-group-lbl" style="margin-top:8px">Lainnya</div>
+      <button class="nav-sub-item" :class="{active:page==='sf'}" @click="nav('sf')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         Performa SF
       </button>
-      <button class="nav-item" :class="{active:page==='order'}" @click="nav('order')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+      <button class="nav-sub-item" :class="{active:page==='order'}" @click="nav('order')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Detail Order
       </button>
-      <button class="nav-item" :class="{active:page==='kendala'}" @click="nav('kendala')">
+      <button class="nav-sub-item" :class="{active:page==='kendala'}" @click="nav('kendala')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Kendala
       </button>
-      <button class="nav-item" :class="{active:page==='peta'}" @click="nav('peta')">
+      <button class="nav-sub-item" :class="{active:page==='peta'}" @click="nav('peta')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         Peta
       </button>
@@ -1122,6 +1268,430 @@ table.te-tbl tbody tr:hover td { background: var(--surface-hover); }
         </div>
       </div>
 
+      <!-- ══ PAGE: D2D SALES ══ -->
+      <div class="page" :class="{active:page==='d2d'}" x-show="!loading && rows.length>0">
+        <div class="section-hdr">
+          <div>
+            <div class="section-title">D2D Sales — Harian</div>
+            <div class="section-sub" x-text="'Bulan ' + cfg.bulan + ' · ' + cluster"></div>
+          </div>
+        </div>
+
+        <!-- KPI cards -->
+        <div class="d2d-kpi-row">
+          <div class="d2d-kpi-card">
+            <div class="d2d-kpi-lbl">PS MTD</div>
+            <div class="d2d-kpi-num" x-text="d2dKpi.ps"></div>
+            <div class="d2d-kpi-sub" x-text="'Target: ' + d2dKpi.tgtPS"></div>
+          </div>
+          <div class="d2d-kpi-card">
+            <div class="d2d-kpi-lbl">DRR</div>
+            <div class="d2d-kpi-num" x-text="d2dKpi.drr"></div>
+            <div class="d2d-kpi-sub">order/hari</div>
+          </div>
+          <div class="d2d-kpi-card">
+            <div class="d2d-kpi-lbl">Hari Capai</div>
+            <div class="d2d-kpi-num" x-text="d2dKpi.hariCapai"></div>
+            <div class="d2d-kpi-sub" x-text="'dari ' + d2dKpi.hariPS + ' hari'"></div>
+          </div>
+          <div class="d2d-kpi-card">
+            <div class="d2d-kpi-lbl">Sisa Hari</div>
+            <div class="d2d-kpi-num" x-text="d2dKpi.daysInMonth - d2dKpi.hariPS"></div>
+            <div class="d2d-kpi-sub" x-text="'dari ' + d2dKpi.daysInMonth + ' hari/bulan'"></div>
+          </div>
+        </div>
+
+        <!-- Tren harian chart -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="section-hdr"><div class="section-title">Tren PS Harian & Kumulatif</div></div>
+          <div id="chart-d2d-tren" style="height:220px"></div>
+        </div>
+
+        <!-- Heatmap per kab × hari -->
+        <div class="card">
+          <div class="section-hdr">
+            <div class="section-title">Heatmap PS per Kabupaten × Hari</div>
+            <div class="section-sub">Hijau = PS lebih tinggi</div>
+          </div>
+          <div class="heatmap-wrap">
+            <table class="heatmap-tbl">
+              <thead>
+                <tr>
+                  <th>Kabupaten</th>
+                  <template x-for="d in Array.from({length:d2dHeatmap.daysInMonth},(_,i)=>i+1)" :key="d">
+                    <th x-text="d"></th>
+                  </template>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="kab in d2dHeatmap.kabs" :key="kab">
+                  <tr>
+                    <td x-text="kab"></td>
+                    <template x-for="d in Array.from({length:d2dHeatmap.daysInMonth},(_,i)=>i+1)" :key="d">
+                      <td :class="hmClass(d2dHeatmap.map[kab]?.[d]||0, d2dHeatmap.maxVal)"
+                          x-text="d2dHeatmap.map[kab]?.[d] || ''"></td>
+                    </template>
+                    <td style="font-weight:700;color:var(--text-1)"
+                        x-text="Object.values(d2dHeatmap.map[kab]||{}).reduce((s,v)=>s+v,0)"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: DEEPDIVE ══ -->
+      <div class="page" :class="{active:page==='deepdive'}" x-show="!loading && rows.length>0">
+        <div class="section-hdr">
+          <div>
+            <div class="section-title">Deepdive Sales</div>
+            <div class="section-sub" x-text="'Bulan ' + cfg.bulan + ' · ' + cluster"></div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="dd-tabs">
+          <button class="dd-tab" :class="{active:ddTab==='channel'}" @click="ddTab='channel';$nextTick(()=>renderDdChart())">Channel</button>
+          <button class="dd-tab" :class="{active:ddTab==='produk'}"  @click="ddTab='produk';$nextTick(()=>renderDdChart())">Produk Kategori</button>
+          <button class="dd-tab" :class="{active:ddTab==='speed'}"   @click="ddTab='speed';$nextTick(()=>renderDdChart())">Speed</button>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="dd-cards">
+          <template x-for="item in ddActiveData" :key="item.name">
+            <div class="dd-card">
+              <div class="dd-card-lbl" x-text="item.name || '—'"></div>
+              <div class="dd-card-num" x-text="item.ps"></div>
+              <div class="dd-card-sub" x-text="'IO: ' + item.io + ' · RE: ' + item.re"></div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Bar chart -->
+        <div class="card">
+          <div class="section-hdr">
+            <div class="section-title" x-text="ddTab==='channel'?'Channel Sales':ddTab==='produk'?'Produk Kategori':'Speed Produk'"></div>
+          </div>
+          <div id="chart-dd-main" style="height:260px"></div>
+        </div>
+
+        <!-- Detail table -->
+        <div class="card" style="margin-top:14px;padding:0;overflow:hidden">
+          <table class="te-tbl">
+            <thead>
+              <tr>
+                <th x-text="ddTab==='channel'?'Channel':ddTab==='produk'?'Produk':'Speed'"></th>
+                <th>IO</th><th>RE</th><th>PS</th>
+                <th>PS/RE%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="item in ddActiveData" :key="item.name">
+                <tr>
+                  <td x-text="item.name||'—'"></td>
+                  <td x-text="item.io"></td>
+                  <td x-text="item.re"></td>
+                  <td x-text="item.ps"></td>
+                  <td x-text="item.re>0?Math.round(item.ps/item.re*100)+'%':'—'"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: OUTLOOK ══ -->
+      <div class="page" :class="{active:page==='outlook'}" x-show="!loading && rows.length>0">
+        <div class="section-hdr">
+          <div>
+            <div class="section-title">Outlook Sales</div>
+            <div class="section-sub" x-text="'Proyeksi EOM · Bulan ' + cfg.bulan + ' · ' + cluster"></div>
+          </div>
+        </div>
+
+        <!-- Hari badge row -->
+        <div class="ol-header-row">
+          <div class="ol-hari-badge">📅 Hari ke-<span x-text="outlookMeta.hariPS"></span> dari <span x-text="outlookMeta.daysInMonth"></span></div>
+          <div class="ol-hari-badge">⏳ Sisa <span x-text="outlookMeta.sisaHari"></span> hari</div>
+        </div>
+
+        <!-- Outlook tabs -->
+        <div class="ol-tabs">
+          <button class="ol-tab" :class="{active:olTab==='ringkasan'}" @click="olTab='ringkasan'">Ringkasan</button>
+          <button class="ol-tab" :class="{active:olTab==='simulasi'}" @click="olTab='simulasi'">Simulasi DRR</button>
+          <button class="ol-tab" :class="{active:olTab==='tren'}" @click="olTab='tren';$nextTick(()=>renderOlTren())">Tren Proyeksi</button>
+        </div>
+
+        <!-- Tab: Ringkasan -->
+        <div x-show="olTab==='ringkasan'">
+          <div class="card" style="padding:0;overflow:hidden">
+            <table class="ol-tbl">
+              <thead>
+                <tr>
+                  <th>Kabupaten</th>
+                  <th>MTD PS</th>
+                  <th>DRR</th>
+                  <th>OL EOM</th>
+                  <th>Target</th>
+                  <th>vs Target</th>
+                  <th>vs LM</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="d in outlookData" :key="d.kab">
+                  <tr>
+                    <td x-text="d.kab"></td>
+                    <td x-text="d.mtd"></td>
+                    <td x-text="d.drr"></td>
+                    <td class="ol-eom-num" x-text="d.olEom"></td>
+                    <td x-text="d.tgtPS || '—'"></td>
+                    <td>
+                      <span x-show="d.vsTarget !== null"
+                            :class="d.vsTarget>=100?'d-up':d.vsTarget>=80?'d-neu':'d-down'"
+                            x-text="d.vsTarget + '%'"></span>
+                      <span x-show="d.vsTarget === null">—</span>
+                    </td>
+                    <td>
+                      <span x-show="d.vsLM !== null"
+                            :class="d.vsLM>=0?'d-up':'d-down'"
+                            x-text="(d.vsLM>=0?'+':'')+d.vsLM+'%'"></span>
+                      <span x-show="d.vsLM === null">—</span>
+                    </td>
+                  </tr>
+                </template>
+                <!-- Total row -->
+                <tr style="background:var(--surface-elevated);font-weight:700">
+                  <td>TOTAL</td>
+                  <td x-text="outlookData.reduce((s,d)=>s+d.mtd,0)"></td>
+                  <td x-text="outlookMeta.hariPS>0?(outlookData.reduce((s,d)=>s+d.mtd,0)/outlookMeta.hariPS).toFixed(2):'—'"></td>
+                  <td class="ol-eom-num" x-text="outlookData.reduce((s,d)=>s+d.olEom,0)"></td>
+                  <td x-text="outlookData.reduce((s,d)=>s+d.tgtPS,0)||'—'"></td>
+                  <td>
+                    <span :class="outlookData.reduce((s,d)=>s+d.olEom,0)/Math.max(outlookData.reduce((s,d)=>s+d.tgtPS,0),1)*100>=100?'d-up':'d-down'"
+                          x-text="outlookData.reduce((s,d)=>s+d.tgtPS,0)>0?Math.round(outlookData.reduce((s,d)=>s+d.olEom,0)/outlookData.reduce((s,d)=>s+d.tgtPS,0)*100)+'%':'—'"></span>
+                  </td>
+                  <td>—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Simulasi DRR -->
+        <div x-show="olTab==='simulasi'">
+          <div class="card" style="margin-bottom:14px">
+            <div class="section-hdr">
+              <div class="section-title">Simulasi DRR Manual</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <label style="font-size:12px;color:var(--text-2)">DRR Simulasi:</label>
+                <input type="number" class="sim-input" x-model="simDrr" min="0" step="0.1" placeholder="auto">
+                <button class="btn btn-sm" @click="simDrr=0">Reset</button>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--text-2);margin-bottom:12px">
+              Masukkan DRR manual untuk melihat proyeksi EOM. Kosongkan (0) untuk menggunakan DRR aktual.
+            </div>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <table class="ol-tbl">
+              <thead>
+                <tr>
+                  <th>Kabupaten</th>
+                  <th>MTD PS</th>
+                  <th>DRR Aktual</th>
+                  <th>DRR Sim</th>
+                  <th>OL EOM (Sim)</th>
+                  <th>vs Target</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="d in outlookData" :key="d.kab">
+                  <tr>
+                    <td x-text="d.kab"></td>
+                    <td x-text="d.mtd"></td>
+                    <td x-text="d.drr"></td>
+                    <td x-text="simDrr>0?simDrr:d.drr"></td>
+                    <td class="ol-eom-num" x-text="d.olEom"></td>
+                    <td>
+                      <span x-show="d.vsTarget!==null"
+                            :class="d.vsTarget>=100?'d-up':d.vsTarget>=80?'d-neu':'d-down'"
+                            x-text="d.vsTarget+'%'"></span>
+                      <span x-show="d.vsTarget===null">—</span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Tren Proyeksi -->
+        <div x-show="olTab==='tren'">
+          <div class="card">
+            <div class="section-hdr"><div class="section-title">Kumulatif PS & Proyeksi EOM</div></div>
+            <div id="chart-ol-tren" style="height:260px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: SF PERFORMANCE (NEW) ══ -->
+      <div class="page" :class="{active:page==='sfperf'}" x-show="!loading && rows.length>0">
+        <div class="section-hdr">
+          <div>
+            <div class="section-title">SF Performance</div>
+            <div class="section-sub" x-text="'Bulan ' + cfg.bulan + ' · ' + cluster"></div>
+          </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="sfp-kpi-row">
+          <div class="sfp-kpi-card">
+            <div class="sfp-kpi-lbl">SF Registered</div>
+            <div class="sfp-kpi-num" x-text="sfperfKpi.total"></div>
+            <div class="sfp-kpi-sub">total SF terdaftar</div>
+          </div>
+          <div class="sfp-kpi-card">
+            <div class="sfp-kpi-lbl">SF Aktif</div>
+            <div class="sfp-kpi-num" x-text="sfperfKpi.aktif"></div>
+            <div class="sfp-kpi-sub">PS ≥ 1 bulan ini</div>
+          </div>
+          <div class="sfp-kpi-card">
+            <div class="sfp-kpi-lbl">SF Produktif</div>
+            <div class="sfp-kpi-num" x-text="sfperfKpi.produktif"></div>
+            <div class="sfp-kpi-sub">PS ≥ 10 bulan ini</div>
+          </div>
+          <div class="sfp-kpi-card">
+            <div class="sfp-kpi-lbl">SF Baru Aktif</div>
+            <div class="sfp-kpi-num" x-text="sfperfKpi.baru"></div>
+            <div class="sfp-kpi-sub">prevPS=0, PS≥1</div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="sfp-tabs">
+          <button class="sfp-tab" :class="{active:sfpTab==='scorecard'}" @click="sfpTab='scorecard'">Scorecard</button>
+          <button class="sfp-tab" :class="{active:sfpTab==='tier'}" @click="sfpTab='tier';$nextTick(()=>renderSfpTier())">Distribusi Tier</button>
+          <button class="sfp-tab" :class="{active:sfpTab==='daftar'}" @click="sfpTab='daftar'">Daftar SF</button>
+        </div>
+
+        <!-- Scorecard per kab -->
+        <div x-show="sfpTab==='scorecard'">
+          <div class="card" style="padding:0;overflow:hidden">
+            <table class="sfp-tbl">
+              <thead>
+                <tr>
+                  <th>Kabupaten</th>
+                  <th>Registered</th>
+                  <th>Aktif</th>
+                  <th>Aktif%</th>
+                  <th>Produktif</th>
+                  <th>Produktif%</th>
+                  <th>SF Baru</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="d in sfperfScorecard" :key="d.kab">
+                  <tr>
+                    <td x-text="d.kab"></td>
+                    <td x-text="d.total"></td>
+                    <td x-text="d.aktif"></td>
+                    <td x-text="d.total>0?Math.round(d.aktif/d.total*100)+'%':'—'"></td>
+                    <td x-text="d.produktif"></td>
+                    <td x-text="d.total>0?Math.round(d.produktif/d.total*100)+'%':'—'"></td>
+                    <td x-text="d.baru"></td>
+                  </tr>
+                </template>
+                <tr style="background:var(--surface-elevated);font-weight:700">
+                  <td>TOTAL</td>
+                  <td x-text="sfperfScorecard.reduce((s,d)=>s+d.total,0)"></td>
+                  <td x-text="sfperfScorecard.reduce((s,d)=>s+d.aktif,0)"></td>
+                  <td x-text="sfperfScorecard.reduce((s,d)=>s+d.total,0)>0?Math.round(sfperfScorecard.reduce((s,d)=>s+d.aktif,0)/sfperfScorecard.reduce((s,d)=>s+d.total,0)*100)+'%':'—'"></td>
+                  <td x-text="sfperfScorecard.reduce((s,d)=>s+d.produktif,0)"></td>
+                  <td x-text="sfperfScorecard.reduce((s,d)=>s+d.total,0)>0?Math.round(sfperfScorecard.reduce((s,d)=>s+d.produktif,0)/sfperfScorecard.reduce((s,d)=>s+d.total,0)*100)+'%':'—'"></td>
+                  <td x-text="sfperfScorecard.reduce((s,d)=>s+d.baru,0)"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tier distribution -->
+        <div x-show="sfpTab==='tier'">
+          <div class="card" style="margin-bottom:14px">
+            <div class="section-hdr"><div class="section-title">Distribusi Tier SF (berdasarkan PS bulan lalu)</div></div>
+            <div id="chart-sfp-tier" style="height:240px"></div>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <table class="sfp-tbl">
+              <thead>
+                <tr>
+                  <th>Tier</th><th>Range PS LM</th><th>Jumlah SF</th><th>Target/SF</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="t in TIER_CONFIG" :key="t.name">
+                  <tr>
+                    <td>
+                      <span class="tier-badge" :class="'tier-'+t.name.toLowerCase()"
+                            x-text="t.icon+' '+t.name"></span>
+                    </td>
+                    <td x-text="t.rangeLabel"></td>
+                    <td x-text="sfperfTierDist[t.name]||0"></td>
+                    <td x-text="t.target"></td>
+                    <td x-text="t.action"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Daftar SF (full table with tier) -->
+        <div x-show="sfpTab==='daftar'">
+          <div class="card" style="padding:0;overflow:hidden">
+            <table class="sfp-tbl">
+              <thead>
+                <tr>
+                  <th>SF</th><th>Kabupaten</th><th>Tier</th><th>PS LM</th><th>PS MTD</th><th>Target</th><th>Ach%</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="sf in filteredSF" :key="sf.code">
+                  <tr>
+                    <td>
+                      <div style="font-weight:600;font-size:12px" x-text="sf.nama||sf.code"></div>
+                      <div style="font-size:10px;color:var(--text-3)" x-text="sf.code"></div>
+                    </td>
+                    <td x-text="sf.kab"></td>
+                    <td>
+                      <span class="tier-badge" :class="'tier-'+sf.tier.toLowerCase()"
+                            x-text="sf.tierIcon+' '+sf.tier"></span>
+                    </td>
+                    <td x-text="sf.prevPS"></td>
+                    <td x-text="sf.ps"></td>
+                    <td x-text="sf.target"></td>
+                    <td>
+                      <div class="ach-wrap">
+                        <div class="ach-bar">
+                          <div class="ach-fill"
+                               :style="'width:'+Math.min(sf.ach,100)+'%;background:'+(sf.ach>=100?'var(--success)':sf.ach>=70?'var(--brand)':'var(--danger)')"
+                          ></div>
+                        </div>
+                        <span class="ach-pct"
+                              :class="sf.ach>=100?'d-up':sf.ach>=70?'':'d-down'"
+                              x-text="sf.ach+'%'"></span>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1246,6 +1816,12 @@ function app() {
     orderPage: 0,
     kendalaSearch: '', kendalaCat: '',
 
+    // New page tabs
+    ddTab: 'channel',
+    olTab: 'ringkasan',
+    sfpTab: 'scorecard',
+    simDrr: 0,
+
     // Charts refs
     _charts: {},
 
@@ -1269,7 +1845,11 @@ function app() {
     },
 
     get pageTitle() {
-      const map = { dashboard:'Dashboard', sf:'Performa SF', order:'Detail Order', kendala:'Kendala', peta:'Peta' };
+      const map = {
+        dashboard:'Sales Dashboard', d2d:'D2D Sales', deepdive:'Deepdive Sales',
+        outlook:'Outlook Sales', sfperf:'SF Performance',
+        sf:'Performa SF', order:'Detail Order', kendala:'Kendala', peta:'Peta',
+      };
       return map[this.page] || '';
     },
 
@@ -1514,6 +2094,220 @@ function app() {
       return Math.round(arr.reduce((s,sf) => s + sf.ach, 0) / arr.length);
     },
 
+    // ── D2D Sales ──
+    get d2dKpi() {
+      const rows = this.filteredRows;
+      const bulan = this.cfg.bulan;
+      const today = new Date();
+      const hariPS = today.getDate();
+      let ps = 0;
+      const dayMap = {}; // day → count
+      rows.forEach(r => {
+        if ((r[C.BLN_PS]||'').toString() === bulan) {
+          ps++;
+          const d = parseInt(r[C.TGL_PS]||0);
+          if (d >= 1) dayMap[d] = (dayMap[d]||0) + 1;
+        }
+      });
+      const drr = hariPS > 0 ? ps / hariPS : 0;
+      // Hari capai target: days where PS count >= daily target (DRR)
+      // Use daily target = totalTgtPS / daysInMonth
+      const kabs = CLUSTER[this.cluster]?.kab || [];
+      let tgtPS = 0;
+      kabs.forEach(k => { tgtPS += (this.cfg.targets[k]?.ps||0); });
+      const daysInMonth = new Date(today.getFullYear(), parseInt(bulan), 0).getDate();
+      const dailyTgt = daysInMonth > 0 ? tgtPS / daysInMonth : 0;
+      let hariCapai = 0;
+      for (let d = 1; d <= hariPS; d++) {
+        if ((dayMap[d]||0) >= dailyTgt && dailyTgt > 0) hariCapai++;
+      }
+      return { ps, drr: drr.toFixed(2), hariCapai, hariPS, tgtPS, daysInMonth };
+    },
+
+    get d2dHeatmap() {
+      const rows = this.filteredRows;
+      const bulan = this.cfg.bulan;
+      const kabs = CLUSTER[this.cluster]?.kab || [];
+      // dayMap[kab][day] = count
+      const map = {};
+      kabs.forEach(k => { map[k] = {}; });
+      let maxVal = 0;
+      rows.forEach(r => {
+        if ((r[C.BLN_PS]||'').toString() !== bulan) return;
+        const kab = (r[C.VAL_KAB]||'').trim().toUpperCase();
+        if (!map[kab]) return;
+        const d = parseInt(r[C.TGL_PS]||0);
+        if (d < 1 || d > 31) return;
+        map[kab][d] = (map[kab][d]||0) + 1;
+        if (map[kab][d] > maxVal) maxVal = map[kab][d];
+      });
+      const daysInMonth = new Date(new Date().getFullYear(), parseInt(bulan), 0).getDate();
+      return { map, kabs, daysInMonth, maxVal };
+    },
+
+    hmClass(val, max) {
+      if (!val || val === 0) return 'hm-0';
+      const pct = max > 0 ? val / max : 0;
+      if (pct < 0.2) return 'hm-lo';
+      if (pct < 0.45) return 'hm-md';
+      if (pct < 0.75) return 'hm-hi';
+      return 'hm-vhi';
+    },
+
+    // ── Deepdive ──
+    get deepdiveChannel() {
+      const bulan = this.cfg.bulan;
+      const map = {};
+      this.filteredRows.forEach(r => {
+        const ch = r[C.CHANNEL2] || 'Lainnya';
+        if (!map[ch]) map[ch] = {io:0,re:0,ps:0};
+        if ((r[C.BLN_IO]||'').toString()===bulan) map[ch].io++;
+        if ((r[C.BLN_RE]||'').toString()===bulan) map[ch].re++;
+        if ((r[C.BLN_PS]||'').toString()===bulan) map[ch].ps++;
+      });
+      return Object.entries(map).map(([name,v])=>({name,...v})).sort((a,b)=>b.ps-a.ps);
+    },
+
+    get deepdiveProduk() {
+      const bulan = this.cfg.bulan;
+      const map = {};
+      this.filteredRows.forEach(r => {
+        const p = r[C.PRODUK_KAT] || 'Lainnya';
+        if (!map[p]) map[p] = {io:0,re:0,ps:0};
+        if ((r[C.BLN_IO]||'').toString()===bulan) map[p].io++;
+        if ((r[C.BLN_RE]||'').toString()===bulan) map[p].re++;
+        if ((r[C.BLN_PS]||'').toString()===bulan) map[p].ps++;
+      });
+      return Object.entries(map).map(([name,v])=>({name,...v})).sort((a,b)=>b.ps-a.ps);
+    },
+
+    get deepdiveSpeed() {
+      const bulan = this.cfg.bulan;
+      const map = {};
+      this.filteredRows.forEach(r => {
+        const sp = r[C.SPEED] || 'Lainnya';
+        if (!map[sp]) map[sp] = {io:0,re:0,ps:0};
+        if ((r[C.BLN_IO]||'').toString()===bulan) map[sp].io++;
+        if ((r[C.BLN_RE]||'').toString()===bulan) map[sp].re++;
+        if ((r[C.BLN_PS]||'').toString()===bulan) map[sp].ps++;
+      });
+      return Object.entries(map).map(([name,v])=>({name,...v})).sort((a,b)=>b.ps-a.ps);
+    },
+
+    get ddActiveData() {
+      if (this.ddTab === 'channel') return this.deepdiveChannel;
+      if (this.ddTab === 'produk')  return this.deepdiveProduk;
+      return this.deepdiveSpeed;
+    },
+
+    // ── Outlook ──
+    get outlookData() {
+      const rows = this.filteredRows;
+      const bulan = this.cfg.bulan;
+      const prevBulan = this.prevBulan.toString();
+      const today = new Date();
+      const hariPS = today.getDate();
+      const daysInMonth = new Date(today.getFullYear(), parseInt(bulan), 0).getDate();
+      const sisaHari = Math.max(daysInMonth - hariPS, 0);
+      const kabs = CLUSTER[this.cluster]?.kab || [];
+      const map = {};
+      kabs.forEach(k => { map[k] = {mtd:0, prev:0, drr:0}; });
+
+      rows.forEach(r => {
+        const kab = (r[C.VAL_KAB]||'').trim().toUpperCase();
+        if (!map[kab]) return;
+        if ((r[C.BLN_PS]||'').toString()===bulan) map[kab].mtd++;
+        if ((r[C.BLN_PS]||'').toString()===prevBulan) map[kab].prev++;
+      });
+
+      return kabs.map(k => {
+        const d = map[k];
+        const drr = hariPS > 0 ? d.mtd / hariPS : 0;
+        const simDrr = parseFloat(this.simDrr)||0;
+        const effDrr = simDrr > 0 ? simDrr : drr;
+        const olEom = Math.round(d.mtd + effDrr * sisaHari);
+        const tgtPS = this.cfg.targets[k]?.ps||0;
+        const vsTarget = tgtPS > 0 ? Math.round(olEom/tgtPS*100) : null;
+        const vsLM = d.prev > 0 ? Math.round((olEom-d.prev)/d.prev*100) : null;
+        return { kab:k, mtd:d.mtd, drr:drr.toFixed(2), olEom, tgtPS, vsTarget, vsLM, prev:d.prev };
+      });
+    },
+
+    get outlookMeta() {
+      const today = new Date();
+      const bulan = this.cfg.bulan;
+      const daysInMonth = new Date(today.getFullYear(), parseInt(bulan), 0).getDate();
+      const hariPS = today.getDate();
+      const sisaHari = Math.max(daysInMonth - hariPS, 0);
+      return { daysInMonth, hariPS, sisaHari };
+    },
+
+    // ── SF Performance (New Page) ──
+    get sfperfKpi() {
+      const bulan = this.cfg.bulan;
+      const prevBulan = this.prevBulan.toString();
+      const sfMap = {};
+      this.filteredRows.forEach(r => {
+        const code = (r[C.CODE_SF]||'').trim();
+        if (!code) return;
+        if (!sfMap[code]) sfMap[code] = { ps:0, prevPS:0 };
+        if ((r[C.BLN_PS]||'').toString()===bulan) sfMap[code].ps++;
+        if ((r[C.BLN_PS]||'').toString()===prevBulan) sfMap[code].prevPS++;
+      });
+      const all = Object.values(sfMap);
+      const total = all.length;
+      const aktif = all.filter(s=>s.ps>=1).length;
+      const produktif = all.filter(s=>s.ps>=10).length;
+      const baru = all.filter(s=>s.prevPS===0 && s.ps>=1).length;
+      return { total, aktif, produktif, baru };
+    },
+
+    get sfperfScorecard() {
+      const bulan = this.cfg.bulan;
+      const prevBulan = this.prevBulan.toString();
+      const kabs = CLUSTER[this.cluster]?.kab || [];
+      const kabSF = {}; // kab → {code → {ps, prevPS}}
+      kabs.forEach(k => { kabSF[k] = {}; });
+
+      this.filteredRows.forEach(r => {
+        const kab = (r[C.VAL_KAB]||'').trim().toUpperCase();
+        const code = (r[C.CODE_SF]||'').trim();
+        if (!kabSF[kab] || !code) return;
+        if (!kabSF[kab][code]) kabSF[kab][code] = { ps:0, prevPS:0 };
+        if ((r[C.BLN_PS]||'').toString()===bulan) kabSF[kab][code].ps++;
+        if ((r[C.BLN_PS]||'').toString()===prevBulan) kabSF[kab][code].prevPS++;
+      });
+
+      return kabs.map(k => {
+        const sfs = Object.values(kabSF[k]||{});
+        const total = sfs.length;
+        const aktif = sfs.filter(s=>s.ps>=1).length;
+        const produktif = sfs.filter(s=>s.ps>=10).length;
+        const baru = sfs.filter(s=>s.prevPS===0&&s.ps>=1).length;
+        return { kab:k, total, aktif, produktif, baru };
+      });
+    },
+
+    get sfperfTierDist() {
+      const bulan = this.cfg.bulan;
+      const prevBulan = this.prevBulan.toString();
+      const codeMap = {};
+      this.filteredRows.forEach(r => {
+        const code = (r[C.CODE_SF]||'').trim();
+        if (!code) return;
+        if (!codeMap[code]) codeMap[code] = { ps:0, prevPS:0 };
+        if ((r[C.BLN_PS]||'').toString()===bulan) codeMap[code].ps++;
+        if ((r[C.BLN_PS]||'').toString()===prevBulan) codeMap[code].prevPS++;
+      });
+      const dist = {};
+      TIER_CONFIG.forEach(t => { dist[t.name] = 0; });
+      Object.values(codeMap).forEach(sf => {
+        const t = getSFTier(sf.prevPS);
+        dist[t.name]++;
+      });
+      return dist;
+    },
+
     // ── Orders ──
     get filteredOrders() {
       let rows = this.filteredRows;
@@ -1605,6 +2399,14 @@ function app() {
         this.renderChannel();
         this.renderTime();
         this.renderHP();
+      } else if (this.page === 'd2d') {
+        this.renderD2dTren();
+      } else if (this.page === 'deepdive') {
+        this.renderDdChart();
+      } else if (this.page === 'outlook') {
+        this.renderOlTren();
+      } else if (this.page === 'sfperf') {
+        if (this.sfpTab === 'tier') this.renderSfpTier();
       } else if (this.page === 'kendala') {
         this.renderKendalaCat();
         this.renderKendalaTren();
@@ -1795,6 +2597,115 @@ function app() {
           symbolSize: 8,
         }],
       });
+    },
+
+    // ── D2D Trend Chart ──
+    renderD2dTren() {
+      const chart = this.getOrInit('chart-d2d-tren');
+      if (!chart) return;
+      const bulan = this.cfg.bulan;
+      const dayCount = new Date(new Date().getFullYear(), parseInt(bulan), 0).getDate();
+      const days = Array.from({length: dayCount}, (_,i) => i+1);
+      const ps = new Array(dayCount).fill(0);
+      const cum = new Array(dayCount).fill(0);
+      let running = 0;
+      this.filteredRows.forEach(r => {
+        if ((r[C.BLN_PS]||'').toString()===bulan) {
+          const d = parseInt(r[C.TGL_PS]||0)-1;
+          if (d>=0&&d<dayCount) ps[d]++;
+        }
+      });
+      for (let i=0;i<dayCount;i++) { running+=ps[i]; cum[i]=running; }
+      chart.setOption(Object.assign({}, ECHARTS_THEME, {
+        legend:{ data:['PS Harian','Kumulatif'], top:0, ...ECHARTS_THEME.legend },
+        xAxis:{ ...ECHARTS_THEME.xAxis, type:'category', data:days },
+        yAxis:{ ...ECHARTS_THEME.yAxis, type:'value' },
+        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'cross'} },
+        series:[
+          { name:'PS Harian', type:'bar', data:ps, barMaxWidth:16, itemStyle:{borderRadius:[3,3,0,0], color:'rgba(63,185,80,.6)'} },
+          { name:'Kumulatif', type:'line', data:cum, smooth:true, lineStyle:{width:2,color:'#3fb950'}, symbol:'none', yAxisIndex:0, color:'#3fb950' },
+        ],
+      }));
+    },
+
+    // ── Deepdive Charts ──
+    renderDdChart() {
+      const chart = this.getOrInit('chart-dd-main');
+      if (!chart) return;
+      const data = this.ddActiveData;
+      const names = data.map(d=>d.name);
+      chart.setOption(Object.assign({}, ECHARTS_THEME, {
+        legend:{ data:['IO','RE','PS'], top:0, ...ECHARTS_THEME.legend },
+        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
+        grid:{ left:90, right:20, top:30, bottom:10, containLabel:false },
+        xAxis:{ ...ECHARTS_THEME.xAxis, type:'value' },
+        yAxis:{ ...ECHARTS_THEME.yAxis, type:'category', data:names.slice().reverse() },
+        series:[
+          { name:'IO', type:'bar', data:names.slice().reverse().map(n=>{const d=data.find(x=>x.name===n);return d?d.io:0;}), barMaxWidth:12, itemStyle:{borderRadius:[0,4,4,0], color:'#d29922'} },
+          { name:'RE', type:'bar', data:names.slice().reverse().map(n=>{const d=data.find(x=>x.name===n);return d?d.re:0;}), barMaxWidth:12, itemStyle:{borderRadius:[0,4,4,0], color:'#58a6ff'} },
+          { name:'PS', type:'bar', data:names.slice().reverse().map(n=>{const d=data.find(x=>x.name===n);return d?d.ps:0;}), barMaxWidth:12, itemStyle:{borderRadius:[0,4,4,0], color:'#3fb950'} },
+        ],
+      }));
+    },
+
+    // ── Outlook Trend ──
+    renderOlTren() {
+      const chart = this.getOrInit('chart-ol-tren');
+      if (!chart) return;
+      const bulan = this.cfg.bulan;
+      const today = new Date();
+      const daysInMonth = new Date(today.getFullYear(), parseInt(bulan), 0).getDate();
+      const hariPS = today.getDate();
+      const days = Array.from({length: daysInMonth}, (_,i)=>i+1);
+      const ps = new Array(daysInMonth).fill(null);
+      const cum = new Array(daysInMonth).fill(null);
+      const proj = new Array(daysInMonth).fill(null);
+      let running = 0;
+      const dayMap = {};
+      this.filteredRows.forEach(r => {
+        if ((r[C.BLN_PS]||'').toString()===bulan) {
+          const d = parseInt(r[C.TGL_PS]||0)-1;
+          if (d>=0&&d<daysInMonth) dayMap[d]=(dayMap[d]||0)+1;
+        }
+      });
+      for (let i=0;i<daysInMonth;i++) {
+        if (i < hariPS) { const v=dayMap[i]||0; ps[i]=v; running+=v; cum[i]=running; }
+      }
+      const drr = hariPS > 0 ? running / hariPS : 0;
+      // Projection line from current MTD forward
+      for (let i = hariPS-1; i < daysInMonth; i++) {
+        proj[i] = Math.round(running + drr * (i - hariPS + 1));
+      }
+      chart.setOption(Object.assign({}, ECHARTS_THEME, {
+        legend:{ data:['PS Kumulatif','Proyeksi EOM'], top:0, ...ECHARTS_THEME.legend },
+        xAxis:{ ...ECHARTS_THEME.xAxis, type:'category', data:days },
+        yAxis:{ ...ECHARTS_THEME.yAxis, type:'value' },
+        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'cross'} },
+        series:[
+          { name:'PS Kumulatif', type:'line', data:cum, smooth:false, lineStyle:{width:2,color:'#3fb950'}, symbol:'none', color:'#3fb950', areaStyle:{color:'rgba(63,185,80,.08)'} },
+          { name:'Proyeksi EOM', type:'line', data:proj, smooth:false, lineStyle:{width:2,color:'#58a6ff',type:'dashed'}, symbol:'none', color:'#58a6ff' },
+        ],
+      }));
+    },
+
+    // ── SF Perf Tier Distribution ──
+    renderSfpTier() {
+      const chart = this.getOrInit('chart-sfp-tier');
+      if (!chart) return;
+      const dist = this.sfperfTierDist;
+      const tiers = TIER_CONFIG.map(t=>t.name);
+      const colors = { Black:'#6b7280', Bronze:'#cd7f32', Silver:'#c0c8d4', Gold:'#f5c542', Platinum:'#67c5e8', Diamond:'#a78bfa' };
+      chart.setOption(Object.assign({}, ECHARTS_THEME, {
+        tooltip:{ ...ECHARTS_THEME.tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
+        xAxis:{ ...ECHARTS_THEME.xAxis, type:'category', data:tiers },
+        yAxis:{ ...ECHARTS_THEME.yAxis, type:'value' },
+        series:[{
+          type:'bar', barMaxWidth:40,
+          data: tiers.map(t=>({ value: dist[t]||0, itemStyle:{ color:colors[t]||'#3987e5', borderRadius:[4,4,0,0] } })),
+          label:{ show:true, position:'top', color:'#8b949e', fontSize:11, fontFamily:"'Poppins',sans-serif" },
+        }],
+        grid:{ left:30, right:10, top:30, bottom:10, containLabel:true },
+      }));
     },
 
     // ── TOAST ──
