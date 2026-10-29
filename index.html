@@ -2454,10 +2454,12 @@ function app() {
       this.loading = false;
     },
 
-    // ── Fetch dari Google Apps Script Web App (dengan cache 15 menit) ──
+    // ── Fetch dari Google Apps Script Web App (dengan cache 15 menit, filter bulan di server) ──
     async fetchGAS(type, forceRefresh = false, ttlMs = 15 * 60 * 1000) {
-      const cacheKey = `wok_cache_${type}`;
-      const cacheTsKey = `wok_cache_ts_${type}`;
+      const bulan = this.cfg.bulan;
+      // Cache key menyertakan bulan agar ganti bulan otomatis invalidate cache
+      const cacheKey = `wok_cache_${type}_b${bulan}`;
+      const cacheTsKey = `wok_cache_ts_${type}_b${bulan}`;
       if (!forceRefresh) {
         const cached = localStorage.getItem(cacheKey);
         const cachedTs = parseInt(localStorage.getItem(cacheTsKey) || '0');
@@ -2466,7 +2468,8 @@ function app() {
         }
       }
       const base = this.cfg.gasUrl;
-      const url  = `${base}?token=${GAS_TOKEN}&type=${type}`;
+      // Kirim parameter bulan ke GAS agar GAS filter di server side (hemat transfer data)
+      const url  = `${base}?token=${GAS_TOKEN}&type=${type}&bulan=${bulan}`;
       const res  = await fetch(url);
       if (!res.ok) throw new Error('HTTP ' + res.status + ' saat fetch ' + type);
       const json = await res.json();
