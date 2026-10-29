@@ -5,8 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard WOK LamWay</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Leaflet untuk OpenStreetMap peta -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
+<!-- ECharts pinned version -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<!-- Leaflet JS -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+<!-- Alpine.js pinned version (ganti ke version spesifik agar stabil) -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 <style>
 /* ============================================================
    DESIGN TOKENS — Dashboard WOK Lampung Barat / Way Kanan
@@ -751,10 +757,164 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
   flex-direction: column; gap: 12px; color: var(--text-2);
 }
 #echarts-map { width: 100%; height: 480px; }
+
+/* ── LEAFLET MAP ── */
+#leaflet-map {
+  width: 100%; height: 480px; border-radius: var(--r);
+  z-index: 0; background: var(--surface-card);
+}
+.leaflet-popup-content { font-family: 'Poppins', sans-serif; font-size: 12px; line-height: 1.6; }
+.leaflet-tile { filter: brightness(.9) contrast(1.1); }
+[data-theme="dark"] .leaflet-tile { filter: invert(1) hue-rotate(200deg) brightness(.75) contrast(1.2); }
+.map-cluster-badge {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; letter-spacing: .05em;
+}
+.map-cluster-a { background: rgba(34,217,114,.18); color: #22d972; border: 1px solid rgba(34,217,114,.3); }
+.map-cluster-b { background: rgba(251,191,36,.18);  color: #fbbf24; border: 1px solid rgba(251,191,36,.3); }
+.map-cluster-c { background: rgba(88,166,255,.18);  color: #58a6ff; border: 1px solid rgba(88,166,255,.3); }
+
+/* ── SKIP NAVIGATION ── */
+.skip-nav {
+  position: fixed; top: -999px; left: 8px; z-index: 9999;
+  background: var(--brand); color: #fff; padding: 8px 16px;
+  border-radius: var(--r); font-size: 13px; font-weight: 600;
+  text-decoration: none; transition: top .15s;
+}
+.skip-nav:focus { top: 8px; }
+
+/* ── MOBILE HAMBURGER ── */
+.hamburger {
+  display: none; flex-direction: column; gap: 4px;
+  background: none; border: 1px solid var(--surface-border);
+  border-radius: var(--r); padding: 7px 9px; cursor: pointer;
+  min-width: 44px; min-height: 44px; align-items: center; justify-content: center;
+}
+.hamburger span {
+  display: block; width: 18px; height: 2px;
+  background: var(--text-1); border-radius: 1px; transition: .2s;
+}
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.6); z-index: 199;
+}
+@media (max-width: 768px) {
+  .hamburger { display: flex; }
+  .sidebar {
+    position: fixed; top: 0; left: -260px; height: 100%;
+    z-index: 200; transition: left .25s ease;
+  }
+  .sidebar.open { left: 0; }
+  .sidebar-overlay.open { display: block; }
+  .main { margin-left: 0 !important; }
+  .app { display: block; }
+  .topbar { position: sticky; top: 0; z-index: 100; }
+}
+
+/* ── NAVIGATION TOUCH TARGETS ── */
+.nav-sub-item {
+  min-height: 44px;
+  display: flex; align-items: center;
+}
+
+/* ── SKELETON LOADING ── */
+.skeleton-wrap { display: flex; flex-direction: column; gap: 16px; padding: 20px; }
+.skeleton-bar {
+  background: linear-gradient(90deg, var(--surface-card) 25%, var(--surface-elevated) 50%, var(--surface-card) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.4s ease infinite;
+  border-radius: var(--r);
+}
+@keyframes skeleton-pulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── GLOSSARY MODAL ── */
+.glossary-modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.65);
+  z-index: 500; display: flex; align-items: center; justify-content: center;
+}
+.glossary-modal {
+  background: var(--surface-card); border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg); padding: 24px 28px; max-width: 480px; width: 90%;
+  max-height: 80vh; overflow-y: auto;
+}
+.glossary-title { font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 16px; }
+.glossary-table { width: 100%; border-collapse: collapse; }
+.glossary-table td { padding: 8px 6px; font-size: 12px; vertical-align: top; border-bottom: 1px solid var(--surface-border); }
+.glossary-table td:first-child { font-weight: 700; color: var(--brand); width: 70px; white-space: nowrap; }
+.glossary-table td:last-child { color: var(--text-2); line-height: 1.5; }
+.glossary-btn {
+  background: none; border: 1px solid var(--surface-border); border-radius: var(--r);
+  color: var(--text-2); cursor: pointer; font-family: inherit; font-size: 11px;
+  padding: 5px 10px; min-height: 44px; min-width: 44px;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.glossary-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+/* ── FUNNEL CHART ── */
+.funnel-wrap { display: flex; align-items: center; justify-content: center; gap: 0; padding: 20px 0 10px; }
+.funnel-step { text-align: center; position: relative; }
+.funnel-bar-wrap { display: flex; justify-content: center; }
+.funnel-bar {
+  border-radius: 6px; transition: width .4s ease;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; color: #fff; height: 64px; min-width: 80px;
+}
+.funnel-lbl { font-size: 11px; color: var(--text-2); margin-top: 6px; font-weight: 600; letter-spacing: .05em; }
+.funnel-val { font-size: 22px; font-weight: 800; margin-bottom: 2px; }
+.funnel-arrow { font-size: 28px; color: var(--text-3); align-self: center; padding: 0 8px; margin-top: -8px; }
+.funnel-conv { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+/* ── EXPORT PDF ── */
+@media print {
+  .sidebar, .topbar, .hamburger, .sidebar-overlay, .btn, .modal-bg, .toast-wrap,
+  .cluster-toggle, .theme-toggle, .glossary-modal-bg { display: none !important; }
+  .main { margin: 0 !important; }
+  .content { padding: 0 !important; }
+  .card, .te-kab-card { break-inside: avoid; }
+  body { background: #fff !important; color: #000 !important; }
+  .page { display: block !important; }
+  .page:not(.active) { display: none !important; }
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 20px; gap: 12px; color: var(--text-2); text-align: center;
+}
+.empty-state svg { opacity: .25; }
+.empty-state-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.empty-state-sub { font-size: 12px; color: var(--text-3); }
+
+/* ── LAST SYNC FOOTER ── */
+.sync-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface-input); border-radius: 999px;
+  padding: 2px 9px; font-size: 10px; color: var(--text-2);
+}
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+
+/* ── SEMANTIC COLOR OVERRIDE ── */
+.status-ps   { color: var(--success); }
+.status-re   { color: var(--info); }
+.status-io   { color: var(--warning); }
+.status-err  { color: var(--danger); }
+
+/* ── ARIA CHART WRAPPER ── */
+.chart-area[aria-label] { outline: none; }
+.chart-area[aria-label]:focus { outline: 2px solid var(--brand); outline-offset: 2px; }
 </style>
 </head>
 
 <body x-data="app()" x-init="init()">
+
+<!-- SKIP NAVIGATION -->
+<a href="#main-content" class="skip-nav">Lewati navigasi</a>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" :class="{open: menuOpen}" @click="menuOpen=false"></div>
 
 <!-- ══════════════════════════════════════════════════════════
      CONFIG MODAL
@@ -775,18 +935,9 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <div class="input-grp">
         <label class="input-lbl">Bulan Aktif</label>
         <select class="select" x-model="cfg.bulan">
-          <option value="1">Januari 2026</option>
-          <option value="2">Februari 2026</option>
-          <option value="3">Maret 2026</option>
-          <option value="4">April 2026</option>
-          <option value="5">Mei 2026</option>
-          <option value="6">Juni 2026</option>
-          <option value="7">Juli 2026</option>
-          <option value="8">Agustus 2026</option>
-          <option value="9">September 2026</option>
-          <option value="10">Oktober 2026</option>
-          <option value="11">November 2026</option>
-          <option value="12">Desember 2026</option>
+          <template x-for="m in availableMonths" :key="m.val">
+            <option :value="m.val" x-text="m.label + ' 2026'"></option>
+          </template>
         </select>
       </div>
 
@@ -848,103 +999,172 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 <div class="app">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" :class="{open: menuOpen}" role="navigation" aria-label="Menu Navigasi">
     <div class="sidebar-brand">
       <div class="brand-name">⚡ WOK Dashboard</div>
       <div class="brand-sub">Lampung Barat · Way Kanan</div>
     </div>
 
-    <nav class="nav-section" style="padding:0">
-      <!-- NEW SALES GROUP -->
-      <div class="nav-group-lbl">New Sales</div>
-      <button class="nav-sub-item" :class="{active:page==='dashboard'}" @click="nav('dashboard')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <nav class="nav-section" style="padding:0" aria-label="Halaman Dashboard">
+      <!-- GROUP 1: PERFORMA SALES -->
+      <div class="nav-group-lbl">📊 Performa Sales</div>
+      <button class="nav-sub-item" :class="{active:page==='dashboard'}" @click="nav('dashboard');menuOpen=false" aria-label="Sales Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         Sales Dashboard
       </button>
-      <button class="nav-sub-item" :class="{active:page==='d2d'}" @click="nav('d2d')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      <button class="nav-sub-item" :class="{active:page==='d2d'}" @click="nav('d2d');menuOpen=false" aria-label="D2D Sales">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
         D2D Sales
       </button>
-      <button class="nav-sub-item" :class="{active:page==='deepdive'}" @click="nav('deepdive')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      <button class="nav-sub-item" :class="{active:page==='deepdive'}" @click="nav('deepdive');menuOpen=false" aria-label="Deepdive Sales">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
         Deepdive
       </button>
-      <button class="nav-sub-item" :class="{active:page==='outlook'}" @click="nav('outlook')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <button class="nav-sub-item" :class="{active:page==='outlook'}" @click="nav('outlook');menuOpen=false" aria-label="Outlook Sales">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Outlook
       </button>
-      <button class="nav-sub-item" :class="{active:page==='sfperf'}" @click="nav('sfperf')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+
+      <!-- GROUP 2: SF & TIM -->
+      <div class="nav-group-lbl" style="margin-top:8px">👤 SF &amp; Tim</div>
+      <button class="nav-sub-item" :class="{active:page==='sfperf'}" @click="nav('sfperf');menuOpen=false" aria-label="SF Performance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         SF Performance
       </button>
-
-      <!-- LAINNYA GROUP -->
-      <div class="nav-group-lbl" style="margin-top:8px">Lainnya</div>
-      <button class="nav-sub-item" :class="{active:page==='sf'}" @click="nav('sf')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        Performa SF
+      <button class="nav-sub-item" :class="{active:page==='sf'}" @click="nav('sf');menuOpen=false" aria-label="Performa SF — Leaderboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Leaderboard SF
       </button>
-      <button class="nav-sub-item" :class="{active:page==='order'}" @click="nav('order')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+
+      <!-- GROUP 3: LAPANGAN -->
+      <div class="nav-group-lbl" style="margin-top:8px">🗺 Lapangan</div>
+      <button class="nav-sub-item" :class="{active:page==='order'}" @click="nav('order');menuOpen=false" aria-label="Detail Order">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Detail Order
       </button>
-      <button class="nav-sub-item" :class="{active:page==='kendala'}" @click="nav('kendala')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <button class="nav-sub-item" :class="{active:page==='kendala'}" @click="nav('kendala');menuOpen=false" aria-label="Kendala & Cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Kendala
       </button>
-      <button class="nav-sub-item" :class="{active:page==='peta'}" @click="nav('peta')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <button class="nav-sub-item" :class="{active:page==='peta'}" @click="nav('peta');menuOpen=false" aria-label="Peta Sebaran">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         Peta
       </button>
     </nav>
 
     <div class="sidebar-footer">
-      Data: <span x-text="lastUpdate || '—'"></span><br>
-      <span x-text="filteredRows.length + ' order unik'"></span>
+      <div class="sync-badge" x-show="lastSync">
+        <span class="sync-dot"></span>
+        <span x-text="'Sync ' + (lastSync || '—')"></span>
+      </div>
+      <div style="margin-top:4px" x-text="filteredRows.length + ' order unik'"></div>
     </div>
   </aside>
 
   <!-- MAIN -->
-  <div class="main">
+  <div class="main" id="main-content">
 
     <!-- TOPBAR -->
     <div class="topbar">
+      <!-- Hamburger (mobile) -->
+      <button class="hamburger" @click="menuOpen=!menuOpen" aria-label="Buka menu navigasi" :aria-expanded="menuOpen">
+        <span></span><span></span><span></span>
+      </button>
+
       <div class="topbar-title" x-text="pageTitle"></div>
       <div class="cluster-toggle">
         <button class="cluster-btn" :class="{active:cluster==='Lampung Barat'}" @click="setCluster('Lampung Barat')">Lampung Barat</button>
         <button class="cluster-btn" :class="{active:cluster==='Way Kanan'}" @click="setCluster('Way Kanan')">Way Kanan</button>
       </div>
-      <button class="btn" @click="loadData()" :disabled="loading">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23,4 23,11 16,11"/><polyline points="1,20 1,13 8,13"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 11M1 13l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      <button class="btn" @click="loadData()" :disabled="loading" aria-label="Refresh data">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="23,4 23,11 16,11"/><polyline points="1,20 1,13 8,13"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 11M1 13l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         <span x-text="loading ? 'Memuat...' : 'Refresh'"></span>
       </button>
-      <button class="theme-toggle" @click="toggleTheme()" :title="themeMode==='dark' ? 'Light Mode' : 'Dark Mode'">
+      <!-- Glossary -->
+      <button class="glossary-btn" @click="glossaryOpen=true" aria-label="Buka glosarium istilah">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="display:none" class="topbar-label">Glosarium</span>
+        ?
+      </button>
+      <!-- Export PDF -->
+      <button class="btn" @click="window.print()" aria-label="Export halaman sebagai PDF">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        PDF
+      </button>
+      <button class="theme-toggle" @click="toggleTheme()" :title="themeMode==='dark' ? 'Light Mode' : 'Dark Mode'" :aria-label="themeMode==='dark' ? 'Aktifkan Light Mode' : 'Aktifkan Dark Mode'">
         <span x-text="themeMode==='dark' ? '☀️' : '🌙'"></span>
       </button>
-      <button class="btn" @click="showConfig=true">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <button class="btn" @click="showConfig=true" aria-label="Konfigurasi API">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         API
       </button>
+    </div>
+
+    <!-- GLOSSARY MODAL -->
+    <div class="glossary-modal-bg" x-show="glossaryOpen" x-transition style="display:none" @keydown.escape.window="glossaryOpen=false" role="dialog" aria-modal="true" aria-label="Glosarium Istilah">
+      <div class="glossary-modal" @click.stop>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="glossary-title">📖 Glosarium Istilah</div>
+          <button class="btn" @click="glossaryOpen=false" style="padding:4px 10px;font-size:11px" aria-label="Tutup glosarium">✕ Tutup</button>
+        </div>
+        <table class="glossary-table" aria-label="Daftar singkatan dan definisi">
+          <tbody>
+            <tr><td>PS</td><td><strong>Put in Service</strong> — Order berhasil dipasang dan aktif berlangganan</td></tr>
+            <tr><td>RE</td><td><strong>Register</strong> — Order yang sudah diregistrasi/diproses tim teknis</td></tr>
+            <tr><td>IO</td><td><strong>Input Order</strong> — Order masuk dari pelanggan baru</td></tr>
+            <tr><td>DRR</td><td><strong>Daily Run Rate</strong> — Rata-rata PS per hari di bulan berjalan (PS ÷ hari)</td></tr>
+            <tr><td>MOM</td><td><strong>Month over Month</strong> — Perbandingan aktual vs target, atau vs bulan sebelumnya</td></tr>
+            <tr><td>WoW</td><td><strong>Week over Week</strong> — Perbandingan minggu ini vs minggu lalu</td></tr>
+            <tr><td>LOS</td><td><strong>Length of Stay</strong> — Masa kerja SF (dalam bulan/hari)</td></tr>
+            <tr><td>PS/RE</td><td>Rasio konversi Register menjadi Put in Service (dalam %)</td></tr>
+            <tr><td>RE/IO</td><td>Rasio konversi Input Order menjadi Register (dalam %)</td></tr>
+            <tr><td>SF</td><td><strong>Sales Force</strong> — Tenaga penjual lapangan</td></tr>
+            <tr><td>STO</td><td><strong>Sentral Telepon Otomat</strong> — Lokasi/titik jaringan IndiHome</td></tr>
+            <tr><td>WOK</td><td><strong>Witel Operation Kelompok</strong> — Unit operasional regional Telkom</td></tr>
+            <tr><td>Unik</td><td>Filter data untuk menghindari duplikasi order dalam laporan</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- CONTENT -->
     <div class="content">
 
-      <!-- LOADING STATE -->
-      <div x-show="loading" class="loading-wrap">
-        <div class="spinner"></div>
-        <div>Memuat data dari Google Sheets...</div>
+      <!-- LOADING STATE (skeleton) -->
+      <div x-show="loading" role="status" aria-live="polite" aria-label="Sedang memuat data">
+        <div class="skeleton-wrap">
+          <div class="skeleton-bar" style="height:120px"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="skeleton-bar" style="height:80px"></div>
+            <div class="skeleton-bar" style="height:80px"></div>
+          </div>
+          <div class="skeleton-bar" style="height:200px"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div class="skeleton-bar" style="height:160px"></div>
+            <div class="skeleton-bar" style="height:160px"></div>
+            <div class="skeleton-bar" style="height:160px"></div>
+          </div>
+        </div>
       </div>
 
       <!-- NO CONFIG STATE -->
-      <div x-show="!loading && rows.length===0 && !showConfig" class="loading-wrap">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <div style="color:var(--text-2)">Belum ada data. Klik tombol <strong>API</strong> untuk setting.</div>
-        <button class="btn btn-primary" @click="showConfig=true">⚙ Konfigurasi API</button>
+      <div x-show="!loading && rows.length===0 && !showConfig" class="loading-wrap" role="status">
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <div class="empty-state-title">Belum ada data</div>
+          <div class="empty-state-sub">Klik tombol <strong>API</strong> di topbar untuk menghubungkan Google Sheets.</div>
+          <button class="btn btn-primary" @click="showConfig=true">⚙ Konfigurasi API</button>
+        </div>
       </div>
 
       <!-- ══ PAGE: DASHBOARD ══ -->
       <div class="page" :class="{active:page==='dashboard'}" x-show="!loading && rows.length>0">
+
+        <!-- Page subtitle -->
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:12px;padding:0 2px">
+          📊 Ringkasan performa sales bulan berjalan ·
+          <span style="color:var(--text-2)">DRR = PS ÷ hari · MOM = aktual ÷ target × 100%</span>
+        </div>
 
         <!-- ── TIGER EYES HERO ── -->
         <div class="te-hero">
@@ -998,7 +1218,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               <div class="te-meta">PS/RE <strong x-text="kpi.psRE + '%'"></strong></div>
               <div class="te-meta">Hari berjalan <strong x-text="kpi.hariPS"></strong></div>
               <template x-if="kpi.psPrev > 0">
-                <div class="te-meta">PS prev <strong x-text="kpi.psPrev"></strong></div>
+                <div class="te-meta">
+                  vs bulan lalu <strong x-text="kpi.ps + ' vs ' + kpi.psPrev"></strong>
+                  <span :class="kpi.momPSvsLast>=0 ? 'up' : 'down'" x-text="kpi.momPSvsLast !== null ? (kpi.momPSvsLast>=0?'+':'')+kpi.momPSvsLast+'%' : ''"></span>
+                </div>
               </template>
               <template x-if="kpi.cancel > 0">
                 <div class="te-meta" style="color:var(--danger)">Batal <strong x-text="kpi.cancel"></strong></div>
@@ -1032,7 +1255,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
             <!-- RE -->
             <div class="te-metric-card te-re-card">
-              <div class="te-mc-lbl">REGISTER ENGINEER</div>
+              <div class="te-mc-lbl">REGISTER</div>
               <div class="te-mc-val" style="color:var(--info)" x-text="kpi.re"></div>
               <div class="te-mc-ach">
                 <template x-if="kpi.momRE !== null">
@@ -1139,40 +1362,90 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </table>
         </div>
 
+        <!-- ── FUNNEL IO → RE → PS ── -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Funnel Konversi IO → RE → PS</div>
+              <div class="card-subtitle" x-text="'Cluster ' + cluster + ' · IO→RE: '+kpi.reIO+'% · RE→PS: '+kpi.psRE+'%'"></div>
+            </div>
+          </div>
+          <div class="funnel-wrap" role="img" :aria-label="'Funnel: IO '+kpi.io+', RE '+kpi.re+', PS '+kpi.ps">
+            <!-- IO -->
+            <div class="funnel-step">
+              <div class="funnel-val status-io" x-text="kpi.io"></div>
+              <div class="funnel-bar-wrap">
+                <div class="funnel-bar" style="background:var(--warning);" :style="{width: kpi.io>0 ? '180px' : '120px'}">IO</div>
+              </div>
+              <div class="funnel-lbl">INPUT ORDER</div>
+            </div>
+            <!-- Arrow 1 -->
+            <div class="funnel-arrow" role="presentation">
+              <div style="text-align:center">
+                <div>→</div>
+                <div class="funnel-conv" x-text="kpi.reIO + '%'"></div>
+              </div>
+            </div>
+            <!-- RE -->
+            <div class="funnel-step">
+              <div class="funnel-val status-re" x-text="kpi.re"></div>
+              <div class="funnel-bar-wrap">
+                <div class="funnel-bar" style="background:var(--info);" :style="{width: kpi.io>0 ? Math.max(80, 180*kpi.re/Math.max(kpi.io,1))+'px' : '120px'}">RE</div>
+              </div>
+              <div class="funnel-lbl">REGISTER</div>
+            </div>
+            <!-- Arrow 2 -->
+            <div class="funnel-arrow" role="presentation">
+              <div style="text-align:center">
+                <div>→</div>
+                <div class="funnel-conv" x-text="kpi.psRE + '%'"></div>
+              </div>
+            </div>
+            <!-- PS -->
+            <div class="funnel-step">
+              <div class="funnel-val status-ps" x-text="kpi.ps"></div>
+              <div class="funnel-bar-wrap">
+                <div class="funnel-bar" style="background:var(--success);" :style="{width: kpi.io>0 ? Math.max(60, 180*kpi.ps/Math.max(kpi.io,1))+'px' : '100px'}">PS</div>
+              </div>
+              <div class="funnel-lbl">PUT IN SERVICE</div>
+            </div>
+          </div>
+        </div>
+
         <!-- ── CHARTS ── -->
         <div class="charts-grid">
           <div class="card">
             <div class="card-header">
               <div>
                 <div class="card-title">Tren Harian IO / RE / PS</div>
-                <div class="card-subtitle" x-text="'Cluster ' + cluster + ' · Bulan ini'"></div>
+                <div class="card-subtitle" x-text="'Cluster ' + cluster + ' · Bulan ini · MA7 = moving average 7 hari'"></div>
               </div>
             </div>
-            <div class="chart-area" id="chart-tren" style="height:220px"></div>
+            <div class="chart-area" id="chart-tren" style="height:220px" role="img" aria-label="Grafik tren harian IO, RE, dan PS" tabindex="0"></div>
           </div>
           <div class="card">
             <div class="card-header">
               <div>
                 <div class="card-title">Breakdown Produk</div>
-                <div class="card-subtitle">Speed Produk (DT)</div>
+                <div class="card-subtitle">Speed Produk (kolom DT)</div>
               </div>
             </div>
-            <div class="chart-area" id="chart-produk" style="height:220px"></div>
+            <div class="chart-area" id="chart-produk" style="height:220px" role="img" aria-label="Diagram lingkaran breakdown produk" tabindex="0"></div>
           </div>
         </div>
 
         <div class="charts-grid-3">
           <div class="card">
             <div class="card-header"><div class="card-title">Channel</div></div>
-            <div class="chart-area" id="chart-channel" style="height:180px"></div>
+            <div class="chart-area" id="chart-channel" style="height:180px" role="img" aria-label="Grafik breakdown channel" tabindex="0"></div>
           </div>
           <div class="card">
             <div class="card-header"><div class="card-title">Time Range Input IO</div></div>
-            <div class="chart-area" id="chart-time" style="height:180px"></div>
+            <div class="chart-area" id="chart-time" style="height:180px" role="img" aria-label="Grafik distribusi waktu input order" tabindex="0"></div>
           </div>
           <div class="card">
             <div class="card-header"><div class="card-title">Homepass</div></div>
-            <div class="chart-area" id="chart-hp" style="height:180px"></div>
+            <div class="chart-area" id="chart-hp" style="height:180px" role="img" aria-label="Diagram homepass vs non-homepass" tabindex="0"></div>
           </div>
         </div>
 
@@ -1271,11 +1544,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               </thead>
               <tbody>
                 <template x-for="(sf, idx) in filteredSF" :key="sf.code">
-                  <tr>
+                  <tr :style="sf.alertPS0 ? 'background:rgba(239,68,68,0.08);border-left:3px solid var(--danger)' : ''">
                     <td style="color:var(--text-3);font-size:11px" x-text="idx+1"></td>
                     <td>
                       <div style="font-weight:500;font-size:12px" x-text="sf.nama||sf.code"></div>
                       <div class="mono" style="font-size:10px;color:var(--text-2)" x-text="sf.code"></div>
+                      <template x-if="sf.alertPS0">
+                        <div style="font-size:10px;color:var(--danger);font-weight:600;margin-top:2px">⚠️ PS=0 &gt;15 hari</div>
+                      </template>
                     </td>
                     <td style="font-size:11px;color:var(--text-2)" x-text="sf.kab"></td>
                     <td>
@@ -1283,7 +1559,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                     </td>
                     <td style="text-align:right;color:var(--text-2)" x-text="sf.prevPS"></td>
                     <td style="text-align:right;color:var(--text-2);font-weight:600" x-text="sf.target"></td>
-                    <td style="text-align:right;color:var(--success);font-weight:700;font-size:14px" x-text="sf.ps"></td>
+                    <td style="text-align:right;font-weight:700;font-size:14px" :style="sf.alertPS0?'color:var(--danger)':'color:var(--success)'" x-text="sf.ps"></td>
                     <td>
                       <div class="ach-wrap">
                         <div class="ach-bar">
@@ -1461,9 +1737,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <div class="section-sub" x-text="koordinatRows.length + ' order dengan koordinat · ' + cluster"></div>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
-          <div id="echarts-map"></div>
-          <div style="padding:10px 16px;font-size:11px;color:var(--text-3)">
-            🟡 IO · 🟢 PS · 🔴 Batal — Gunakan scroll untuk zoom
+          <div id="leaflet-map" style="height:480px;width:100%" role="img" aria-label="Peta sebaran order dengan koordinat"></div>
+          <div style="padding:10px 16px;font-size:11px;color:var(--text-3);display:flex;gap:16px;flex-wrap:wrap">
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fbbf24;margin-right:4px"></span>IO</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22d972;margin-right:4px"></span>PS</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></span>Batal/Cancel</span>
+            <span><span style="display:inline-block;width:24px;height:4px;background:#3b82f6;margin-right:4px;vertical-align:middle"></span>Zona A (PS tinggi)</span>
+            <span><span style="display:inline-block;width:24px;height:4px;background:#f59e0b;margin-right:4px;vertical-align:middle"></span>Zona B</span>
+            <span><span style="display:inline-block;width:24px;height:4px;background:#64748b;margin-right:4px;vertical-align:middle"></span>Zona C</span>
           </div>
         </div>
       </div>
@@ -1859,10 +2140,11 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               </thead>
               <tbody>
                 <template x-for="sf in filteredSF" :key="sf.code">
-                  <tr>
+                  <tr :style="sf.alertPS0?'background:rgba(239,68,68,0.08);border-left:3px solid var(--danger)':''">
                     <td>
                       <div style="font-weight:600;font-size:12px" x-text="sf.nama||sf.code"></div>
                       <div style="font-size:10px;color:var(--text-3)" x-text="sf.code"></div>
+                      <template x-if="sf.alertPS0"><div style="font-size:10px;color:var(--danger);font-weight:600">⚠️ PS=0 &gt;15 hari</div></template>
                     </td>
                     <td x-text="sf.kab"></td>
                     <td>
@@ -1870,7 +2152,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                             x-text="sf.tierIcon+' '+sf.tier"></span>
                     </td>
                     <td x-text="sf.prevPS"></td>
-                    <td x-text="sf.ps"></td>
+                    <td :style="sf.alertPS0?'color:var(--danger);font-weight:700':''" x-text="sf.ps"></td>
                     <td x-text="sf.target"></td>
                     <td>
                       <div class="ach-wrap">
@@ -2045,6 +2327,11 @@ function app() {
     // Charts refs
     _charts: {},
 
+    // UI state
+    menuOpen: false,
+    glossaryOpen: false,
+    lastSync: localStorage.getItem('wok_last_sync') || '',
+
     // ── Init ──
     init() {
       // Apply saved theme
@@ -2118,23 +2405,47 @@ function app() {
       return b <= 1 ? 12 : b - 1;
     },
 
+    // Dynamic months available in actual data
+    get availableMonths() {
+      const monthSet = new Set();
+      const names = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      for (const r of this.rows) {
+        const kab = (r[C.VAL_KAB]||'').trim().toUpperCase();
+        // Include all clusters for month detection
+        const tgl = r[C.TGL_PS] || r[C.TGL_IO] || '';
+        if (!tgl) continue;
+        const m = new Date(tgl).getMonth() + 1;
+        if (m >= 1 && m <= 12) monthSet.add(m);
+      }
+      if (monthSet.size === 0) {
+        // fallback: current month
+        monthSet.add(new Date().getMonth() + 1);
+      }
+      return [...monthSet].sort((a,b) => a-b).map(m => ({ val: String(m), label: names[m] }));
+    },
+
     get prevBulanLabel() {
       const names = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
       return names[this.prevBulan] || this.prevBulan;
     },
 
     // ── Load Data via GAS ──
-    async loadData() {
+    async loadData(forceRefresh = false) {
       if (!this.cfg.gasUrl) { this.showConfig = true; return; }
       this.loading = true;
+      const CACHE_TTL_MS = 15 * 60 * 1000; // 15 menit
       try {
         const [bulan, sfData] = await Promise.all([
-          this.fetchGAS('bulan_ini'),
-          this.fetchGAS('update_sf'),
+          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS),
+          this.fetchGAS('update_sf', forceRefresh, CACHE_TTL_MS),
         ]);
         this.rows = bulan || [];
         this.sfMaster = sfData || [];
-        this.lastUpdate = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+        const now = new Date();
+        const nowStr = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+        this.lastUpdate = nowStr;
+        this.lastSync = nowStr;
+        localStorage.setItem('wok_last_sync', nowStr);
         this.$nextTick(() => this.renderCharts());
         this.toast('Data berhasil dimuat · ' + this.rows.length + ' baris', 'ok');
       } catch(e) {
@@ -2143,15 +2454,27 @@ function app() {
       this.loading = false;
     },
 
-    // ── Fetch dari Google Apps Script Web App ──
-    async fetchGAS(type) {
+    // ── Fetch dari Google Apps Script Web App (dengan cache 15 menit) ──
+    async fetchGAS(type, forceRefresh = false, ttlMs = 15 * 60 * 1000) {
+      const cacheKey = `wok_cache_${type}`;
+      const cacheTsKey = `wok_cache_ts_${type}`;
+      if (!forceRefresh) {
+        const cached = localStorage.getItem(cacheKey);
+        const cachedTs = parseInt(localStorage.getItem(cacheTsKey) || '0');
+        if (cached && (Date.now() - cachedTs) < ttlMs) {
+          try { return JSON.parse(cached); } catch(e) {}
+        }
+      }
       const base = this.cfg.gasUrl;
       const url  = `${base}?token=${GAS_TOKEN}&type=${type}`;
       const res  = await fetch(url);
       if (!res.ok) throw new Error('HTTP ' + res.status + ' saat fetch ' + type);
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'GAS error (' + type + ')');
-      return json.data || [];
+      const data = json.data || [];
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      localStorage.setItem(cacheTsKey, Date.now().toString());
+      return data;
     },
 
     // ── Filtered rows (cluster + dedup) ──
@@ -2225,6 +2548,10 @@ function app() {
         momPS, momRE, momIO,
         wowPS, momPSvsLast,
         psPrev: psPrevTotal,
+        ioPrev: ioPrevTotal,
+        rePrev: rePrevTotal,
+        momIOvsLast: ioPrevTotal > 0 ? Math.round((io - ioPrevTotal) / ioPrevTotal * 100) : null,
+        momREvsLast: rePrevTotal > 0 ? Math.round((re - rePrevTotal) / rePrevTotal * 100) : null,
       };
     },
 
@@ -2291,6 +2618,11 @@ function app() {
       });
 
       const arr = Object.values(map);
+      const today = new Date();
+      const hariIni = today.getDate();
+      const bulanIni = (today.getMonth() + 1).toString();
+      const isCurrentMonth = bulan === bulanIni;
+
       arr.forEach(sf => {
         sf.los = sf.io > 0 ? Math.round((sf.ps / sf.io) * 100) : 0;
         // Tier classification based on previous month PS
@@ -2300,6 +2632,8 @@ function app() {
         sf.target   = tierInfo.target;
         sf.action   = tierInfo.action;
         sf.ach      = sf.target > 0 ? Math.round((sf.ps / sf.target) * 100) : 0;
+        // Flag SF with PS=0 after day 15 of current month
+        sf.alertPS0 = isCurrentMonth && hariIni > 15 && sf.ps === 0 && sf.io > 0;
       });
 
       return arr.sort((a,b) => b.ps - a.ps);
@@ -2676,14 +3010,20 @@ function app() {
         if ((r[C.BLN_RE]||'').toString()===bulan) { const d=parseInt(r[C.TGL_RE]||0)-1; if(d>=0&&d<dayCount) re[d]++; }
         if ((r[C.BLN_PS]||'').toString()===bulan) { const d=parseInt(r[C.TGL_PS]||0)-1; if(d>=0&&d<dayCount) ps[d]++; }
       });
+      // 7-day moving average helper
+      const ma7 = (arr) => arr.map((_, i) => {
+        const slice = arr.slice(Math.max(0, i-6), i+1);
+        return parseFloat((slice.reduce((s,v)=>s+v,0)/slice.length).toFixed(1));
+      });
       chart.setOption(Object.assign({}, getChartTheme(), {
-        legend: { data:['IO','RE','PS'], top: 0, ...getChartTheme().legend },
+        legend: { data:['IO','RE','PS','PS MA7'], top: 0, ...getChartTheme().legend },
         xAxis: { ...getChartTheme().xAxis, type:'category', data: days.map(d=>d) },
         yAxis: { ...getChartTheme().yAxis, type:'value' },
         series: [
           { name:'IO', type:'line', data:io, smooth:true, lineStyle:{width:2}, color:'#fbbf24', symbol:'none' },
           { name:'RE', type:'line', data:re, smooth:true, lineStyle:{width:2}, color:'#58a6ff', symbol:'none' },
           { name:'PS', type:'line', data:ps, smooth:true, lineStyle:{width:2,color:'#22d972'}, areaStyle:{color:'rgba(34,217,114,.08)'}, color:'#22d972', symbol:'none' },
+          { name:'PS MA7', type:'line', data:ma7(ps), smooth:true, lineStyle:{width:2,type:'dashed',color:'#a78bfa'}, color:'#a78bfa', symbol:'none', tooltip:{show:true} },
         ],
         tooltip: { ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'cross'} },
       }));
@@ -2801,68 +3141,108 @@ function app() {
     },
 
     renderPeta() {
-      const chart = this.getOrInit('echarts-map');
-      if (!chart) return;
+      // Use Leaflet.js + OpenStreetMap
       const rows = this.koordinatRows;
-      const light = isLight();
+      const mapEl = document.getElementById('leaflet-map');
+      if (!mapEl) return;
+      if (!window.L) { mapEl.innerHTML = '<p style="padding:20px;color:var(--text-3)">Leaflet belum tersedia</p>'; return; }
 
-      const mkSeries = (label, color, filter) => ({
-        name: label,
-        type: 'scatter',
-        data: rows.filter(filter).map(r => ({
-          value: [r.lng, r.lat],
-          name: r.id,
-          sf: r.sf,
-          status: r.status,
-        })),
-        symbolSize: 9,
-        itemStyle: { color, opacity: 0.75, borderColor: light ? 'rgba(255,255,255,.6)' : 'rgba(0,0,0,.3)', borderWidth: 1 },
-        emphasis: { itemStyle: { opacity: 1, borderWidth: 2 } },
+      // Destroy existing map instance to avoid "already initialized" error
+      if (this._leafletMap) {
+        this._leafletMap.remove();
+        this._leafletMap = null;
+        this._leafletMarkerLayer = null;
+      }
+
+      // Default center: Lampung Barat region
+      const DEFAULT_LAT = -5.0, DEFAULT_LNG = 104.2;
+      const map = L.map('leaflet-map').setView([DEFAULT_LAT, DEFAULT_LNG], 9);
+      this._leafletMap = map;
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+      }).addTo(map);
+
+      if (rows.length === 0) {
+        map.setView([DEFAULT_LAT, DEFAULT_LNG], 9);
+        return;
+      }
+
+      // ── K-Means clustering (k=3) untuk zone A/B/C berdasarkan PS density ──
+      const psRows = rows.filter(r => r.status.includes('Put In Service'));
+      function kMeans(points, k, maxIter=30) {
+        if (points.length < k) return points.map((_,i) => i % k);
+        // Init centroids from spread of points
+        let centroids = points.slice(0, k).map(p => ({lat: p.lat, lng: p.lng}));
+        let labels = new Array(points.length).fill(0);
+        for (let iter = 0; iter < maxIter; iter++) {
+          // Assign
+          labels = points.map(p => {
+            let minD = Infinity, best = 0;
+            centroids.forEach((c, ci) => {
+              const d = Math.pow(p.lat-c.lat, 2) + Math.pow(p.lng-c.lng, 2);
+              if (d < minD) { minD=d; best=ci; }
+            });
+            return best;
+          });
+          // Update centroids
+          const newC = Array.from({length:k}, ()=>({lat:0,lng:0,n:0}));
+          points.forEach((p,i) => { newC[labels[i]].lat+=p.lat; newC[labels[i]].lng+=p.lng; newC[labels[i]].n++; });
+          centroids = newC.map(c => c.n>0 ? {lat:c.lat/c.n, lng:c.lng/c.n} : centroids[0]);
+        }
+        return labels;
+      }
+
+      // Color circle based on zone
+      const zoneColors = ['#3b82f6','#f59e0b','#64748b']; // A, B, C
+      let zoneLabelMap = {};
+      if (psRows.length >= 3) {
+        const kLabels = kMeans(psRows, 3);
+        // Sort zones by count (desc): zone A = most PS
+        const zoneCounts = [0,1,2].map(z => kLabels.filter(l=>l===z).length);
+        const zoneRanked = [0,1,2].sort((a,b)=>zoneCounts[b]-zoneCounts[a]);
+        psRows.forEach((r, i) => { zoneLabelMap[r.id] = zoneRanked.indexOf(kLabels[i]); });
+      }
+
+      // Marker layer group
+      const markers = L.layerGroup().addTo(map);
+      this._leafletMarkerLayer = markers;
+
+      const bounds = [];
+      rows.forEach(r => {
+        if (!r.lat || !r.lng) return;
+        const isPS = r.status.includes('Put In Service');
+        const isCancel = r.status.toUpperCase().includes('CANCEL') || r.status.toUpperCase().includes('BATAL');
+        let color = '#fbbf24'; // IO = yellow
+        if (isPS) {
+          const zone = zoneLabelMap[r.id] ?? 1;
+          color = zoneColors[zone];
+        } else if (isCancel) {
+          color = '#ef4444';
+        }
+        const circle = L.circleMarker([r.lat, r.lng], {
+          radius: isPS ? 8 : 6,
+          fillColor: color,
+          color: '#fff',
+          weight: 1,
+          opacity: 0.9,
+          fillOpacity: 0.8,
+        });
+        const zoneLabel = isPS ? (' · Zona ' + ['A','B','C'][zoneLabelMap[r.id]??1]) : '';
+        circle.bindPopup(`<div style="font-family:'Poppins',sans-serif;font-size:12px;line-height:1.7">
+          <b>${r.id}</b><br>
+          SF: <b>${r.sf}</b><br>
+          Status: ${r.status}${zoneLabel}<br>
+          <small>${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}</small>
+        </div>`);
+        markers.addLayer(circle);
+        bounds.push([r.lat, r.lng]);
       });
 
-      const th = getChartTheme();
-      chart.setOption({
-        backgroundColor: 'transparent',
-        legend: {
-          ...th.legend,
-          top: 4,
-          data: ['Put In Service','IO','Batal'],
-        },
-        tooltip: {
-          ...th.tooltip,
-          trigger: 'item',
-          formatter: p => {
-            const d = p.data;
-            return `<div style="font-size:11px;line-height:1.6">
-              <b>${d.name}</b><br>
-              SF: ${d.sf}<br>
-              Status: ${d.status}<br>
-              Lng: ${d.value[0].toFixed(5)}, Lat: ${d.value[1].toFixed(5)}
-            </div>`;
-          },
-        },
-        grid: { left: 50, right: 20, top: 40, bottom: 40 },
-        xAxis: {
-          ...th.xAxis,
-          type: 'value',
-          name: 'Longitude',
-          nameTextStyle: { color: light ? '#8a6050' : '#484f58', fontFamily:"'Poppins',sans-serif", fontSize: 10 },
-          scale: true,
-          splitLine: { lineStyle: { color: light ? 'rgba(180,120,90,.10)' : '#21262d' } },
-        },
-        yAxis: {
-          ...th.yAxis,
-          type: 'value',
-          name: 'Latitude',
-          nameTextStyle: { color: light ? '#8a6050' : '#484f58', fontFamily:"'Poppins',sans-serif", fontSize: 10 },
-          scale: true,
-        },
-        series: [
-          mkSeries('Put In Service', '#22d972', r => r.status.includes('Put In Service')),
-          mkSeries('IO',             '#fbbf24', r => !r.status.includes('Put In Service') && !r.status.includes('CANCEL')),
-          mkSeries('Batal',          '#ff4d4d', r => r.status.includes('CANCEL')),
-        ],
-      });
+      if (bounds.length > 0) {
+        map.fitBounds(L.latLngBounds(bounds), {padding: [20,20]});
+      }
     },
 
     // ── D2D Trend Chart ──
@@ -2938,18 +3318,40 @@ function app() {
         if (i < hariPS) { const v=dayMap[i]||0; ps[i]=v; running+=v; cum[i]=running; }
       }
       const drr = hariPS > 0 ? running / hariPS : 0;
-      // Projection line from current MTD forward
+
+      // Weighted DRR: Senin–Jumat bobot lebih tinggi (ratio weekday vs weekend PS)
+      // Bobot: Senin=1.2, Selasa=1.2, Rabu=1.15, Kamis=1.1, Jumat=1.1, Sabtu=0.8, Minggu=0.7
+      const dayWeights = [0.7, 1.2, 1.2, 1.15, 1.1, 1.1, 0.8]; // Sun=0, Mon=1, ..., Sat=6
+      let weightedSum = 0, weightedCount = 0;
+      for (let i = 0; i < hariPS; i++) {
+        const dow = new Date(today.getFullYear(), parseInt(bulan)-1, i+1).getDay();
+        const w = dayWeights[dow];
+        weightedSum += (dayMap[i]||0) / w;
+        weightedCount += 1;
+      }
+      const drrWeighted = weightedCount > 0 ? weightedSum / weightedCount : drr;
+
+      // Projection line from current MTD forward (both simple and weighted)
+      const projWeighted = new Array(daysInMonth).fill(null);
       for (let i = hariPS-1; i < daysInMonth; i++) {
         proj[i] = Math.round(running + drr * (i - hariPS + 1));
+        // Weighted: multiply DRR by today's day weight for remaining days
+        let wEOM = running;
+        for (let j = hariPS; j <= i; j++) {
+          const dow = new Date(today.getFullYear(), parseInt(bulan)-1, j+1).getDay();
+          wEOM += drrWeighted * dayWeights[dow];
+        }
+        projWeighted[i] = Math.round(wEOM);
       }
       chart.setOption(Object.assign({}, getChartTheme(), {
-        legend:{ data:['PS Kumulatif','Proyeksi EOM'], top:0, ...getChartTheme().legend },
+        legend:{ data:['PS Kumulatif','Proyeksi EOM','Proyeksi Weighted'], top:0, ...getChartTheme().legend },
         xAxis:{ ...getChartTheme().xAxis, type:'category', data:days },
         yAxis:{ ...getChartTheme().yAxis, type:'value' },
         tooltip:{ ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'cross'} },
         series:[
           { name:'PS Kumulatif', type:'line', data:cum, smooth:false, lineStyle:{width:2,color:'#22d972'}, symbol:'none', color:'#22d972', areaStyle:{color:'rgba(34,217,114,.08)'} },
           { name:'Proyeksi EOM', type:'line', data:proj, smooth:false, lineStyle:{width:2,color:'#58a6ff',type:'dashed'}, symbol:'none', color:'#58a6ff' },
+          { name:'Proyeksi Weighted', type:'line', data:projWeighted, smooth:false, lineStyle:{width:2,color:'#f59e0b',type:'dotted'}, symbol:'none', color:'#f59e0b' },
         ],
       }));
     },
