@@ -3394,12 +3394,15 @@ function app() {
         const blnIO = (r[C.BLN_IO]||'').toString();
         const blnRE = (r[C.BLN_RE]||'').toString();
         const blnPS = (r[C.BLN_PS]||'').toString();
-        // IO: masuk rentang tanggal IO
-        if (blnIO === bulan && this.inRange(r[C.TGL_IO])) io++;
-        // RE: masuk rentang tanggal RE
-        if (blnRE === bulan && this.inRange(r[C.TGL_RE])) re++;
-        // PS: masuk rentang tanggal PS
-        if (blnPS === bulan && this.inRange(r[C.TGL_PS])) {
+        const valIO = (r[C.VAL_IO]||'').toString().trim();
+        const valRE = (r[C.VAL_RE]||'').toString().trim();
+        const valPS = (r[C.VAL_PS]||'').toString().trim();
+        // IO: masuk rentang tanggal IO + status IO tidak kosong
+        if (blnIO === bulan && this.inRange(r[C.TGL_IO]) && valIO !== '') io++;
+        // RE: masuk rentang tanggal RE + status RE = "Register"
+        if (blnRE === bulan && this.inRange(r[C.TGL_RE]) && valRE === 'Register') re++;
+        // PS: masuk rentang tanggal PS + status PS = "Put In service"
+        if (blnPS === bulan && this.inRange(r[C.TGL_PS]) && valPS === 'Put In service') {
           ps++;
           // weekly PS
           const tgl = r[C.DATE_PS] || r[C.DATE_IO] || '';
@@ -3418,9 +3421,12 @@ function app() {
         const blnIO = (r[C.BLN_IO]||'').toString();
         const blnRE = (r[C.BLN_RE]||'').toString();
         const blnPS = (r[C.BLN_PS]||'').toString();
-        if (blnPS === prevBulan && this.inRange(r[C.TGL_PS])) psPrevTotal++;
-        if (blnIO === prevBulan && this.inRange(r[C.TGL_IO])) ioPrevTotal++;
-        if (blnRE === prevBulan && this.inRange(r[C.TGL_RE])) rePrevTotal++;
+        const valIO = (r[C.VAL_IO]||'').toString().trim();
+        const valRE = (r[C.VAL_RE]||'').toString().trim();
+        const valPS = (r[C.VAL_PS]||'').toString().trim();
+        if (blnPS === prevBulan && this.inRange(r[C.TGL_PS]) && valPS === 'Put In service') psPrevTotal++;
+        if (blnIO === prevBulan && this.inRange(r[C.TGL_IO]) && valIO !== '') ioPrevTotal++;
+        if (blnRE === prevBulan && this.inRange(r[C.TGL_RE]) && valRE === 'Register') rePrevTotal++;
       });
 
       // Total targets for cluster
