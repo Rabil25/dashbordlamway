@@ -38,6 +38,44 @@ const USERS_SHEET = 'Users';
 // ── Cache TTL (detik) ─────────────────────────────────────────
 const CACHE_TTL_DATA    = 600;   // 10 menit – bulan_ini & update_sf
 const CACHE_TTL_BULAN   = 3600;  // 1 jam    – list_bulan
+const CACHE_CHUNK_SIZE  = 85000; // 85KB per chunk (GAS limit 100KB/entry)
+
+// ================================================================
+//  CHUNKED CACHE HELPERS – untuk data > 90KB
+// ================================================================
+function cachePutChunked(cache, key, dataObj, ttl) {
+  try {
+    const serialized = JSON.stringify(dataObj);
+    const total = Math.ceil(serialized.length / CACHE_CHUNK_SIZE);
+    // Simpan metadata dulu
+    cache.put(key + '__meta', JSON.stringify({ chunks: total }), ttl);
+    // Simpan tiap chunk
+    for (let i = 0; i < total; i++) {
+      const chunk = serialized.substring(i * CACHE_CHUNK_SIZE, (i + 1) * CACHE_CHUNK_SIZE);
+      cache.put(key + '__c' + i, chunk, ttl);
+    }
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+function cacheGetChunked(cache, key) {
+  try {
+    const metaStr = cache.get(key + '__meta');
+    if (!metaStr) return null;
+    const meta = JSON.parse(metaStr);
+    let serialized = '';
+    for (let i = 0; i < meta.chunks; i++) {
+      const chunk = cache.get(key + '__c' + i);
+      if (chunk === null) return null; // salah satu chunk expired → cache miss
+      serialized += chunk;
+    }
+    return JSON.parse(serialized);
+  } catch(e) {
+    return null;
+  }
+}
 
 // ================================================================
 //  Entry Point GET
@@ -125,14 +163,49 @@ function getAllData(bulan) {
 }
 
 // ================================================================
-//  BARU: Warmup – mencegah GAS cold start
+//  BARU: Warmup – mencegah cold start + pre-cache data terbaru
 //  Pasang time-based trigger setiap 5 menit via setupWarmupTrigger()
 // ================================================================
 function warmupSelf() {
-  // Hanya buka spreadsheet agar GAS instance tetap hangat
   try {
-    SpreadsheetApp.openById(CONFIG.SHEET_ID);
-    Logger.log('Warmup OK: ' + new Date().toISOString());
+    const cache  = CacheService.getScriptCache();
+    const now    = new Date();
+    const bulanNow  = (now.getMonth() + 1).toString(); // 1-12
+    const bulanPrev = now.getMonth() > 0 ? now.getMonth().toString() : '12';
+
+    // Pre-cache bulan aktif jika belum ada
+    const keyNow = 'sheet_Bulan_Ini_' + bulanNow;
+    if (!cacheGetChunked(cache, keyNow)) {
+      const d = getRawSheet('Bulan_Ini', 'CE2:DT', bulanNow);
+      if (d.ok) cachePutChunked(cache, keyNow, d, CACHE_TTL_DATA);
+      Logger.log('Pre-cache bulan ' + bulanNow + ': ' + (d.rows||0) + ' baris');
+    } else {
+      Logger.log('Cache bulan ' + bulanNow + ' masih valid');
+    }
+
+    // Pre-cache bulan lalu jika belum ada
+    const keyPrev = 'sheet_Bulan_Ini_' + bulanPrev;
+    if (!cacheGetChunked(cache, keyPrev)) {
+      const d = getRawSheet('Bulan_Ini', 'CE2:DT', bulanPrev);
+      if (d.ok) cachePutChunked(cache, keyPrev, d, CACHE_TTL_DATA);
+      Logger.log('Pre-cache bulan lalu ' + bulanPrev + ': ' + (d.rows||0) + ' baris');
+    }
+
+    // Pre-cache Update SF jika belum ada
+    const keySf = 'sheet_Update_SF_all';
+    if (!cacheGetChunked(cache, keySf)) {
+      const d = getRawSheet('Update SF', 'A2:AG', '');
+      if (d.ok) cachePutChunked(cache, keySf, d, CACHE_TTL_DATA);
+      Logger.log('Pre-cache Update SF: ' + (d.rows||0) + ' baris');
+    }
+
+    // Pre-cache list_bulan jika belum ada
+    if (!cache.get('list_bulan__meta') && !cache.get('list_bulan')) {
+      const d = getListBulan();
+      if (d.ok) cache.put('list_bulan', JSON.stringify(d), CACHE_TTL_BULAN);
+    }
+
+    Logger.log('Warmup selesai: ' + new Date().toISOString());
   } catch(e) {
     Logger.log('Warmup error: ' + e.message);
   }
@@ -401,35 +474,24 @@ function getListBulanCached() {
   return result;
 }
 
-// ── BARU: getRawSheet dengan cache ───────────────────────────
+// ── BARU: getRawSheet dengan chunked cache ───────────────────
 function getRawSheetCached(sheetName, range, filterBulan) {
   const cache = CacheService.getScriptCache();
-  // Key cache unik per sheet + bulan
   const cacheKey = 'sheet_' + sheetName.replace(/\s/g,'_') + '_' + (filterBulan||'all');
 
-  try {
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      parsed._fromCache = true;
-      return parsed;
-    }
-  } catch(e) {
-    // Cache miss atau parse error, lanjut baca sheet
+  // Coba ambil dari chunked cache
+  const cached = cacheGetChunked(cache, cacheKey);
+  if (cached) {
+    cached._fromCache = true;
+    return cached;
   }
 
+  // Cache miss → baca dari Sheets
   const result = getRawSheet(sheetName, range, filterBulan);
 
+  // Simpan ke chunked cache (berapapun ukurannya)
   if (result.ok) {
-    try {
-      // GAS CacheService max value size: 100KB per entry
-      const serialized = JSON.stringify(result);
-      if (serialized.length < 90000) {  // beri margin
-        cache.put(cacheKey, serialized, CACHE_TTL_DATA);
-      }
-    } catch(e) {
-      // Data terlalu besar untuk cache, tidak masalah
-    }
+    cachePutChunked(cache, cacheKey, result, CACHE_TTL_DATA);
   }
 
   return result;
