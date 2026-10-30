@@ -2417,23 +2417,16 @@ function app() {
       return b <= 1 ? 12 : b - 1;
     },
 
-    // Dynamic months available in actual data
+    // Months Jan–current month (fixed list, tidak bergantung data)
     get availableMonths() {
-      const monthSet = new Set();
       const names = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-      for (const r of this.rows) {
-        const kab = (r[C.VAL_KAB]||'').trim().toUpperCase();
-        // Include all clusters for month detection
-        const tgl = r[C.TGL_PS] || r[C.TGL_IO] || '';
-        if (!tgl) continue;
-        const m = new Date(tgl).getMonth() + 1;
-        if (m >= 1 && m <= 12) monthSet.add(m);
+      const now = new Date();
+      const curMonth = now.getMonth() + 1;
+      const result = [];
+      for (let m = 1; m <= curMonth; m++) {
+        result.push({ val: String(m), label: names[m] });
       }
-      if (monthSet.size === 0) {
-        // fallback: current month
-        monthSet.add(new Date().getMonth() + 1);
-      }
-      return [...monthSet].sort((a,b) => a-b).map(m => ({ val: String(m), label: names[m] }));
+      return result;
     },
 
     get prevBulanLabel() {
