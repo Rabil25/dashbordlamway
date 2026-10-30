@@ -2635,7 +2635,7 @@ function app() {
         const nowStr = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         this.lastUpdate = nowStr;
         this.lastSync = nowStr;
-        localStorage.setItem('wok_last_sync', nowStr);
+        // wok_last_sync disimpan di state saja (bukan localStorage — data terlalu besar)
         this.$nextTick(() => this.renderCharts());
         this.toast('Data dimuat · ' + merged.length + ' baris total (' + bulanList.length + ' bulan) — ganti bulan/tanggal tanpa loading 🚀', 'ok');
       } catch(e) {
@@ -2647,26 +2647,21 @@ function app() {
     // ── Fetch dari Google Apps Script Web App (dengan cache 15 menit, filter bulan di server) ──
     async fetchGAS(type, forceRefresh = false, ttlMs = 15 * 60 * 1000, bulanOverride = null) {
       const bulan = bulanOverride || this.cfg.bulan;
-      // Cache key menyertakan bulan agar ganti bulan otomatis invalidate cache
-      const cacheKey = `wok_cache_${type}_b${bulan}`;
-      const cacheTsKey = `wok_cache_ts_${type}_b${bulan}`;
+      // In-memory cache (pakai Map, tidak makan localStorage quota)
+      if (!this._memCache) this._memCache = new Map();
+      const cacheKey = `${type}_b${bulan}`;
       if (!forceRefresh) {
-        const cached = localStorage.getItem(cacheKey);
-        const cachedTs = parseInt(localStorage.getItem(cacheTsKey) || '0');
-        if (cached && (Date.now() - cachedTs) < ttlMs) {
-          try { return JSON.parse(cached); } catch(e) {}
-        }
+        const hit = this._memCache.get(cacheKey);
+        if (hit && (Date.now() - hit.ts) < ttlMs) return hit.data;
       }
       const base = this.cfg.gasUrl;
-      // Kirim parameter bulan ke GAS agar GAS filter di server side (hemat transfer data)
       const url  = `${base}?token=${GAS_TOKEN}&type=${type}&bulan=${bulan}`;
       const res  = await fetch(url);
       if (!res.ok) throw new Error('HTTP ' + res.status + ' saat fetch ' + type);
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'GAS error (' + type + ')');
       const data = json.data || [];
-      localStorage.setItem(cacheKey, JSON.stringify(data));
-      localStorage.setItem(cacheTsKey, Date.now().toString());
+      this._memCache.set(cacheKey, { data, ts: Date.now() });
       return data;
     },
 
