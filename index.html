@@ -3890,16 +3890,12 @@ function app() {
       const fSTO    = this.petaFilterSTO;
       const fProduk = this.petaFilterProduk;
       return this.filteredRows.filter(r => {
-        // Hanya tampilkan order yang masuk di bulan aktif (IO atau RE atau PS di bulan ini)
+        // Hanya tampilkan order yang IO-nya di bulan aktif
         const blnIO = (r[C.BLN_IO]||'').toString();
-        const blnRE = (r[C.BLN_RE]||'').toString();
-        const blnPS = (r[C.BLN_PS]||'').toString();
-        if (blnIO !== bulan && blnRE !== bulan && blnPS !== bulan) return false;
-        // Filter tanggal: gunakan tgl IO sebagai acuan masuk bulan (jika ada)
-        if (blnIO === bulan) {
-          const tgl = parseInt(r[C.TGL_IO]||0);
-          if (tgl < tglA || tgl > tglB) return false;
-        }
+        if (blnIO !== bulan) return false;
+        // Filter tanggal berdasarkan tgl IO
+        const tgl = parseInt(r[C.TGL_IO]||0);
+        if (tgl < tglA || tgl > tglB) return false;
         // Filter STO (multi)
         if (fSTO.length > 0 && !fSTO.includes((r[C.STO]||'').trim())) return false;
         // Filter Produk (key = "PRODUK_KAT|SPEED")
