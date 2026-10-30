@@ -2629,14 +2629,17 @@ function app() {
           this._availBulanList = listBulanRaw; // simpan untuk dropdown
         }
 
-        // 2. Fetch data baris untuk bulan yang dipilih (GAS filter di server)
-        const [allData, sfData] = await Promise.all([
-          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS),
+        // 2. Fetch data bulan aktif + bulan sebelumnya (untuk MoM, Tier LM, PS SF LM)
+        const prevBulanStr = String(this.prevBulan); // bulan - 1
+        const [allData, prevData, sfData] = await Promise.all([
+          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS),               // bulan aktif
+          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS, prevBulanStr), // bulan lalu
           this.fetchGAS('update_sf', forceRefresh, CACHE_TTL_MS),
         ]);
 
-        this.allRows  = allData  || [];
-        this.sfMaster = sfData   || [];
+        // Gabung bulan aktif + bulan lalu ke allRows agar MoM bisa dihitung
+        this.allRows  = [...(allData || []), ...(prevData || [])];
+        this.sfMaster = sfData || [];
 
         const nowStr = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         this.lastUpdate = nowStr;
@@ -2645,8 +2648,8 @@ function app() {
         this.$nextTick(() => this.renderCharts());
 
         this.toast(
-          this.allRows.length + ' baris dimuat · bulan ' + this.cfg.bulan +
-          (this._availBulanList ? ' · tersedia: ' + this._availBulanList.join(', ') : ''),
+          (allData||[]).length + ' baris bln ' + this.cfg.bulan +
+          ' + ' + (prevData||[]).length + ' baris bln ' + prevBulanStr + ' dimuat',
           'ok'
         );
 
