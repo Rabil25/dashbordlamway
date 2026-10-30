@@ -1663,6 +1663,15 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             <div class="te-metric-card te-io-card">
               <div class="te-mc-lbl">INPUT ORDER</div>
               <div class="te-mc-val" style="color:var(--warning)" x-text="kpi.io"></div>
+              <!-- MoM badge IO -->
+              <div class="te-delta-row" style="margin:3px 0">
+                <template x-if="kpi.momIOvsLast !== null">
+                  <span class="te-pill" :class="kpi.momIOvsLast>=0 ? 'te-pill-up' : 'te-pill-down'">
+                    <span x-text="kpi.momIOvsLast>=0 ? '▲' : '▼'"></span>
+                    <span x-text="'MoM ' + (kpi.momIOvsLast>=0?'+':'') + kpi.momIOvsLast + '%'"></span>
+                  </span>
+                </template>
+              </div>
               <div class="te-mc-ach">
                 <template x-if="kpi.momIO !== null">
                   <span>Target <span x-text="kpi.tgtIO"></span> · <strong
@@ -1676,8 +1685,13 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   :style="{width: kpi.momIO!==null ? Math.min(kpi.momIO,100)+'%':'0%', background:'var(--warning)'}">
                 </div>
               </div>
-              <div style="font-size:10px;color:var(--text-3);margin-top:5px"
-                x-text="kpi.io>0 ? 'RE/IO ' + Math.round(kpi.re/kpi.io*100) + '%' : ''">
+              <div style="font-size:10px;color:var(--text-3);margin-top:5px">
+                <span x-text="kpi.io>0 ? 'RE/IO ' + Math.round(kpi.re/kpi.io*100) + '%' : ''"></span>
+                <template x-if="kpi.ioPrev > 0">
+                  <span> · vs LM <strong x-text="kpi.io + ' vs ' + kpi.ioPrev"></strong>
+                    <span :class="kpi.momIOvsLast>=0 ? 'up' : 'down'" x-text="kpi.momIOvsLast !== null ? (kpi.momIOvsLast>=0?'+':'')+kpi.momIOvsLast+'%' : ''"></span>
+                  </span>
+                </template>
               </div>
             </div>
 
@@ -1685,6 +1699,15 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             <div class="te-metric-card te-re-card">
               <div class="te-mc-lbl">REGISTER</div>
               <div class="te-mc-val" style="color:var(--info)" x-text="kpi.re"></div>
+              <!-- MoM badge RE -->
+              <div class="te-delta-row" style="margin:3px 0">
+                <template x-if="kpi.momREvsLast !== null">
+                  <span class="te-pill" :class="kpi.momREvsLast>=0 ? 'te-pill-up' : 'te-pill-down'">
+                    <span x-text="kpi.momREvsLast>=0 ? '▲' : '▼'"></span>
+                    <span x-text="'MoM ' + (kpi.momREvsLast>=0?'+':'') + kpi.momREvsLast + '%'"></span>
+                  </span>
+                </template>
+              </div>
               <div class="te-mc-ach">
                 <template x-if="kpi.momRE !== null">
                   <span>Target <span x-text="kpi.tgtRE"></span> · <strong
@@ -1698,8 +1721,13 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   :style="{width: kpi.momRE!==null ? Math.min(kpi.momRE,100)+'%':'0%', background:'var(--info)'}">
                 </div>
               </div>
-              <div style="font-size:10px;color:var(--text-3);margin-top:5px"
-                x-text="kpi.re>0 ? 'PS/RE ' + kpi.psRE + '%' : ''">
+              <div style="font-size:10px;color:var(--text-3);margin-top:5px">
+                <span x-text="kpi.re>0 ? 'PS/RE ' + kpi.psRE + '%' : ''"></span>
+                <template x-if="kpi.rePrev > 0">
+                  <span> · vs LM <strong x-text="kpi.re + ' vs ' + kpi.rePrev"></strong>
+                    <span :class="kpi.momREvsLast>=0 ? 'up' : 'down'" x-text="kpi.momREvsLast !== null ? (kpi.momREvsLast>=0?'+':'')+kpi.momREvsLast+'%' : ''"></span>
+                  </span>
+                </template>
               </div>
             </div>
           </div>
