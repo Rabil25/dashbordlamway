@@ -2800,16 +2800,21 @@ function app() {
       const map = {};
       const bulan = this.cfg.bulan;
       const prevBulan = this.prevBulan.toString();
+      const produkFilter = this.sfProdukFilter || '';
 
-      // Hitung PS bulan ini dari filteredRows
+      // Hitung PS bulan ini dari filteredRows — filter produk masuk ke sini
       this.filteredRows.forEach(r => {
         const code = (r[C.CODE_SF]||'').trim();
         if (!code) return;
+        const produk = (r[C.PRODUK_KAT]||'');
+        // Inisialisasi entry SF (pakai semua row untuk nama/kab/channel)
         if (!map[code]) map[code] = {
           code, nama: r[C.NAMA_SF]||'', channel: r[C.CHANNEL2]||'',
           kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
-          produk: r[C.PRODUK_KAT]||'',
+          produk,
         };
+        // Hitung angka HANYA untuk produk yang dipilih (atau semua jika tidak ada filter)
+        if (produkFilter && produk !== produkFilter) return;
         const m = map[code];
         const blnIOsf = (r[C.BLN_IO]||'').toString();
         const blnPS   = (r[C.BLN_PS]||'').toString();
@@ -2867,7 +2872,9 @@ function app() {
       const q = this.sfSearch.toLowerCase();
       if (q) arr = arr.filter(sf => sf.code.toLowerCase().includes(q) || sf.nama.toLowerCase().includes(q));
       if (this.sfKabFilter) arr = arr.filter(sf => sf.kab.toUpperCase() === this.sfKabFilter.toUpperCase());
-      if (this.sfProdukFilter) arr = arr.filter(sf => sf.produk === this.sfProdukFilter);
+      // Filter produk: buildSFTable sudah recount angka per produk,
+      // tapi kita tetap sembunyikan SF yang sama sekali tidak punya transaksi produk tersebut
+      if (this.sfProdukFilter) arr = arr.filter(sf => sf.io > 0 || sf.re > 0 || sf.ps > 0);
       // Sort
       const tierOrder = ['Diamond','Platinum','Gold','Silver','Bronze','Black'];
       if (this.sfSort === 'ach')  arr = [...arr].sort((a,b) => b.ach - a.ach);
