@@ -1464,14 +1464,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   'dp-in-range': !cell.other && cell.d>cfg.tglAwal && cell.d<cfg.tglAkhir
                 }"
                 x-text="cell.other ? '' : cell.d"
-                @click="if(!cell.other){ if(picking===0||picking===2){ cfg.tglAwal=cell.d; cfg.tglAkhir=cell.d; picking=1; } else { if(cell.d<cfg.tglAwal){ cfg.tglAkhir=cfg.tglAwal; cfg.tglAwal=cell.d; } else { cfg.tglAkhir=cell.d; } picking=2; open=false; _deferredRender(); } }"
+                @click="if(!cell.other){ if(picking===0||picking===2){ cfg.tglAwal=cell.d; cfg.tglAkhir=cell.d; picking=1; } else { const newA=cell.d<cfg.tglAwal?cell.d:cfg.tglAwal, newB=cell.d<cfg.tglAwal?cfg.tglAwal:cell.d; picking=2; open=false; _deferredUpdateTgl(newA, newB); } }"
               ></div>
             </template>
           </div>
           <!-- Footer -->
           <div class="dp-footer">
             <span class="dp-footer-hint" x-text="cfg.tglAwal===cfg.tglAkhir ? ('Tgl '+cfg.tglAwal) : (cfg.tglAwal+' s/d '+cfg.tglAkhir)"></span>
-            <button class="dp-reset" @click="cfg.tglAwal=1; cfg.tglAkhir=new Date().getDate(); picking=0; open=false; _deferredRender()">Reset</button>
+            <button class="dp-reset" @click="picking=0; open=false; _deferredUpdateTgl(1, new Date().getDate())">Reset</button>
           </div>
         </div>
       </div>
@@ -3008,6 +3008,7 @@ function app() {
     async init() {
       // Expose deferred render to window for nested x-data components (date picker)
       window._deferredRender = () => this._deferredRender();
+      window._deferredUpdateTgl = (a, b) => this._deferredUpdateTgl(a, b);
 
       // Apply saved theme
       document.documentElement.setAttribute('data-theme', this.themeMode);
@@ -3234,11 +3235,17 @@ function app() {
 
     // ── Cluster ──
     setCluster(c) {
-      this.cluster = c;
-      this.sfKabFilter = '';
-      this.orderKab = '';
-      this.orderPage = 0;
-      this._deferredRender();
+      // Show loading bar FIRST, then change data in next frame so browser can repaint
+      this.filterLoading = true;
+      clearTimeout(this._renderTimer);
+      this._renderTimer = setTimeout(() => {
+        this.cluster = c;
+        this.sfKabFilter = '';
+        this.orderKab = '';
+        this.orderPage = 0;
+        this.filterLoading = false;
+        this.$nextTick(() => this.renderCharts());
+      }, 30);
     },
 
     _deferredRender() {
@@ -3247,7 +3254,19 @@ function app() {
       this._renderTimer = setTimeout(() => {
         this.filterLoading = false;
         this.$nextTick(() => this.renderCharts());
-      }, 80);
+      }, 30);
+    },
+
+    _deferredUpdateTgl(a, b) {
+      // Show loading bar FIRST, then update date range in next frame so browser can repaint
+      this.filterLoading = true;
+      clearTimeout(this._renderTimer);
+      this._renderTimer = setTimeout(() => {
+        this.cfg.tglAwal = a;
+        this.cfg.tglAkhir = b;
+        this.filterLoading = false;
+        this.$nextTick(() => this.renderCharts());
+      }, 30);
     },
 
     get clusterKab() {
