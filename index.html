@@ -1771,32 +1771,29 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <div class="section-title">Peta Koordinat Order</div>
           <div class="section-sub" x-text="koordinatRows.length + ' order dengan koordinat · ' + cluster"></div>
         </div>
-        <!-- Filter checkbox IO / RE / PS -->
+        <!-- Filter checkbox Belum PS / Kendala / PS -->
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text-2)">Tampilkan:</span>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#fbbf24;background:var(--card-bg);border:1.5px solid #fbbf24;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="petaFilter.io ? '' : 'opacity:.4'">
             <input type="checkbox" x-model="petaFilter.io" @change="$nextTick(()=>renderPeta())" style="accent-color:#fbbf24;width:14px;height:14px">
-            IO
+            Belum PS
           </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#22c55e;background:var(--card-bg);border:1.5px solid #22c55e;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="petaFilter.re ? '' : 'opacity:.4'">
-            <input type="checkbox" x-model="petaFilter.re" @change="$nextTick(()=>renderPeta())" style="accent-color:#22c55e;width:14px;height:14px">
-            RE
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#ef4444;background:var(--card-bg);border:1.5px solid #ef4444;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="petaFilter.re ? '' : 'opacity:.4'">
+            <input type="checkbox" x-model="petaFilter.re" @change="$nextTick(()=>renderPeta())" style="accent-color:#ef4444;width:14px;height:14px">
+            Kendala
           </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#3b82f6;background:var(--card-bg);border:1.5px solid #3b82f6;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="petaFilter.ps ? '' : 'opacity:.4'">
-            <input type="checkbox" x-model="petaFilter.ps" @change="$nextTick(()=>renderPeta())" style="accent-color:#3b82f6;width:14px;height:14px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#22c55e;background:var(--card-bg);border:1.5px solid #22c55e;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="petaFilter.ps ? '' : 'opacity:.4'">
+            <input type="checkbox" x-model="petaFilter.ps" @change="$nextTick(()=>renderPeta())" style="accent-color:#22c55e;width:14px;height:14px">
             PS
           </label>
-          <span style="font-size:11px;color:var(--text-3);margin-left:4px" x-text="koordinatRows.filter(r=>(r.type==='io'&&petaFilter.io)||(r.type==='re'&&petaFilter.re)||(r.type==='ps'&&petaFilter.ps)).length + ' marker tampil'"></span>
+          <span style="font-size:11px;color:var(--text-3);margin-left:4px" x-text="koordinatRows.filter(r=>(r.type==='proses'&&petaFilter.io)||(r.type==='kendala'&&petaFilter.re)||(r.type==='ps'&&petaFilter.ps)).length + ' marker tampil'"></span>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div id="leaflet-map" style="height:480px;width:100%" role="img" aria-label="Peta sebaran order dengan koordinat"></div>
           <div style="padding:10px 16px;font-size:11px;color:var(--text-3);display:flex;gap:16px;flex-wrap:wrap">
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fbbf24;margin-right:4px"></span>IO</span>
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:4px"></span>RE</span>
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3b82f6;margin-right:4px"></span>PS Zona A</span>
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:4px"></span>PS Zona B</span>
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#64748b;margin-right:4px"></span>PS Zona C</span>
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></span>Batal</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:4px"></span>PS (Put In Service)</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fbbf24;margin-right:4px"></span>Belum PS (proses)</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></span>Kendala / Batal</span>
           </div>
         </div>
       </div>
@@ -3244,14 +3241,14 @@ function app() {
         return parts.length===2 && parseFloat(parts[0]) && parseFloat(parts[1]);
       }).map(r => {
         const [lat, lng] = (r[C.KOORDINAT]||'').split(',').map(Number);
-        const bulan = this.cfg.bulan;
-        // Tentukan tipe marker berdasarkan bulan yang aktif
-        const hasPS = (r[C.BLN_PS]||'').toString() === bulan && r[C.VAL_PS];
-        const hasRE = (r[C.BLN_RE]||'').toString() === bulan && r[C.VAL_RE];
-        const hasIO = (r[C.BLN_IO]||'').toString() === bulan && r[C.VAL_IO];
-        const type = hasPS ? 'ps' : hasRE ? 're' : hasIO ? 'io' : 'io';
-        const status = r[C.VAL_PS]||r[C.VAL_RE]||r[C.VAL_IO]||'';
-        return { lat, lng, status, type, sf: r[C.NAMA_SF]||'', id: r[C.ID_ORDER]||'' };
+        // Status peta berdasarkan CP (VAL_PS) dan CZ (KENDALA_CAT)
+        const valPS  = (r[C.VAL_PS]||'').toString().trim();
+        const kendala = (r[C.KENDALA_CAT]||'').toString().trim();
+        const sudahPS = valPS.toLowerCase().includes('put in service');
+        // type: 'ps' = hijau, 'kendala' = merah, 'proses' = kuning
+        const type = sudahPS ? 'ps' : (kendala ? 'kendala' : 'proses');
+        const statusLabel = sudahPS ? 'Put In Service' : (kendala ? ('Kendala: ' + kendala) : 'Belum PS');
+        return { lat, lng, status: statusLabel, type, kendala, sf: r[C.NAMA_SF]||'', id: r[C.ID_ORDER]||'' };
       });
     },
 
@@ -3466,41 +3463,8 @@ function app() {
         return;
       }
 
-      // ── K-Means clustering (k=3) untuk zone A/B/C berdasarkan PS density ──
-      const psRows = rows.filter(r => r.status.includes('Put In Service'));
-      function kMeans(points, k, maxIter=30) {
-        if (points.length < k) return points.map((_,i) => i % k);
-        // Init centroids from spread of points
-        let centroids = points.slice(0, k).map(p => ({lat: p.lat, lng: p.lng}));
-        let labels = new Array(points.length).fill(0);
-        for (let iter = 0; iter < maxIter; iter++) {
-          // Assign
-          labels = points.map(p => {
-            let minD = Infinity, best = 0;
-            centroids.forEach((c, ci) => {
-              const d = Math.pow(p.lat-c.lat, 2) + Math.pow(p.lng-c.lng, 2);
-              if (d < minD) { minD=d; best=ci; }
-            });
-            return best;
-          });
-          // Update centroids
-          const newC = Array.from({length:k}, ()=>({lat:0,lng:0,n:0}));
-          points.forEach((p,i) => { newC[labels[i]].lat+=p.lat; newC[labels[i]].lng+=p.lng; newC[labels[i]].n++; });
-          centroids = newC.map(c => c.n>0 ? {lat:c.lat/c.n, lng:c.lng/c.n} : centroids[0]);
-        }
-        return labels;
-      }
-
-      // Color circle based on zone
-      const zoneColors = ['#3b82f6','#f59e0b','#64748b']; // A, B, C
-      let zoneLabelMap = {};
-      if (psRows.length >= 3) {
-        const kLabels = kMeans(psRows, 3);
-        // Sort zones by count (desc): zone A = most PS
-        const zoneCounts = [0,1,2].map(z => kLabels.filter(l=>l===z).length);
-        const zoneRanked = [0,1,2].sort((a,b)=>zoneCounts[b]-zoneCounts[a]);
-        psRows.forEach((r, i) => { zoneLabelMap[r.id] = zoneRanked.indexOf(kLabels[i]); });
-      }
+      // Warna marker: ps=hijau, kendala=merah, proses=kuning
+      const typeColor = { ps: '#22c55e', kendala: '#ef4444', proses: '#fbbf24' };
 
       // Marker layer group
       const markers = L.layerGroup().addTo(map);
@@ -3511,37 +3475,23 @@ function app() {
       rows.forEach(r => {
         if (!r.lat || !r.lng) return;
         // Filter by checkbox
-        if (r.type === 'ps' && !pf.ps) return;
-        if (r.type === 're' && !pf.re) return;
-        if (r.type === 'io' && !pf.io) return;
+        if (r.type === 'ps'      && !pf.ps) return;
+        if (r.type === 'kendala' && !pf.re) return;  // RE slot = kendala
+        if (r.type === 'proses'  && !pf.io) return;  // IO slot = proses
 
-        const isPS = r.type === 'ps';
-        const isRE = r.type === 're';
-        const isCancel = r.status.toUpperCase().includes('CANCEL') || r.status.toUpperCase().includes('BATAL');
-        let color = '#fbbf24'; // IO = yellow
-        if (isPS) {
-          const zone = zoneLabelMap[r.id] ?? 1;
-          color = zoneColors[zone];
-        } else if (isRE) {
-          color = '#22c55e'; // RE = hijau
-        } else if (isCancel) {
-          color = '#ef4444';
-        }
+        const color = typeColor[r.type] || '#fbbf24';
         const circle = L.circleMarker([r.lat, r.lng], {
-          radius: isPS ? 8 : 6,
+          radius: r.type === 'ps' ? 8 : 6,
           fillColor: color,
           color: '#fff',
           weight: 1,
           opacity: 0.9,
-          fillOpacity: 0.8,
+          fillOpacity: 0.85,
         });
-        const zoneLabel = isPS ? (' · Zona ' + ['A','B','C'][zoneLabelMap[r.id]??1]) : '';
-        const typeLabel = isPS ? 'PS' : isRE ? 'RE' : 'IO';
         circle.bindPopup(`<div style="font-family:'Poppins',sans-serif;font-size:12px;line-height:1.7">
           <b>${r.id}</b><br>
           SF: <b>${r.sf}</b><br>
-          Tipe: <b style="color:${color}">${typeLabel}</b>${zoneLabel}<br>
-          Status: ${r.status}<br>
+          Status: <b style="color:${color}">${r.status}</b><br>
           <small>${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}</small>
         </div>`);
         markers.addLayer(circle);
