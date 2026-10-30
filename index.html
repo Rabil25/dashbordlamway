@@ -1008,7 +1008,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn" @click="showConfig=false" x-show="rows.length>0">Batal</button>
+      <button class="btn" @click="showConfig=false" x-show="allRows.length>0">Batal</button>
       <button class="btn btn-primary" @click="saveConfig()">Simpan &amp; Muat Data</button>
     </div>
   </div>
@@ -1098,7 +1098,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <button class="cluster-btn" :class="{active:cluster==='Way Kanan'}" @click="setCluster('Way Kanan')">Way Kanan</button>
       </div>
       <!-- Bulan filter di topbar -->
-      <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="loadData(true)" aria-label="Pilih bulan" title="Filter bulan">
+      <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="$nextTick(()=>renderCharts())" aria-label="Pilih bulan" title="Filter bulan">
         <template x-for="m in availableMonths" :key="m.val">
           <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label + ' ' + new Date().getFullYear()"></option>
         </template>
@@ -1183,7 +1183,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- NO CONFIG STATE -->
-      <div x-show="!loading && rows.length===0 && !showConfig" class="loading-wrap" role="status">
+      <div x-show="!loading && allRows.length===0 && !showConfig" class="loading-wrap" role="status">
         <div class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <div class="empty-state-title">Belum ada data</div>
@@ -1193,7 +1193,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: DASHBOARD ══ -->
-      <div class="page" :class="{active:page==='dashboard'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='dashboard'}" x-show="!loading && allRows.length>0">
 
         <!-- Page subtitle -->
         <div style="font-size:11px;color:var(--text-3);margin-bottom:12px;padding:0 2px">
@@ -1524,7 +1524,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: SF ══ -->
-      <div class="page" :class="{active:page==='sf'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='sf'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
           <div>
             <div class="section-title">Performa SF</div>
@@ -1635,7 +1635,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: ORDER ══ -->
-      <div class="page" :class="{active:page==='order'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='order'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
           <div>
             <div class="section-title">Detail Order</div>
@@ -1715,7 +1715,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: KENDALA ══ -->
-      <div class="page" :class="{active:page==='kendala'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='kendala'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
           <div class="section-title">Analisa Kendala / Cancel</div>
           <div class="section-sub" x-text="kpi.cancel + ' order batal · ' + cluster"></div>
@@ -1766,7 +1766,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: PETA ══ -->
-      <div class="page" :class="{active:page==='peta'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='peta'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
           <div class="section-title">Peta Koordinat Order</div>
           <div class="section-sub" x-text="koordinatRows.length + ' order dengan koordinat · ' + cluster"></div>
@@ -1785,7 +1785,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: D2D SALES ══ -->
-      <div class="page" :class="{active:page==='d2d'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='d2d'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
           <div>
             <div class="section-title">D2D Sales — Harian</div>
@@ -1859,7 +1859,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: DEEPDIVE ══ -->
-      <div class="page" :class="{active:page==='deepdive'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='deepdive'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
           <div>
             <div class="section-title">Deepdive Sales</div>
@@ -1919,7 +1919,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: OUTLOOK ══ -->
-      <div class="page" :class="{active:page==='outlook'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='outlook'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
           <div>
             <div class="section-title">Outlook Sales</div>
@@ -2053,7 +2053,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ══ PAGE: SF PERFORMANCE (NEW) ══ -->
-      <div class="page" :class="{active:page==='sfperf'}" x-show="!loading && rows.length>0">
+      <div class="page" :class="{active:page==='sfperf'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
           <div>
             <div class="section-title">SF Performance</div>
@@ -2469,8 +2469,7 @@ function app() {
     loading: false,
     showConfig: false,
     themeMode: localStorage.getItem('dashTheme') || 'light',
-    rows: [],         // raw rows from GAS (current bulan)
-    prevRows: [],     // raw rows dari bulan sebelumnya (untuk MoM)
+    allRows: [],      // semua baris dari semua bulan (load sekali, filter lokal)
     lastUpdate: '',
     TIER_CONFIG,      // expose to template
 
@@ -2599,23 +2598,46 @@ function app() {
       if (!this.cfg.gasUrl) { this.showConfig = true; return; }
       this.loading = true;
       const CACHE_TTL_MS = 15 * 60 * 1000; // 15 menit
+
       try {
-        const prevBulanStr = String(this.prevBulan);
-        const [bulan, sfData, prevBulanData] = await Promise.all([
-          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS),
+        // Fetch semua bulan (1 s/d bulan ini) + prev bulan untuk MoM, paralel sekaligus
+        const currentBulan = parseInt(this.cfg.bulan) || (new Date().getMonth() + 1);
+        const prevBulan = this.prevBulan;
+        // Kumpulkan bulan unik yang perlu di-fetch (1..currentBulan + prevBulan jika di luar range)
+        const bulanSet = new Set();
+        for (let b = 1; b <= currentBulan; b++) bulanSet.add(b);
+        bulanSet.add(prevBulan); // pastikan prev bulan selalu ada
+        const bulanList = Array.from(bulanSet).sort((a,b) => a-b).map(String);
+
+        const [sfData, ...monthResults] = await Promise.all([
           this.fetchGAS('update_sf', forceRefresh, CACHE_TTL_MS),
-          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS, prevBulanStr),
+          ...bulanList.map(b => this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS, b)),
         ]);
-        this.rows = bulan || [];
-        this.prevRows = prevBulanData || [];
+
+        // Merge + dedup berdasarkan KODE_IO (ID unik per order)
+        const seen = new Set();
+        const merged = [];
+        for (const rows of monthResults) {
+          for (const r of (rows || [])) {
+            const key = (r[C.KODE_IO]||'').trim();
+            // Gunakan key komposit jika KODE_IO kosong
+            const uid = key || ((r[C.CODE_SF]||'')+'_'+(r[C.TGL_IO]||'')+'_'+(r[C.VAL_IO]||''));
+            if (!seen.has(uid)) {
+              seen.add(uid);
+              merged.push(r);
+            }
+          }
+        }
+
+        this.allRows = merged;
         this.sfMaster = sfData || [];
-        const now = new Date();
-        const nowStr = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+
+        const nowStr = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         this.lastUpdate = nowStr;
         this.lastSync = nowStr;
         localStorage.setItem('wok_last_sync', nowStr);
         this.$nextTick(() => this.renderCharts());
-        this.toast('Data berhasil dimuat · ' + this.rows.length + ' baris (prev: ' + this.prevRows.length + ')', 'ok');
+        this.toast('Data dimuat · ' + merged.length + ' baris total (' + bulanList.length + ' bulan) — ganti bulan/tanggal tanpa loading 🚀', 'ok');
       } catch(e) {
         this.toast('Gagal memuat: ' + e.message, 'err');
       }
@@ -2660,20 +2682,20 @@ function app() {
       return day >= a && day <= b;
     },
 
-    // ── Filtered rows (cluster + dedup) ──
+    // ── Filtered rows (cluster + dedup) — dari allRows, filtering bulan dilakukan di getter KPI ──
     get filteredRows() {
       const kab = CLUSTER[this.cluster]?.kab || [];
-      return this.rows.filter(r => {
+      return this.allRows.filter(r => {
         if ((r[C.DEDUP]||'').trim() !== 'Unik') return false;
         if (!kab.includes((r[C.VAL_KAB]||'').trim().toUpperCase())) return false;
         return true;
       });
     },
 
-    // ── Filtered rows dari bulan sebelumnya (untuk MoM) ──
+    // ── Filtered rows bulan sebelumnya (untuk MoM) — sama source, filter bulan di getter ──
     get filteredPrevRows() {
       const kab = CLUSTER[this.cluster]?.kab || [];
-      return this.prevRows.filter(r => {
+      return this.allRows.filter(r => {
         if ((r[C.DEDUP]||'').trim() !== 'Unik') return false;
         if (!kab.includes((r[C.VAL_KAB]||'').trim().toUpperCase())) return false;
         return true;
@@ -3375,7 +3397,7 @@ function app() {
         maxZoom: 18,
       }).addTo(map);
 
-      if (rows.length === 0) {
+      if (allRows.length === 0) {
         map.setView([DEFAULT_LAT, DEFAULT_LNG], 9);
         return;
       }
