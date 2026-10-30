@@ -3399,10 +3399,10 @@ function app() {
         const valPS = (r[C.VAL_PS]||'').toString().trim();
         // IO: masuk rentang tanggal IO + status IO tidak kosong
         if (blnIO === bulan && this.inRange(r[C.TGL_IO]) && valIO !== '') io++;
-        // RE: masuk rentang tanggal RE + status RE = "Register"
-        if (blnRE === bulan && this.inRange(r[C.TGL_RE]) && valRE === 'Register') re++;
-        // PS: masuk rentang tanggal PS + status PS = "Put In service"
-        if (blnPS === bulan && this.inRange(r[C.TGL_PS]) && valPS === 'Put In service') {
+        // RE: masuk rentang tanggal RE + status RE tidak kosong
+        if (blnRE === bulan && this.inRange(r[C.TGL_RE]) && valRE !== '') re++;
+        // PS: masuk rentang tanggal PS + status PS tidak kosong
+        if (blnPS === bulan && this.inRange(r[C.TGL_PS]) && valPS !== '') {
           ps++;
           // weekly PS
           const tgl = r[C.DATE_PS] || r[C.DATE_IO] || '';
@@ -3424,9 +3424,9 @@ function app() {
         const valIO = (r[C.VAL_IO]||'').toString().trim();
         const valRE = (r[C.VAL_RE]||'').toString().trim();
         const valPS = (r[C.VAL_PS]||'').toString().trim();
-        if (blnPS === prevBulan && this.inRange(r[C.TGL_PS]) && valPS === 'Put In service') psPrevTotal++;
+        if (blnPS === prevBulan && this.inRange(r[C.TGL_PS]) && valPS !== '') psPrevTotal++;
         if (blnIO === prevBulan && this.inRange(r[C.TGL_IO]) && valIO !== '') ioPrevTotal++;
-        if (blnRE === prevBulan && this.inRange(r[C.TGL_RE]) && valRE === 'Register') rePrevTotal++;
+        if (blnRE === prevBulan && this.inRange(r[C.TGL_RE]) && valRE !== '') rePrevTotal++;
       });
 
       // Total targets for cluster
