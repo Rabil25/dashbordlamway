@@ -1786,10 +1786,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div>
           <div style="display:flex;flex-direction:column;gap:4px">
             <span style="font-size:11px;font-weight:600;color:var(--text-3)">Produk</span>
-            <select x-model="petaFilterProduk" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer">
+            <select x-model="petaFilterProduk" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer;min-width:160px">
               <option value="">Semua Produk</option>
-              <template x-for="p in produkList" :key="p">
-                <option :value="p" x-text="p"></option>
+              <template x-for="p in produkList" :key="p.key">
+                <option :value="p.key" x-text="p.label"></option>
               </template>
             </select>
           </div>
@@ -3235,9 +3235,26 @@ function app() {
     },
 
     get produkList() {
-      const s = new Set();
-      this.filteredRows.forEach(r => { const v=r[C.SPEED]||r[C.PRODUK_KAT]; if(v) s.add(v); });
-      return [...s].sort();
+      // Gabung PRODUK_KAT (CH) + SPEED (DT) jadi key unik, hanya dari bulan aktif
+      const bulan = this.cfg.bulan;
+      const map = new Map(); // key → label
+      this.filteredRows.forEach(r => {
+        const blnIO = (r[C.BLN_IO]||'').toString();
+        const blnRE = (r[C.BLN_RE]||'').toString();
+        const blnPS = (r[C.BLN_PS]||'').toString();
+        if (blnIO !== bulan && blnRE !== bulan && blnPS !== bulan) return;
+        const kat   = (r[C.PRODUK_KAT]||'').trim();
+        const speed = (r[C.SPEED]||'').toString().trim();
+        if (!kat && !speed) return;
+        const key   = kat + '|' + speed;
+        if (!map.has(key)) {
+          const label = kat && speed ? kat + ' · ' + speed + ' Mbps'
+                      : kat ? kat
+                      : speed + ' Mbps';
+          map.set(key, label);
+        }
+      });
+      return [...map.entries()].sort((a,b)=>a[1].localeCompare(b[1])).map(([key,label])=>({key,label}));
     },
 
     get stoList() {
@@ -3288,10 +3305,10 @@ function app() {
         }
         // Filter STO (multi)
         if (fSTO.length > 0 && !fSTO.includes((r[C.STO]||'').trim())) return false;
-        // Filter Produk
+        // Filter Produk (key = "PRODUK_KAT|SPEED")
         if (fProduk) {
-          const prod = r[C.SPEED]||r[C.PRODUK_KAT]||'';
-          if (prod !== fProduk) return false;
+          const key = (r[C.PRODUK_KAT]||'').trim() + '|' + (r[C.SPEED]||'').toString().trim();
+          if (key !== fProduk) return false;
         }
         // Harus punya koordinat valid
         const dr = r[C.KOORDINAT]||'';
