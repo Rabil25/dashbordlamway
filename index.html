@@ -1453,16 +1453,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div>
           <!-- Grid kalender -->
           <div class="dp-grid">
-            <template x-for="cell in (()=>{
-              const yr=new Date().getFullYear(), mo=parseInt(cfg.bulan)-1;
-              const first=new Date(yr,mo,1).getDay();
-              const days=new Date(yr,mo+1,0).getDate();
-              const cells=[];
-              for(let i=0;i<first;i++) cells.push({d:0,other:true});
-              for(let d=1;d<=days;d++) cells.push({d,other:false});
-              while(cells.length%7!==0) cells.push({d:0,other:true});
-              return cells;
-            })()" :key="cell.d+'_'+$index">
+            <template x-for="(cell, idx) in dpCells" :key="idx">
               <div
                 class="dp-cell"
                 :class="{
@@ -1471,14 +1462,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   'dp-in-range': !cell.other && cell.d>cfg.tglAwal && cell.d<cfg.tglAkhir
                 }"
                 x-text="cell.other ? '' : cell.d"
-                @click="if(!cell.other){ if(picking===0||picking===2){ cfg.tglAwal=cell.d; cfg.tglAkhir=cell.d; picking=1; } else { if(cell.d<cfg.tglAwal){ cfg.tglAkhir=cfg.tglAwal; cfg.tglAwal=cell.d; } else { cfg.tglAkhir=cell.d; } picking=2; open=false; $nextTick(()=>renderCharts()); } }"
+                @click="if(!cell.other){ if(picking===0||picking===2){ cfg.tglAwal=cell.d; cfg.tglAkhir=cell.d; picking=1; } else { if(cell.d<cfg.tglAwal){ cfg.tglAkhir=cfg.tglAwal; cfg.tglAwal=cell.d; } else { cfg.tglAkhir=cell.d; } picking=2; open=false; setTimeout(()=>renderCharts(),50); } }"
               ></div>
             </template>
           </div>
           <!-- Footer -->
           <div class="dp-footer">
             <span class="dp-footer-hint" x-text="cfg.tglAwal===cfg.tglAkhir ? ('Tgl '+cfg.tglAwal) : (cfg.tglAwal+' s/d '+cfg.tglAkhir)"></span>
-            <button class="dp-reset" @click="cfg.tglAwal=1; cfg.tglAkhir=new Date().getDate(); picking=0; open=false; $nextTick(()=>renderCharts())">Reset</button>
+            <button class="dp-reset" @click="cfg.tglAwal=1; cfg.tglAkhir=new Date().getDate(); picking=0; open=false; setTimeout(()=>renderCharts(),50)">Reset</button>
           </div>
         </div>
       </div>
@@ -3255,6 +3246,18 @@ function app() {
       if (!this.cfg.targets[kab]) this.cfg.targets[kab] = {};
       const ps = parseInt(val)||0;
       this.cfg.targets[kab] = { ps, re: Math.round(ps*1.2), io: Math.round(ps*1.44) };
+    },
+
+    get dpCells() {
+      const yr = new Date().getFullYear();
+      const mo = parseInt(this.cfg.bulan) - 1;
+      const first = new Date(yr, mo, 1).getDay();
+      const days  = new Date(yr, mo + 1, 0).getDate();
+      const cells = [];
+      for (let i = 0; i < first; i++) cells.push({ d: 0, other: true });
+      for (let d = 1; d <= days; d++) cells.push({ d, other: false });
+      while (cells.length % 7 !== 0) cells.push({ d: 0, other: true });
+      return cells;
     },
 
     get prevBulan() {
