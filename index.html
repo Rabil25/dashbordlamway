@@ -837,6 +837,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 .leaflet-popup-content { font-family: 'Poppins', sans-serif; font-size: 12px; line-height: 1.6; }
 .leaflet-tile { filter: brightness(.9) contrast(1.1); }
 [data-theme="dark"] .leaflet-tile { filter: invert(1) hue-rotate(200deg) brightness(.75) contrast(1.2); }
+[data-theme="dark"] #leaflet-map.satellite-mode .leaflet-tile { filter: none; }
 .map-cluster-badge {
   display: inline-block; padding: 2px 7px; border-radius: 999px;
   font-size: 10px; font-weight: 700; letter-spacing: .05em;
@@ -2236,6 +2237,15 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             PS
           </label>
           <span style="font-size:11px;color:var(--text-3);margin-left:4px" x-text="koordinatRows.filter(r=>(r.type==='proses'&&petaFilter.io)||(r.type==='kendala'&&petaFilter.re)||(r.type==='ps'&&petaFilter.ps)).length + ' marker tampil'"></span>
+          <!-- Toggle layer peta -->
+          <div style="margin-left:auto;display:flex;gap:4px;background:var(--bg-2);border-radius:20px;padding:3px">
+            <button @click="mapLayer='osm'; $nextTick(()=>renderPeta())"
+              :style="mapLayer!=='satellite' ? 'background:var(--brand);color:#fff' : 'background:transparent;color:var(--text-2)'"
+              style="border:none;cursor:pointer;font-size:11px;font-weight:600;padding:4px 12px;border-radius:16px;transition:all .2s">🗺 Peta</button>
+            <button @click="mapLayer='satellite'; $nextTick(()=>renderPeta())"
+              :style="mapLayer==='satellite' ? 'background:var(--brand);color:#fff' : 'background:transparent;color:var(--text-2)'"
+              style="border:none;cursor:pointer;font-size:11px;font-weight:600;padding:4px 12px;border-radius:16px;transition:all .2s">🛰 Satelit</button>
+          </div>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div id="leaflet-map" style="height:480px;width:100%" role="img" aria-label="Peta sebaran order dengan koordinat"></div>
@@ -2968,6 +2978,7 @@ function app() {
     allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)
     _availBulanList: null,  // daftar bulan tersedia dari GAS list_bulan
     petaFilter: { io: true, re: true, ps: true },  // checkbox filter peta
+    mapLayer: 'osm',  // 'osm' | 'satellite'
     petaFilterSTO: [],     // [] = semua STO, array untuk multi-select
     petaFilterProduk: '',  // '' = semua produk
     lastUpdate: '',
@@ -4282,10 +4293,25 @@ function app() {
       const map = L.map('leaflet-map').setView([DEFAULT_LAT, DEFAULT_LNG], 9);
       this._leafletMap = map;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 18,
-      }).addTo(map);
+      const isSatellite = this.mapLayer === 'satellite';
+      mapEl.classList.toggle('satellite-mode', isSatellite);
+      if (isSatellite) {
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: '© <a href="https://www.esri.com/">Esri</a> World Imagery',
+          maxZoom: 19,
+        }).addTo(map);
+        // Label overlay agar nama jalan/desa tetap terbaca
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+          attribution: '',
+          maxZoom: 19,
+          opacity: 0.8,
+        }).addTo(map);
+      } else {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 18,
+        }).addTo(map);
+      }
 
       if (rows.length === 0) {
         map.setView([DEFAULT_LAT, DEFAULT_LNG], 9);
