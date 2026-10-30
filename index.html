@@ -1147,7 +1147,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             <tr><td>RE</td><td><strong>Register</strong> — Order yang sudah diregistrasi/diproses tim teknis</td></tr>
             <tr><td>IO</td><td><strong>Input Order</strong> — Order masuk dari pelanggan baru</td></tr>
             <tr><td>DRR</td><td><strong>Daily Run Rate</strong> — Rata-rata PS per hari di bulan berjalan (PS ÷ hari)</td></tr>
-            <tr><td>MOM</td><td><strong>Month over Month</strong> — Perbandingan aktual vs target, atau vs bulan sebelumnya</td></tr>
+            <tr><td>ACV</td><td><strong>Achievement to Target</strong> — Aktual ÷ target × 100%</td></tr>
+            <tr><td>MoM</td><td><strong>Month over Month</strong> — Perbandingan aktual bulan ini vs bulan sebelumnya (rentang tanggal sama)</td></tr>
             <tr><td>WoW</td><td><strong>Week over Week</strong> — Perbandingan minggu ini vs minggu lalu</td></tr>
             <tr><td>LOS</td><td><strong>Length of Stay</strong> — Masa kerja SF (dalam bulan/hari)</td></tr>
             <tr><td>PS/RE</td><td>Rasio konversi Register menjadi Put in Service (dalam %)</td></tr>
@@ -1197,7 +1198,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <!-- Page subtitle -->
         <div style="font-size:11px;color:var(--text-3);margin-bottom:12px;padding:0 2px">
           📊 Ringkasan performa sales bulan berjalan ·
-          <span style="color:var(--text-2)">DRR = PS ÷ hari · MOM = aktual ÷ target × 100%</span>
+          <span style="color:var(--text-2)">DRR = PS ÷ hari · ACV = aktual ÷ target × 100% · MoM = vs bulan lalu</span>
         </div>
 
         <!-- ── TIGER EYES HERO ── -->
@@ -1233,7 +1234,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 <span>Target PS: <strong x-text="kpi.tgtPS||'—'"></strong></span>
                 <span class="te-ach-pct"
                   :style="kpi.momPS !== null ? (kpi.momPS>=100 ? 'color:var(--success)' : kpi.momPS>=70 ? 'color:var(--warning)' : 'color:var(--danger)') : ''"
-                  x-text="kpi.momPS !== null ? kpi.momPS + '% MOM' : 'Target belum diset'">
+                  x-text="kpi.momPS !== null ? kpi.momPS + '% ACV' : 'Target belum diset'">
                 </span>
               </div>
               <div class="te-bar">
@@ -1316,7 +1317,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <div class="te-kab-hdr">
             <div>
               <div class="te-kab-title">Breakdown per Kabupaten</div>
-              <div class="te-kab-sub" x-text="'Cluster ' + cluster + ' · MOM = aktual / target × 100%'"></div>
+              <div class="te-kab-sub" x-text="'Cluster ' + cluster + ' · ACV = aktual / target × 100% · Δ MoM = vs bulan lalu'"></div>
             </div>
             <button class="btn" @click="showTargetModal=true" style="font-size:11px;padding:5px 10px">⚙ Set Target</button>
           </div>
@@ -1325,7 +1326,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               <tr>
                 <th style="text-align:left">KABUPATEN</th>
                 <th>PS / Target</th>
-                <th>MOM PS</th>
+                <th>ACV PS</th>
                 <th>RE</th>
                 <th>PS/RE</th>
                 <th>IO</th>
