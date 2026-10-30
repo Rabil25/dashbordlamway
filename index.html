@@ -2637,7 +2637,13 @@ function app() {
         this.lastSync = nowStr;
         // wok_last_sync disimpan di state saja (bukan localStorage — data terlalu besar)
         this.$nextTick(() => this.renderCharts());
-        this.toast('Data dimuat · ' + merged.length + ' baris total (' + bulanList.length + ' bulan) — ganti bulan/tanggal tanpa loading 🚀', 'ok');
+        // DEBUG: cek sample row
+        const sample = merged[0] || [];
+        const dedup0 = sample[37];
+        const kab0 = sample[38];
+        const blnIO0 = sample[6];
+        this.toast('Data dimuat · ' + merged.length + ' baris · DEDUP[0]="' + dedup0 + '" KAB[0]="' + kab0 + '" BLN[0]="' + blnIO0 + '"', 'ok');
+        setTimeout(() => this.toast('filteredRows: ' + this.filteredRows.length + ' rows', 'ok'), 2000);
       } catch(e) {
         this.toast('Gagal memuat: ' + e.message, 'err');
       }
