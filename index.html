@@ -2600,50 +2600,42 @@ function app() {
       const CACHE_TTL_MS = 15 * 60 * 1000; // 15 menit
 
       try {
-        // Fetch semua bulan (1 s/d bulan ini) + prev bulan untuk MoM, paralel sekaligus
-        const currentBulan = parseInt(this.cfg.bulan) || (new Date().getMonth() + 1);
-        const prevBulan = this.prevBulan;
-        // Kumpulkan bulan unik yang perlu di-fetch (1..currentBulan + prevBulan jika di luar range)
-        const bulanSet = new Set();
-        for (let b = 1; b <= currentBulan; b++) bulanSet.add(b);
-        bulanSet.add(prevBulan); // pastikan prev bulan selalu ada
-        const bulanList = Array.from(bulanSet).sort((a,b) => a-b).map(String);
-
-        const [sfData, ...monthResults] = await Promise.all([
+        // GAS sheet Bulan_Ini berisi semua data yang tersedia — fetch sekali saja
+        // (GAS tidak memfilter berdasarkan param bulan)
+        const [allData, sfData] = await Promise.all([
+          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS),
           this.fetchGAS('update_sf', forceRefresh, CACHE_TTL_MS),
-          ...bulanList.map(b => this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS, b)),
         ]);
 
-        // Merge + dedup berdasarkan KODE_IO (ID unik per order)
-        const seen = new Set();
-        const merged = [];
-        for (const rows of monthResults) {
-          for (const r of (rows || [])) {
-            const key = (r[C.KODE_IO]||'').trim();
-            // Gunakan key komposit jika KODE_IO kosong
-            const uid = key || ((r[C.CODE_SF]||'')+'_'+(r[C.TGL_IO]||'')+'_'+(r[C.VAL_IO]||''));
-            if (!seen.has(uid)) {
-              seen.add(uid);
-              merged.push(r);
-            }
-          }
+        this.allRows  = allData  || [];
+        this.sfMaster = sfData   || [];
+
+        // Auto-detect bulan yang tersedia dari data
+        const bulanDiData = new Set();
+        for (const r of this.allRows) {
+          const b = (r[C.BLN_IO]||'').toString().trim();
+          if (b) bulanDiData.add(b);
         }
 
-        this.allRows = merged;
-        this.sfMaster = sfData || [];
+        // Jika bulan yang dipilih tidak ada di data, pilih bulan terbesar yang ada
+        const selectedBulan = this.cfg.bulan;
+        if (bulanDiData.size > 0 && !bulanDiData.has(selectedBulan)) {
+          const sorted = Array.from(bulanDiData).map(Number).sort((a,b) => b-a);
+          this.cfg.bulan = String(sorted[0]);
+          this.saveCfg();
+        }
 
         const nowStr = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         this.lastUpdate = nowStr;
-        this.lastSync = nowStr;
-        // wok_last_sync disimpan di state saja (bukan localStorage — data terlalu besar)
+        this.lastSync   = nowStr;
+
         this.$nextTick(() => this.renderCharts());
-        // DEBUG: cek sample row
-        const sample = merged[0] || [];
-        const dedup0 = sample[37];
-        const kab0 = sample[38];
-        const blnIO0 = sample[6];
-        this.toast('Data dimuat · ' + merged.length + ' baris · DEDUP[0]="' + dedup0 + '" KAB[0]="' + kab0 + '" BLN[0]="' + blnIO0 + '"', 'ok');
-        setTimeout(() => this.toast('filteredRows: ' + this.filteredRows.length + ' rows', 'ok'), 2000);
+
+        const bulanInfo = bulanDiData.size > 0
+          ? 'bulan tersedia: ' + Array.from(bulanDiData).sort((a,b)=>Number(a)-Number(b)).join(', ')
+          : 'tidak ada data';
+        this.toast(this.allRows.length + ' baris dimuat · ' + bulanInfo, 'ok');
+
       } catch(e) {
         this.toast('Gagal memuat: ' + e.message, 'err');
       }
