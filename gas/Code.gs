@@ -35,6 +35,10 @@ const WILAYAH = {
 const U = { USERNAME:0, HASH:1, ROLE:2, STATUS:3, NAMA:4, TGL_DAFTAR:5, TOKEN:6, EXPIRY:7 };
 const USERS_SHEET = 'Users';
 
+// ── Cache TTL (detik) ─────────────────────────────────────────
+const CACHE_TTL_DATA    = 600;   // 10 menit – bulan_ini & update_sf
+const CACHE_TTL_BULAN   = 3600;  // 1 jam    – list_bulan
+
 // ================================================================
 //  Entry Point GET
 // ================================================================
@@ -65,13 +69,13 @@ function doGet(e) {
 
     switch (type) {
       case 'bulan_ini':
-        data = getRawSheet('Bulan_Ini', 'CE2:DT', bulan);
+        data = getRawSheetCached('Bulan_Ini', 'CE2:DT', bulan);
         break;
       case 'list_bulan':
-        data = getListBulan();
+        data = getListBulanCached();
         break;
       case 'update_sf':
-        data = getRawSheet('Update SF', 'A2:AG', '');
+        data = getRawSheetCached('Update SF', 'A2:AG', '');
         break;
       case 'wilayah':
         data = { ok:true, wilayah: WILAYAH };
@@ -79,14 +83,90 @@ function doGet(e) {
       case 'ping':
         data = { ok:true, message:'pong', updatedAt: new Date().toISOString() };
         break;
+      // ── BARU: Gabungkan 3 request jadi 1 ─────────────────
+      case 'all':
+        data = getAllData(bulan);
+        break;
       default:
-        data = { ok:false, error:'Unknown type. Use: bulan_ini | list_bulan | update_sf | wilayah | ping' };
+        data = { ok:false, error:'Unknown type. Use: bulan_ini | list_bulan | update_sf | wilayah | ping | all' };
     }
 
     return jsonOut(data);
   } catch (err) {
     return jsonOut({ ok:false, error: err.message });
   }
+}
+
+// ================================================================
+//  BARU: Combined endpoint – kembalikan semua data dalam 1 request
+//  Parameter: bulan (bulan aktif, misal "8" untuk Agustus)
+// ================================================================
+function getAllData(bulan) {
+  // Hitung bulan lalu
+  const bulanNum = parseInt(bulan) || 0;
+  const bulanLalu = bulanNum > 1 ? (bulanNum - 1).toString() : '';
+
+  // Ambil semua data (masing-masing sudah pakai cache)
+  const bulanIni  = getRawSheetCached('Bulan_Ini', 'CE2:DT', bulan);
+  const bulanPrev = bulanLalu ? getRawSheetCached('Bulan_Ini', 'CE2:DT', bulanLalu) : { ok:true, data:[], rows:0 };
+  const updateSf  = getRawSheetCached('Update SF', 'A2:AG', '');
+  const listBulan = getListBulanCached();
+
+  return {
+    ok:        true,
+    bulan:     bulan,
+    bulanLalu: bulanLalu,
+    bulanIni:  bulanIni,
+    bulanPrev: bulanPrev,
+    updateSf:  updateSf,
+    listBulan: listBulan,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// ================================================================
+//  BARU: Warmup – mencegah GAS cold start
+//  Pasang time-based trigger setiap 5 menit via setupWarmupTrigger()
+// ================================================================
+function warmupSelf() {
+  // Hanya buka spreadsheet agar GAS instance tetap hangat
+  try {
+    SpreadsheetApp.openById(CONFIG.SHEET_ID);
+    Logger.log('Warmup OK: ' + new Date().toISOString());
+  } catch(e) {
+    Logger.log('Warmup error: ' + e.message);
+  }
+}
+
+// Jalankan fungsi ini SEKALI dari Editor GAS untuk memasang trigger warmup
+// Extensions → Apps Script → Run → setupWarmupTrigger
+function setupWarmupTrigger() {
+  // Hapus trigger warmup lama jika ada
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'warmupSelf') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  // Pasang trigger baru setiap 5 menit
+  ScriptApp.newTrigger('warmupSelf')
+    .timeBased()
+    .everyMinutes(5)
+    .create();
+  Logger.log('Warmup trigger terpasang: setiap 5 menit');
+}
+
+// Hapus trigger warmup (jalankan jika ingin menonaktifkan)
+function removeWarmupTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  let removed = 0;
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'warmupSelf') {
+      ScriptApp.deleteTrigger(triggers[i]);
+      removed++;
+    }
+  }
+  Logger.log('Trigger warmup dihapus: ' + removed + ' trigger');
 }
 
 // ================================================================
@@ -289,8 +369,73 @@ function updateUserField(username, colIdx, value) {
 }
 
 // ================================================================
-//  DATA HANDLERS (existing)
+//  DATA HANDLERS – dengan CacheService
 // ================================================================
+
+// ── BARU: getListBulan dengan cache ─────────────────────────
+function getListBulanCached() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'list_bulan';
+
+  try {
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      parsed._fromCache = true;
+      return parsed;
+    }
+  } catch(e) {
+    // Cache miss atau parse error, lanjut baca sheet
+  }
+
+  const result = getListBulan();
+
+  if (result.ok) {
+    try {
+      cache.put(cacheKey, JSON.stringify(result), CACHE_TTL_BULAN);
+    } catch(e) {
+      // Cache put gagal (data terlalu besar dll), tidak masalah
+    }
+  }
+
+  return result;
+}
+
+// ── BARU: getRawSheet dengan cache ───────────────────────────
+function getRawSheetCached(sheetName, range, filterBulan) {
+  const cache = CacheService.getScriptCache();
+  // Key cache unik per sheet + bulan
+  const cacheKey = 'sheet_' + sheetName.replace(/\s/g,'_') + '_' + (filterBulan||'all');
+
+  try {
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      parsed._fromCache = true;
+      return parsed;
+    }
+  } catch(e) {
+    // Cache miss atau parse error, lanjut baca sheet
+  }
+
+  const result = getRawSheet(sheetName, range, filterBulan);
+
+  if (result.ok) {
+    try {
+      // GAS CacheService max value size: 100KB per entry
+      const serialized = JSON.stringify(result);
+      if (serialized.length < 90000) {  // beri margin
+        cache.put(cacheKey, serialized, CACHE_TTL_DATA);
+      }
+    } catch(e) {
+      // Data terlalu besar untuk cache, tidak masalah
+    }
+  }
+
+  return result;
+}
+
+// ── getListBulan (tanpa cache) ────────────────────────────────
 function getListBulan() {
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
   const ws = ss.getSheetByName('Bulan_Ini');
@@ -312,6 +457,7 @@ function getListBulan() {
   return { ok:true, bulan:bulanList, updatedAt: new Date().toISOString() };
 }
 
+// ── getRawSheet (tanpa cache) ─────────────────────────────────
 function getRawSheet(sheetName, range, filterBulan) {
   const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
   const ws = ss.getSheetByName(sheetName);

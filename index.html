@@ -3195,34 +3195,68 @@ function app() {
         return;
       }
       this.loading = true;
-      const CACHE_TTL_MS    = 15 * 60 * 1000; // 15 menit
+      const CACHE_TTL_MS    = 15 * 60 * 1000; // 15 menit (in-memory)
       const CACHE_BULAN_MS  = 60 * 60 * 1000; // list_bulan cache 1 jam
 
       try {
-        // 1. Fetch daftar bulan tersedia (ringan, hanya scan 1 kolom)
-        //    Hasilnya dipakai untuk populate dropdown & validasi pilihan
-        const listBulanRaw = await this.fetchListBulan(forceRefresh, CACHE_BULAN_MS);
-        if (listBulanRaw && listBulanRaw.length > 0) {
-          // Jika bulan yang dipilih tidak ada di list, pilih bulan terbesar
-          const bulanAvail = listBulanRaw.map(String);
-          if (!bulanAvail.includes(this.cfg.bulan)) {
-            this.cfg.bulan = String(Math.max(...listBulanRaw));
-            this.saveCfg();
-          }
-          this._availBulanList = listBulanRaw; // simpan untuk dropdown
+        // Cek apakah semua data sudah ada di in-memory cache
+        if (!this._memCache) this._memCache = new Map();
+        const bulanStr     = this.cfg.bulan;
+        const prevBulanStr = String(this.prevBulan);
+        const cacheKeyAll  = `all_b${bulanStr}`;
+        const cacheKeyBulan = 'list_bulan';
+
+        const cachedAll   = !forceRefresh && this._memCache.get(cacheKeyAll);
+        const cachedBulan = !forceRefresh && this._memCache.get(cacheKeyBulan);
+        const nowMs = Date.now();
+
+        if (cachedAll   && (nowMs - cachedAll.ts)   < CACHE_TTL_MS &&
+            cachedBulan && (nowMs - cachedBulan.ts) < CACHE_BULAN_MS) {
+          // Semua data dari cache – tidak perlu request GAS sama sekali
+          const d = cachedAll.data;
+          this.allRows  = [...(d.bulanIni || []), ...(d.bulanPrev || [])];
+          this.sfMaster = d.updateSf || [];
+          const nowStr  = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+          this.lastUpdate = nowStr;
+          this.lastSync   = nowStr;
+          this.$nextTick(() => this.renderCharts());
+          this.loading = false;
+          return;
         }
 
-        // 2. Fetch data bulan aktif + bulan sebelumnya (untuk MoM, Tier LM, PS SF LM)
-        const prevBulanStr = String(this.prevBulan); // bulan - 1
-        const [allData, prevData, sfData] = await Promise.all([
-          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS),               // bulan aktif
-          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS, prevBulanStr), // bulan lalu
-          this.fetchGAS('update_sf', forceRefresh, CACHE_TTL_MS),
-        ]);
+        // Belum di cache atau forceRefresh → 1 request ke endpoint type=all
+        const base = this.cfg.gasUrl;
+        const url  = `${base}?token=${GAS_TOKEN}&type=all&bulan=${bulanStr}`;
+        const res  = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || 'GAS error (all)');
 
-        // Gabung bulan aktif + bulan lalu ke allRows agar MoM bisa dihitung
-        this.allRows  = [...(allData || []), ...(prevData || [])];
-        this.sfMaster = sfData || [];
+        // Simpan ke in-memory cache
+        const allPayload = {
+          bulanIni:  json.bulanIni?.data  || [],
+          bulanPrev: json.bulanPrev?.data || [],
+          updateSf:  json.updateSf?.data  || [],
+        };
+        this._memCache.set(cacheKeyAll, { data: allPayload, ts: nowMs });
+
+        // Simpan list_bulan juga dari respons yang sama
+        if (json.listBulan?.ok && json.listBulan.bulan) {
+          this._memCache.set(cacheKeyBulan, { data: json.listBulan.bulan, ts: nowMs });
+          const listBulanRaw = json.listBulan.bulan;
+          if (listBulanRaw.length > 0) {
+            const bulanAvail = listBulanRaw.map(String);
+            if (!bulanAvail.includes(bulanStr)) {
+              this.cfg.bulan = String(Math.max(...listBulanRaw));
+              this.saveCfg();
+            }
+            this._availBulanList = listBulanRaw;
+          }
+        }
+
+        // Terapkan ke state
+        this.allRows  = [...allPayload.bulanIni, ...allPayload.bulanPrev];
+        this.sfMaster = allPayload.updateSf;
 
         const nowStr = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         this.lastUpdate = nowStr;
@@ -3231,8 +3265,8 @@ function app() {
         this.$nextTick(() => this.renderCharts());
 
         this.toast(
-          (allData||[]).length + ' baris bln ' + this.cfg.bulan +
-          ' + ' + (prevData||[]).length + ' baris bln ' + prevBulanStr + ' dimuat',
+          allPayload.bulanIni.length + ' baris bln ' + bulanStr +
+          ' + ' + allPayload.bulanPrev.length + ' baris bln ' + prevBulanStr + ' dimuat',
           'ok'
         );
 
