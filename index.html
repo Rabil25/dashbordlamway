@@ -1772,20 +1772,30 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <div class="section-sub" x-text="koordinatRows.length + ' order dengan koordinat · ' + cluster"></div>
         </div>
         <!-- Filter STO & Produk -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-          <select x-model="petaFilterSTO" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer">
-            <option value="">Semua STO</option>
-            <template x-for="s in stoList" :key="s">
-              <option :value="s" x-text="s"></option>
-            </template>
-          </select>
-          <select x-model="petaFilterProduk" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer">
-            <option value="">Semua Produk</option>
-            <template x-for="p in produkList" :key="p">
-              <option :value="p" x-text="p"></option>
-            </template>
-          </select>
-          <button @click="petaFilterSTO='';petaFilterProduk='';$nextTick(()=>renderPeta())" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer" x-show="petaFilterSTO||petaFilterProduk">Reset Filter</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:flex-start">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--text-3)">STO <span x-show="petaFilterSTO.length>0" x-text="'('+petaFilterSTO.length+' dipilih)'" style="color:var(--accent)"></span></span>
+            <select multiple x-model="petaFilterSTO" @change="$nextTick(()=>renderPeta())"
+              style="font-size:12px;padding:4px 6px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer;min-width:120px;max-height:110px"
+              title="Ctrl+klik untuk pilih beberapa STO">
+              <template x-for="s in stoList" :key="s">
+                <option :value="s" x-text="s"></option>
+              </template>
+            </select>
+            <span style="font-size:10px;color:var(--text-3)">Ctrl+klik multi</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--text-3)">Produk</span>
+            <select x-model="petaFilterProduk" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer">
+              <option value="">Semua Produk</option>
+              <template x-for="p in produkList" :key="p">
+                <option :value="p" x-text="p"></option>
+              </template>
+            </select>
+          </div>
+          <button @click="petaFilterSTO=[];petaFilterProduk='';$nextTick(()=>renderPeta())"
+            style="font-size:11px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;align-self:flex-end;margin-bottom:2px"
+            x-show="petaFilterSTO.length>0||petaFilterProduk">Reset</button>
         </div>
 
         <!-- Filter checkbox Belum PS / Kendala / PS -->
@@ -2503,7 +2513,7 @@ function app() {
     allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)
     _availBulanList: null,  // daftar bulan tersedia dari GAS list_bulan
     petaFilter: { io: true, re: true, ps: true },  // checkbox filter peta
-    petaFilterSTO: '',     // '' = semua STO
+    petaFilterSTO: [],     // [] = semua STO, array untuk multi-select
     petaFilterProduk: '',  // '' = semua produk
     lastUpdate: '',
     TIER_CONFIG,      // expose to template
@@ -3276,8 +3286,8 @@ function app() {
           const tgl = parseInt(r[C.TGL_IO]||0);
           if (tgl < tglA || tgl > tglB) return false;
         }
-        // Filter STO
-        if (fSTO && (r[C.STO]||'').trim() !== fSTO) return false;
+        // Filter STO (multi)
+        if (fSTO.length > 0 && !fSTO.includes((r[C.STO]||'').trim())) return false;
         // Filter Produk
         if (fProduk) {
           const prod = r[C.SPEED]||r[C.PRODUK_KAT]||'';
