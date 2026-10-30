@@ -1098,7 +1098,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <button class="cluster-btn" :class="{active:cluster==='Way Kanan'}" @click="setCluster('Way Kanan')">Way Kanan</button>
       </div>
       <!-- Bulan filter di topbar -->
-      <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="$nextTick(()=>renderCharts())" aria-label="Pilih bulan" title="Filter bulan">
+      <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="loadData(false)" aria-label="Pilih bulan" title="Filter bulan">
         <template x-for="m in availableMonths" :key="m.val">
           <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label + ' ' + new Date().getFullYear()"></option>
         </template>
@@ -2469,7 +2469,8 @@ function app() {
     loading: false,
     showConfig: false,
     themeMode: localStorage.getItem('dashTheme') || 'light',
-    allRows: [],      // semua baris dari semua bulan (load sekali, filter lokal)
+    allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)
+    _availBulanList: null,  // daftar bulan tersedia dari GAS list_bulan
     lastUpdate: '',
     TIER_CONFIG,      // expose to template
 
@@ -2576,16 +2577,30 @@ function app() {
       return b <= 1 ? 12 : b - 1;
     },
 
-    // Months Jan–current month (fixed list, tidak bergantung data)
+    // Months: dari list_bulan GAS (pakai _availBulanList), fallback ke allRows, fallback bulan ini
     get availableMonths() {
       const names = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-      const now = new Date();
-      const curMonth = now.getMonth() + 1;
-      const result = [];
-      for (let m = 1; m <= curMonth; m++) {
-        result.push({ val: String(m), label: names[m] });
+      // Prioritas 1: daftar bulan dari GAS list_bulan endpoint
+      if (this._availBulanList && this._availBulanList.length > 0) {
+        return this._availBulanList.map(m => ({ val: String(m), label: names[m] || String(m) }));
       }
-      return result;
+      // Prioritas 2: scan dari allRows yang sudah dimuat
+      const bulanSet = new Set();
+      for (const r of this.allRows) {
+        const b  = (r[C.BLN_IO]||'').toString().trim();
+        const b2 = (r[C.BLN_RE]||'').toString().trim();
+        const b3 = (r[C.BLN_PS]||'').toString().trim();
+        if (b  && !isNaN(b))  bulanSet.add(parseInt(b));
+        if (b2 && !isNaN(b2)) bulanSet.add(parseInt(b2));
+        if (b3 && !isNaN(b3)) bulanSet.add(parseInt(b3));
+      }
+      if (bulanSet.size > 0) {
+        return Array.from(bulanSet).sort((a,b) => a-b)
+          .map(m => ({ val: String(m), label: names[m] || String(m) }));
+      }
+      // Fallback: tampilkan bulan berjalan saja
+      const cur = new Date().getMonth() + 1;
+      return [{ val: String(cur), label: names[cur] }];
     },
 
     get prevBulanLabel() {
@@ -2593,15 +2608,28 @@ function app() {
       return names[this.prevBulan] || this.prevBulan;
     },
 
-    // ── Load Data via GAS ──
+    // ── Load Data via GAS (filter per bulan di server) ──
     async loadData(forceRefresh = false) {
       if (!this.cfg.gasUrl) { this.showConfig = true; return; }
       this.loading = true;
-      const CACHE_TTL_MS = 15 * 60 * 1000; // 15 menit
+      const CACHE_TTL_MS    = 15 * 60 * 1000; // 15 menit
+      const CACHE_BULAN_MS  = 60 * 60 * 1000; // list_bulan cache 1 jam
 
       try {
-        // GAS sheet Bulan_Ini berisi semua data yang tersedia — fetch sekali saja
-        // (GAS tidak memfilter berdasarkan param bulan)
+        // 1. Fetch daftar bulan tersedia (ringan, hanya scan 1 kolom)
+        //    Hasilnya dipakai untuk populate dropdown & validasi pilihan
+        const listBulanRaw = await this.fetchListBulan(forceRefresh, CACHE_BULAN_MS);
+        if (listBulanRaw && listBulanRaw.length > 0) {
+          // Jika bulan yang dipilih tidak ada di list, pilih bulan terbesar
+          const bulanAvail = listBulanRaw.map(String);
+          if (!bulanAvail.includes(this.cfg.bulan)) {
+            this.cfg.bulan = String(Math.max(...listBulanRaw));
+            this.saveCfg();
+          }
+          this._availBulanList = listBulanRaw; // simpan untuk dropdown
+        }
+
+        // 2. Fetch data baris untuk bulan yang dipilih (GAS filter di server)
         const [allData, sfData] = await Promise.all([
           this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS),
           this.fetchGAS('update_sf', forceRefresh, CACHE_TTL_MS),
@@ -2610,36 +2638,44 @@ function app() {
         this.allRows  = allData  || [];
         this.sfMaster = sfData   || [];
 
-        // Auto-detect bulan yang tersedia dari data
-        const bulanDiData = new Set();
-        for (const r of this.allRows) {
-          const b = (r[C.BLN_IO]||'').toString().trim();
-          if (b) bulanDiData.add(b);
-        }
-
-        // Jika bulan yang dipilih tidak ada di data, pilih bulan terbesar yang ada
-        const selectedBulan = this.cfg.bulan;
-        if (bulanDiData.size > 0 && !bulanDiData.has(selectedBulan)) {
-          const sorted = Array.from(bulanDiData).map(Number).sort((a,b) => b-a);
-          this.cfg.bulan = String(sorted[0]);
-          this.saveCfg();
-        }
-
         const nowStr = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
         this.lastUpdate = nowStr;
         this.lastSync   = nowStr;
 
         this.$nextTick(() => this.renderCharts());
 
-        const bulanInfo = bulanDiData.size > 0
-          ? 'bulan tersedia: ' + Array.from(bulanDiData).sort((a,b)=>Number(a)-Number(b)).join(', ')
-          : 'tidak ada data';
-        this.toast(this.allRows.length + ' baris dimuat · ' + bulanInfo, 'ok');
+        this.toast(
+          this.allRows.length + ' baris dimuat · bulan ' + this.cfg.bulan +
+          (this._availBulanList ? ' · tersedia: ' + this._availBulanList.join(', ') : ''),
+          'ok'
+        );
 
       } catch(e) {
         this.toast('Gagal memuat: ' + e.message, 'err');
       }
       this.loading = false;
+    },
+
+    // ── Fetch daftar bulan dari GAS (ringan) ──
+    async fetchListBulan(forceRefresh = false, ttlMs = 60 * 60 * 1000) {
+      if (!this._memCache) this._memCache = new Map();
+      const cacheKey = 'list_bulan';
+      if (!forceRefresh) {
+        const hit = this._memCache.get(cacheKey);
+        if (hit && (Date.now() - hit.ts) < ttlMs) return hit.data;
+      }
+      try {
+        const base = this.cfg.gasUrl;
+        const url  = `${base}?token=${GAS_TOKEN}&type=list_bulan`;
+        const res  = await fetch(url);
+        if (!res.ok) return null;
+        const json = await res.json();
+        if (!json.ok || !json.bulan) return null;
+        this._memCache.set(cacheKey, { data: json.bulan, ts: Date.now() });
+        return json.bulan;
+      } catch(e) {
+        return null; // list_bulan optional, jangan gagalkan loadData
+      }
     },
 
     // ── Fetch dari Google Apps Script Web App (dengan cache 15 menit, filter bulan di server) ──
@@ -2663,16 +2699,23 @@ function app() {
       return data;
     },
 
-    // ── Helper: apakah tanggal row masuk rentang tglAwal–tglAkhir? ──
-    inRange(dateStr) {
-      if (!dateStr) return false;
-      // dateStr bisa "yyyy-MM-dd" atau "yyyy-MM-dd HH:mm:ss"
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return false;
-      const day = d.getDate();
-      const a = parseInt(this.cfg.tglAwal) || 1;
+    // ── Helper: apakah hari (kolom TGL_IO/TGL_RE/TGL_PS) masuk rentang tglAwal–tglAkhir? ──
+    // Kolom TGL di sheet berisi angka hari (1–31), bukan full date string.
+    // Kalau nilai adalah angka langsung → pakai sebagai hari.
+    // Kalau nilai adalah string "yyyy-MM-dd" → ambil tanggalnya.
+    inRange(val) {
+      if (val === null || val === undefined || val === '') return false;
+      const a = parseInt(this.cfg.tglAwal)  || 1;
       const b = parseInt(this.cfg.tglAkhir) || new Date().getDate();
-      return day >= a && day <= b;
+      // Angka integer langsung = hari
+      if (typeof val === 'number') return val >= a && val <= b;
+      // String angka (e.g. "5", "21")
+      const n = parseInt(val);
+      if (!isNaN(n) && String(n) === String(val).trim()) return n >= a && n <= b;
+      // String tanggal "yyyy-MM-dd" atau "yyyy-MM-dd HH:mm:ss"
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return false;
+      return d.getDate() >= a && d.getDate() <= b;
     },
 
     // ── Filtered rows (cluster + dedup) — dari allRows, filtering bulan dilakukan di getter KPI ──
