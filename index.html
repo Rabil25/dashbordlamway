@@ -1772,30 +1772,41 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <div class="section-sub" x-text="koordinatRows.length + ' order dengan koordinat · ' + cluster"></div>
         </div>
         <!-- Filter STO & Produk -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:flex-start">
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <span style="font-size:11px;font-weight:600;color:var(--text-3)">STO <span x-show="petaFilterSTO.length>0" x-text="'('+petaFilterSTO.length+' dipilih)'" style="color:var(--accent)"></span></span>
-            <select multiple x-model="petaFilterSTO" @change="$nextTick(()=>renderPeta())"
-              style="font-size:12px;padding:4px 6px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer;min-width:120px;max-height:110px"
-              title="Ctrl+klik untuk pilih beberapa STO">
-              <template x-for="s in stoList" :key="s">
-                <option :value="s" x-text="s"></option>
-              </template>
-            </select>
-            <span style="font-size:10px;color:var(--text-3)">Ctrl+klik multi</span>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+          <!-- STO pills -->
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:11px;font-weight:600;color:var(--text-3);min-width:36px">STO</span>
+            <template x-for="s in stoList" :key="s">
+              <button
+                @click="petaFilterSTO.includes(s) ? petaFilterSTO=petaFilterSTO.filter(x=>x!==s) : petaFilterSTO.push(s); $nextTick(()=>renderPeta())"
+                :style="petaFilterSTO.includes(s)
+                  ? 'background:var(--accent);color:#fff;border-color:var(--accent)'
+                  : 'background:var(--card-bg);color:var(--text-2);border-color:var(--border)'"
+                style="font-size:12px;font-weight:600;padding:3px 12px;border-radius:20px;border:1.5px solid;cursor:pointer;transition:all .15s"
+                x-text="s">
+              </button>
+            </template>
+            <button x-show="petaFilterSTO.length>0"
+              @click="petaFilterSTO=[];$nextTick(()=>renderPeta())"
+              style="font-size:11px;padding:3px 10px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer">
+              ✕ Reset STO
+            </button>
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <span style="font-size:11px;font-weight:600;color:var(--text-3)">Produk</span>
-            <select x-model="petaFilterProduk" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer;min-width:160px">
+          <!-- Produk dropdown -->
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;font-weight:600;color:var(--text-3);min-width:36px">Produk</span>
+            <select x-model="petaFilterProduk" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer;min-width:180px">
               <option value="">Semua Produk</option>
               <template x-for="p in produkList" :key="p.key">
                 <option :value="p.key" x-text="p.label"></option>
               </template>
             </select>
+            <button x-show="petaFilterProduk"
+              @click="petaFilterProduk='';$nextTick(()=>renderPeta())"
+              style="font-size:11px;padding:3px 10px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer">
+              ✕
+            </button>
           </div>
-          <button @click="petaFilterSTO=[];petaFilterProduk='';$nextTick(()=>renderPeta())"
-            style="font-size:11px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;align-self:flex-end;margin-bottom:2px"
-            x-show="petaFilterSTO.length>0||petaFilterProduk">Reset</button>
         </div>
 
         <!-- Filter checkbox Belum PS / Kendala / PS -->
