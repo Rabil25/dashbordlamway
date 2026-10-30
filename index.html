@@ -3998,8 +3998,11 @@ function app() {
     renderProduk() {
       const chart = this.getOrInit('chart-produk');
       if (!chart) return;
+      const bulan = this.cfg.bulan;
       const map = {};
       this.filteredRows.forEach(r => {
+        if ((r[C.BLN_PS]||'').toString() !== bulan) return;
+        if (!(r[C.VAL_PS]||'').toString().trim()) return;
         const v = r[C.SPEED] || r[C.PRODUK_KAT] || 'Lainnya';
         map[v] = (map[v]||0) + 1;
       });
@@ -4026,8 +4029,13 @@ function app() {
     renderChannel() {
       const chart = this.getOrInit('chart-channel');
       if (!chart) return;
+      const bulan = this.cfg.bulan;
       const map = {};
-      this.filteredRows.forEach(r => { const v=r[C.CHANNEL2]||'Lainnya'; map[v]=(map[v]||0)+1; });
+      this.filteredRows.forEach(r => {
+        if ((r[C.BLN_PS]||'').toString() !== bulan) return;
+        if (!(r[C.VAL_PS]||'').toString().trim()) return;
+        const v=r[C.CHANNEL2]||'Lainnya'; map[v]=(map[v]||0)+1;
+      });
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
       chart.setOption(Object.assign({}, getChartTheme(), {
         tooltip: { ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
@@ -4041,8 +4049,13 @@ function app() {
     renderTime() {
       const chart = this.getOrInit('chart-time');
       if (!chart) return;
+      const bulan = this.cfg.bulan;
       const map = {};
-      this.filteredRows.forEach(r => { const v=r[C.TIME_RANGE]||'Lainnya'; map[v]=(map[v]||0)+1; });
+      this.filteredRows.forEach(r => {
+        if ((r[C.BLN_IO]||'').toString() !== bulan) return;
+        if (!(r[C.VAL_IO]||'').toString().trim()) return;
+        const v=r[C.TIME_RANGE]||'Lainnya'; map[v]=(map[v]||0)+1;
+      });
       const order = ['07:00-09:59','10:00-11:59','12:00-13:59','14:00-15:59','16:00-17:59','18:00-20:59','21:00-23:59'];
       const cats = order.filter(k=>map[k]).concat(Object.keys(map).filter(k=>!order.includes(k)));
       chart.setOption(Object.assign({}, getChartTheme(), {
@@ -4057,8 +4070,13 @@ function app() {
     renderHP() {
       const chart = this.getOrInit('chart-hp');
       if (!chart) return;
+      const bulan = this.cfg.bulan;
       let hp=0, nonHp=0;
-      this.filteredRows.forEach(r => { (r[C.HOMEPASS]==='Homepass' ? hp++ : nonHp++); });
+      this.filteredRows.forEach(r => {
+        if ((r[C.BLN_PS]||'').toString() !== bulan) return;
+        if (!(r[C.VAL_PS]||'').toString().trim()) return;
+        (r[C.HOMEPASS]==='Homepass' ? hp++ : nonHp++);
+      });
       chart.setOption(Object.assign({}, (function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()), {
         tooltip: { ...(function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()).tooltip, trigger:'item' },
         series: [{
@@ -4076,8 +4094,15 @@ function app() {
     renderKendalaCat() {
       const chart = this.getOrInit('chart-kendala-cat');
       if (!chart) return;
+      const bulan = this.cfg.bulan;
       const map = {};
-      this.filteredRows.forEach(r => { const v=r[C.KENDALA_CAT]; if(v) map[v]=(map[v]||0)+1; });
+      this.filteredRows.forEach(r => {
+        const blnIO = (r[C.BLN_IO]||'').toString();
+        const blnRE = (r[C.BLN_RE]||'').toString();
+        const blnPS = (r[C.BLN_PS]||'').toString();
+        if (blnIO !== bulan && blnRE !== bulan && blnPS !== bulan) return;
+        const v=r[C.KENDALA_CAT]; if(v) map[v]=(map[v]||0)+1;
+      });
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
       chart.setOption(Object.assign({}, getChartTheme(), {
         tooltip: { ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
@@ -4091,8 +4116,13 @@ function app() {
     renderKendalaTren() {
       const chart = this.getOrInit('chart-kendala-tren');
       if (!chart) return;
+      const bulan = this.cfg.bulan;
       const map = {};
       this.filteredRows.forEach(r => {
+        const blnIO = (r[C.BLN_IO]||'').toString();
+        const blnRE = (r[C.BLN_RE]||'').toString();
+        const blnPS = (r[C.BLN_PS]||'').toString();
+        if (blnIO !== bulan && blnRE !== bulan && blnPS !== bulan) return;
         const d = r[C.TGL_KENDALA]; const cat = r[C.KENDALA_CAT];
         if (d && cat) { const key=d.toString().slice(0,8); map[key]=(map[key]||0)+1; }
       });
