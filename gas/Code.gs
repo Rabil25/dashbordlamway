@@ -129,6 +129,9 @@ function doGet(e) {
       case 'all':
         data = getAllData(bulan);
         break;
+      case 'target':
+        data = getTargetData();
+        break;
       default:
         data = { ok:false, error:'Unknown type. Use: bulan_ini | list_bulan | update_sf | wilayah | ping | all' };
     }
@@ -154,6 +157,8 @@ function getAllData(bulan) {
   const updateSf  = getRawSheetCached('Update SF', 'A2:AG', '');
   const listBulan = getListBulanCached();
 
+  const target = getTargetData();
+
   return {
     ok:        true,
     bulan:     bulan,
@@ -162,8 +167,39 @@ function getAllData(bulan) {
     bulanPrev: bulanPrev,
     updateSf:  updateSf,
     listBulan: listBulan,
+    target:    target,
     updatedAt: new Date().toISOString(),
   };
+}
+
+// ================================================================
+//  TARGET – baca sheet "Target" (Kabupaten | PS)
+// ================================================================
+function getTargetData() {
+  const cache    = CacheService.getScriptCache();
+  const cacheKey = 'target_data';
+
+  try {
+    const cached = cache.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+  } catch(e) {}
+
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const ws = ss.getSheetByName('Target');
+  if (!ws) return { ok:false, error:'Sheet "Target" tidak ditemukan.' };
+
+  // Baca mulai baris 2 (baris 1 = header: Kabupaten | PS)
+  const values = ws.getDataRange().getValues().slice(1);
+  const targets = {};
+  for (let i = 0; i < values.length; i++) {
+    const kab = (values[i][0]||'').toString().trim().toUpperCase();
+    const ps  = parseFloat(values[i][1]) || 0;
+    if (kab) targets[kab] = { ps: ps, re: Math.round(ps*1.2), io: Math.round(ps*1.44) };
+  }
+
+  const result = { ok:true, targets: targets, updatedAt: new Date().toISOString() };
+  try { cache.put(cacheKey, JSON.stringify(result), 600); } catch(e) {}
+  return result;
 }
 
 // ================================================================
