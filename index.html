@@ -1095,9 +1095,15 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
     <div class="modal-sub">Pengaturan koneksi GAS, bulan aktif, dan target per kabupaten.</div>
     <div class="modal-fields">
 
+      <!-- Vercel URL (Data – lebih cepat) -->
+      <div class="input-grp">
+        <label class="input-lbl">Vercel URL <span style="font-size:11px;color:#6b7280">(data endpoint – lebih cepat)</span></label>
+        <input class="input" x-model="cfg.vercelUrl" placeholder="https://dashbordlamway.vercel.app/api/data">
+      </div>
+
       <!-- GAS URL -->
       <div class="input-grp">
-        <label class="input-lbl">GAS Web App URL</label>
+        <label class="input-lbl">GAS Web App URL <span style="font-size:11px;color:#6b7280">(auth – login/register)</span></label>
         <input class="input" x-model="cfg.gasUrl" placeholder="https://script.google.com/macros/s/AKfy.../exec">
       </div>
 
@@ -2725,7 +2731,17 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 //  CONFIG — ganti sesuai kebutuhan
 // ============================================================
 const DEFAULT_GAS_URL  = 'https://script.google.com/macros/s/AKfycbzBskwSjBBScoZPdwkZxKNJ9PcN5Yihb-8rVAwq26O2dodfraHxxClqlL379ryM04jupA/exec';
+const DEFAULT_VERCEL_URL = ''; // akan diisi setelah deploy Vercel
 const GAS_TOKEN        = 'lpgLampung2026';
+
+// Pilih URL terbaik: data endpoint pakai Vercel jika tersedia, auth tetap GAS
+function getDataUrl(cfg) {
+  const vercelUrl = (cfg && cfg.vercelUrl) || DEFAULT_VERCEL_URL;
+  return vercelUrl ? vercelUrl : ((cfg && cfg.gasUrl) || DEFAULT_GAS_URL);
+}
+function getAuthUrl(cfg) {
+  return (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
+}
 
 // Kolom index dalam array (CE=0, CF=1, ...)
 const C = {
@@ -2871,7 +2887,8 @@ function app() {
 
     // Config
     cfg: {
-      gasUrl: localStorage.getItem('wok_gas_url') || DEFAULT_GAS_URL,
+      gasUrl:    localStorage.getItem('wok_gas_url')    || DEFAULT_GAS_URL,
+      vercelUrl: localStorage.getItem('wok_vercel_url') || DEFAULT_VERCEL_URL,
       bulan: String(new Date().getMonth() + 1),   // default: bulan sekarang
       tglAwal: 1,                                  // default: tanggal 1
       tglAkhir: new Date().getDate(),              // default: hari ini (MTD)
@@ -3139,7 +3156,8 @@ function app() {
 
     // ── Config ──
     saveConfig() {
-      localStorage.setItem('wok_gas_url', this.cfg.gasUrl);
+      localStorage.setItem('wok_gas_url',    this.cfg.gasUrl);
+      localStorage.setItem('wok_vercel_url', this.cfg.vercelUrl || '');
       localStorage.setItem('wok_targets', JSON.stringify(this.cfg.targets));
       this.showConfig = false;
       this.loadData();
@@ -3225,7 +3243,7 @@ function app() {
         }
 
         // Belum di cache atau forceRefresh → 1 request ke endpoint type=all
-        const base = this.cfg.gasUrl;
+        const base = getDataUrl(this.cfg);
         const url  = `${base}?token=${GAS_TOKEN}&type=all&bulan=${bulanStr}`;
         const res  = await fetch(url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -3285,7 +3303,7 @@ function app() {
         if (hit && (Date.now() - hit.ts) < ttlMs) return hit.data;
       }
       try {
-        const base = this.cfg.gasUrl;
+        const base = getDataUrl(this.cfg);
         const url  = `${base}?token=${GAS_TOKEN}&type=list_bulan`;
         const res  = await fetch(url);
         if (!res.ok) return null;
@@ -3308,7 +3326,7 @@ function app() {
         const hit = this._memCache.get(cacheKey);
         if (hit && (Date.now() - hit.ts) < ttlMs) return hit.data;
       }
-      const base = this.cfg.gasUrl;
+      const base = getDataUrl(this.cfg);
       const url  = `${base}?token=${GAS_TOKEN}&type=${type}&bulan=${bulan}`;
       const res  = await fetch(url);
       if (!res.ok) throw new Error('HTTP ' + res.status + ' saat fetch ' + type);
