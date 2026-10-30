@@ -1771,6 +1771,23 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <div class="section-title">Peta Koordinat Order</div>
           <div class="section-sub" x-text="koordinatRows.length + ' order dengan koordinat · ' + cluster"></div>
         </div>
+        <!-- Filter STO & Produk -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+          <select x-model="petaFilterSTO" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer">
+            <option value="">Semua STO</option>
+            <template x-for="s in stoList" :key="s">
+              <option :value="s" x-text="s"></option>
+            </template>
+          </select>
+          <select x-model="petaFilterProduk" @change="$nextTick(()=>renderPeta())" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer">
+            <option value="">Semua Produk</option>
+            <template x-for="p in produkList" :key="p">
+              <option :value="p" x-text="p"></option>
+            </template>
+          </select>
+          <button @click="petaFilterSTO='';petaFilterProduk='';$nextTick(()=>renderPeta())" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer" x-show="petaFilterSTO||petaFilterProduk">Reset Filter</button>
+        </div>
+
         <!-- Filter checkbox Belum PS / Kendala / PS -->
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text-2)">Tampilkan:</span>
@@ -2486,6 +2503,8 @@ function app() {
     allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)
     _availBulanList: null,  // daftar bulan tersedia dari GAS list_bulan
     petaFilter: { io: true, re: true, ps: true },  // checkbox filter peta
+    petaFilterSTO: '',     // '' = semua STO
+    petaFilterProduk: '',  // '' = semua produk
     lastUpdate: '',
     TIER_CONFIG,      // expose to template
 
@@ -3211,6 +3230,12 @@ function app() {
       return [...s].sort();
     },
 
+    get stoList() {
+      const s = new Set();
+      this.filteredRows.forEach(r => { const v=(r[C.STO]||'').trim(); if(v) s.add(v); });
+      return [...s].sort();
+    },
+
     // ── Kendala ──
     get filteredKendala() {
       let rows = this.filteredRows.filter(r => r[C.KENDALA_CAT] || r[C.KENDALA_DTL]);
@@ -3238,6 +3263,8 @@ function app() {
       const bulan = this.cfg.bulan;
       const tglA  = parseInt(this.cfg.tglAwal)  || 1;
       const tglB  = parseInt(this.cfg.tglAkhir) || new Date().getDate();
+      const fSTO    = this.petaFilterSTO;
+      const fProduk = this.petaFilterProduk;
       return this.filteredRows.filter(r => {
         // Hanya tampilkan order yang masuk di bulan aktif (IO atau RE atau PS di bulan ini)
         const blnIO = (r[C.BLN_IO]||'').toString();
@@ -3248,6 +3275,13 @@ function app() {
         if (blnIO === bulan) {
           const tgl = parseInt(r[C.TGL_IO]||0);
           if (tgl < tglA || tgl > tglB) return false;
+        }
+        // Filter STO
+        if (fSTO && (r[C.STO]||'').trim() !== fSTO) return false;
+        // Filter Produk
+        if (fProduk) {
+          const prod = r[C.SPEED]||r[C.PRODUK_KAT]||'';
+          if (prod !== fProduk) return false;
         }
         // Harus punya koordinat valid
         const dr = r[C.KOORDINAT]||'';
