@@ -2906,6 +2906,8 @@ function app() {
 
       // Verifikasi session token jika ada
       if (this.sessionToken && this.currentUser) {
+        // Langsung set loading=true agar skeleton muncul, bukan empty state
+        this.loading = true;
         try {
           const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
           const url = gasBase + '?type=auth_verify&session_token=' + encodeURIComponent(this.sessionToken);
@@ -2913,6 +2915,7 @@ function app() {
           const json = await res.json();
           if (!json.ok) {
             // Token expired/invalid → paksa login ulang
+            this.loading       = false;
             this.currentUser   = null;
             this.sessionToken  = '';
             localStorage.removeItem('wok_user');
@@ -2923,18 +2926,19 @@ function app() {
           this.currentUser = json.user;
           localStorage.setItem('wok_user', JSON.stringify(json.user));
         } catch(e) {
-          // Network error: biarkan masuk (offline mode)
+          // Network error: biarkan masuk (offline mode), loading akan reset di loadData
         }
       } else {
         // Tidak ada session → tampilkan login (auth-overlay sudah handle via x-show)
         this.currentUser = null;
       }
 
-      // Jika sudah login, langsung muat data
+      // Jika sudah login, langsung muat data (loading sudah true dari atas)
       if (this.currentUser) {
         if (this.cfg.gasUrl) {
           this.loadData();
         } else {
+          this.loading = false;
           this.showConfig = this.currentUser.role === 'admin';
         }
       }
