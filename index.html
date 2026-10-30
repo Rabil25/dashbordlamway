@@ -926,6 +926,155 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 /* ── ARIA CHART WRAPPER ── */
 .chart-area[aria-label] { outline: none; }
 .chart-area[aria-label]:focus { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* ════════════════════════════════════════════════════════════
+   AUTH — LOGIN / REGISTER / ADMIN
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Auth overlay (fullscreen over everything) ── */
+.auth-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: var(--surface-base);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.auth-card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg);
+  padding: 36px 32px;
+  width: 100%; max-width: 380px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.35);
+  position: relative;
+}
+.auth-logo {
+  text-align: center; margin-bottom: 24px;
+}
+.auth-logo-icon {
+  font-size: 32px; margin-bottom: 6px;
+}
+.auth-logo-title {
+  font-size: 18px; font-weight: 700; color: var(--text-1); margin-bottom: 2px;
+}
+.auth-logo-sub {
+  font-size: 11px; color: var(--text-3);
+}
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-input-grp { display: flex; flex-direction: column; gap: 5px; }
+.auth-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); }
+.auth-input {
+  background: var(--surface-input); border: 1px solid var(--surface-border);
+  border-radius: var(--r); color: var(--text-1); font-family: var(--font);
+  font-size: 13px; padding: 9px 12px; outline: none; width: 100%; box-sizing: border-box;
+  transition: border-color var(--dur);
+}
+.auth-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-glow); }
+.auth-btn {
+  background: var(--brand); color: #fff; border: none; border-radius: var(--r);
+  font-family: var(--font); font-size: 13px; font-weight: 600; padding: 10px 16px;
+  cursor: pointer; width: 100%; transition: background var(--dur);
+}
+.auth-btn:hover { background: var(--brand-hover); }
+.auth-btn:disabled { opacity: .55; cursor: not-allowed; }
+.auth-err {
+  font-size: 12px; color: var(--danger); background: var(--danger-dim);
+  border: 1px solid var(--danger); border-radius: var(--r);
+  padding: 8px 12px; margin-top: -4px;
+}
+.auth-ok {
+  font-size: 12px; color: var(--success); background: var(--success-dim);
+  border: 1px solid var(--success); border-radius: var(--r);
+  padding: 8px 12px; margin-top: -4px;
+}
+.auth-switch {
+  text-align: center; font-size: 12px; color: var(--text-2); margin-top: 4px;
+}
+.auth-switch a {
+  color: var(--brand); cursor: pointer; text-decoration: underline; font-weight: 500;
+}
+.auth-pending-note {
+  text-align: center; font-size: 12px; color: var(--text-2);
+  background: var(--warning-dim); border: 1px solid var(--warning);
+  border-radius: var(--r); padding: 10px 14px; margin-top: 4px;
+  line-height: 1.5;
+}
+.auth-pending-note strong { color: var(--warning); }
+
+/* ── Profile Dropdown (topbar) ── */
+.profile-wrap { position: relative; display: flex; align-items: center; }
+.profile-btn {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--surface-elevated); border: 1px solid var(--surface-border);
+  border-radius: 999px; padding: 4px 10px 4px 4px;
+  cursor: pointer; font-family: var(--font); font-size: 12px;
+  color: var(--text-1); transition: background var(--dur), border-color var(--dur);
+}
+.profile-btn:hover { border-color: var(--brand); background: var(--brand-dim); }
+.profile-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--brand); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.profile-name { font-weight: 600; }
+.profile-role-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  padding: 1px 5px; border-radius: 4px;
+}
+.role-admin { background: var(--brand-glow); color: var(--brand); }
+.role-user  { background: var(--surface-elevated); color: var(--text-2); }
+
+.profile-dropdown {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--surface-card); border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg); min-width: 200px; z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28);
+  overflow: hidden;
+}
+.profile-dropdown-hdr {
+  padding: 12px 14px; border-bottom: 1px solid var(--surface-border);
+  font-size: 12px;
+}
+.profile-dropdown-hdr .pd-name { font-weight: 700; color: var(--text-1); }
+.profile-dropdown-hdr .pd-username { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+.pd-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; font-size: 12px; color: var(--text-1);
+  cursor: pointer; transition: background var(--dur);
+  border: none; background: none; font-family: var(--font); width: 100%; text-align: left;
+}
+.pd-item:hover { background: var(--surface-hover); }
+.pd-item.danger { color: var(--danger); }
+.pd-sep { height: 1px; background: var(--surface-border); margin: 2px 0; }
+
+/* ── Admin Panel Modal ── */
+.admin-panel {
+  background: var(--surface-card); border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg); padding: 24px; max-width: 560px; width: 100%;
+  max-height: 80vh; overflow-y: auto;
+}
+.admin-title { font-size: 16px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
+.admin-sub { font-size: 12px; color: var(--text-3); margin-bottom: 18px; }
+.admin-user-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface-elevated); border: 1px solid var(--surface-border);
+  border-radius: var(--r); padding: 10px 14px; margin-bottom: 8px;
+}
+.admin-user-info .aui-nama { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.admin-user-info .aui-user { font-size: 11px; color: var(--text-3); }
+.admin-user-info .aui-tgl  { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+.admin-user-actions { display: flex; gap: 6px; }
+.btn-approve { background: var(--success-dim); color: var(--success); border: 1px solid var(--success); border-radius: var(--r); padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font); }
+.btn-reject  { background: var(--danger-dim);  color: var(--danger);  border: 1px solid var(--danger);  border-radius: var(--r); padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font); }
+.btn-approve:hover { background: var(--success); color: #fff; }
+.btn-reject:hover  { background: var(--danger);  color: #fff; }
+
+/* ── Change Password Modal ── */
+.chpwd-modal {
+  background: var(--surface-card); border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg); padding: 24px; max-width: 380px; width: 100%;
+}
+.chpwd-title { font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 16px; }
 </style>
 </head>
 
@@ -1015,9 +1164,137 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
+     AUTH OVERLAY (login / register)
+     ══════════════════════════════════════════════════════════ -->
+<div class="auth-overlay" x-show="!currentUser" x-transition:enter="opacity-100" x-transition:leave="opacity-0" style="display:none">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">⚡</div>
+      <div class="auth-logo-title">WOK Dashboard</div>
+      <div class="auth-logo-sub">Lampung Barat · Way Kanan</div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div x-show="authView==='login'">
+      <form class="auth-form" @submit.prevent="doLogin()">
+        <div class="auth-input-grp">
+          <label class="auth-lbl">Username</label>
+          <input class="auth-input" type="text" x-model="authForm.username" placeholder="username" autocomplete="username" :disabled="authLoading">
+        </div>
+        <div class="auth-input-grp">
+          <label class="auth-lbl">Password</label>
+          <input class="auth-input" type="password" x-model="authForm.password" placeholder="••••••••" autocomplete="current-password" :disabled="authLoading">
+        </div>
+        <div class="auth-err" x-show="authError" x-text="authError"></div>
+        <button class="auth-btn" type="submit" :disabled="authLoading" x-text="authLoading ? 'Masuk...' : 'Masuk'"></button>
+      </form>
+      <div class="auth-switch">Belum punya akun? <a @click="authView='register';authError='';authSuccess=''">Daftar di sini</a></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div x-show="authView==='register'">
+      <form class="auth-form" @submit.prevent="doRegister()">
+        <div class="auth-input-grp">
+          <label class="auth-lbl">Nama Lengkap</label>
+          <input class="auth-input" type="text" x-model="authForm.nama" placeholder="Nama Lengkap" :disabled="authLoading">
+        </div>
+        <div class="auth-input-grp">
+          <label class="auth-lbl">Username</label>
+          <input class="auth-input" type="text" x-model="authForm.username" placeholder="huruf kecil + angka (3-20 karakter)" autocomplete="username" :disabled="authLoading">
+        </div>
+        <div class="auth-input-grp">
+          <label class="auth-lbl">Password</label>
+          <input class="auth-input" type="password" x-model="authForm.password" placeholder="minimal 6 karakter" autocomplete="new-password" :disabled="authLoading">
+        </div>
+        <div class="auth-input-grp">
+          <label class="auth-lbl">Konfirmasi Password</label>
+          <input class="auth-input" type="password" x-model="authForm.password2" placeholder="ulangi password" autocomplete="new-password" :disabled="authLoading">
+        </div>
+        <div class="auth-err" x-show="authError" x-text="authError"></div>
+        <div class="auth-ok" x-show="authSuccess" x-text="authSuccess"></div>
+        <div class="auth-pending-note" x-show="authSuccess">
+          Pendaftaran berhasilmu sedang <strong>menunggu persetujuan admin</strong>. Kamu akan bisa login setelah disetujui.
+        </div>
+        <button class="auth-btn" type="submit" :disabled="authLoading || !!authSuccess" x-text="authLoading ? 'Mendaftar...' : 'Daftar'"></button>
+      </form>
+      <div class="auth-switch">Sudah punya akun? <a @click="authView='login';authError='';authSuccess=''">Login di sini</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     ADMIN PANEL MODAL
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal-bg" x-show="showAdminPanel" x-transition style="display:none" @click.self="showAdminPanel=false">
+  <div class="admin-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="admin-title">👥 Manajemen Pengguna</div>
+      <button class="btn" @click="showAdminPanel=false" style="padding:4px 10px;font-size:11px">✕ Tutup</button>
+    </div>
+    <div class="admin-sub">Kelola permintaan akses dan daftar pengguna.</div>
+
+    <!-- Filter tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button class="btn" :class="adminFilter==='pending'?'btn-primary':''" @click="adminFilter='pending';loadPendingUsers()" style="font-size:11px;padding:5px 12px">⏳ Pending</button>
+      <button class="btn" :class="adminFilter==='all'?'btn-primary':''" @click="adminFilter='all';loadPendingUsers()" style="font-size:11px;padding:5px 12px">📋 Semua User</button>
+      <button class="btn" @click="loadPendingUsers()" style="font-size:11px;padding:5px 12px" :disabled="adminLoading">🔄</button>
+    </div>
+
+    <div x-show="adminLoading" class="loading-wrap" style="padding:24px"><div class="spinner"></div></div>
+    <div x-show="!adminLoading && adminUsers.length===0" class="empty" x-text="adminFilter==='pending' ? 'Tidak ada permintaan pending.' : 'Tidak ada pengguna.'"></div>
+
+    <template x-for="u in adminUsers" :key="u.username">
+      <div class="admin-user-card">
+        <div class="admin-user-info">
+          <div class="aui-nama" x-text="u.nama"></div>
+          <div class="aui-user">@<span x-text="u.username"></span> · <span x-text="u.role"></span></div>
+          <div class="aui-tgl">Daftar: <span x-text="u.tgl_daftar"></span> · Status: <span :style="u.status==='active'?'color:var(--success)':u.status==='rejected'?'color:var(--danger)':'color:var(--warning)'" x-text="u.status"></span></div>
+        </div>
+        <div class="admin-user-actions" x-show="u.status==='pending'">
+          <button class="btn-approve" @click="approveUser(u.username,'approve')">✓ Setujui</button>
+          <button class="btn-reject"  @click="approveUser(u.username,'reject')">✕ Tolak</button>
+        </div>
+        <div x-show="u.status!=='pending'" style="font-size:11px;color:var(--text-3)">
+          <span x-text="u.status==='active'?'✓ Aktif':'✕ Ditolak'"></span>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     CHANGE PASSWORD MODAL
+     ══════════════════════════════════════════════════════════ -->
+<div class="modal-bg" x-show="showChangePassword" x-transition style="display:none" @click.self="showChangePassword=false">
+  <div class="chpwd-modal">
+    <div class="chpwd-title">🔑 Ganti Password</div>
+    <form class="auth-form" @submit.prevent="doChangePassword()">
+      <div class="auth-input-grp">
+        <label class="auth-lbl">Password Lama</label>
+        <input class="auth-input" type="password" x-model="chpwdForm.old" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="auth-input-grp">
+        <label class="auth-lbl">Password Baru</label>
+        <input class="auth-input" type="password" x-model="chpwdForm.new1" placeholder="minimal 6 karakter" autocomplete="new-password">
+      </div>
+      <div class="auth-input-grp">
+        <label class="auth-lbl">Konfirmasi Password Baru</label>
+        <input class="auth-input" type="password" x-model="chpwdForm.new2" placeholder="ulangi password baru" autocomplete="new-password">
+      </div>
+      <div class="auth-err" x-show="chpwdError" x-text="chpwdError"></div>
+      <div class="auth-ok" x-show="chpwdSuccess" x-text="chpwdSuccess"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button type="button" class="btn" style="flex:1" @click="showChangePassword=false">Batal</button>
+        <button type="submit" class="auth-btn" style="flex:2" :disabled="chpwdLoading" x-text="chpwdLoading?'Menyimpan...':'Simpan'"></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
      APP SHELL
      ══════════════════════════════════════════════════════════ -->
-<div class="app">
+<div class="app" x-show="currentUser">
 
   <!-- SIDEBAR -->
   <aside class="sidebar" :class="{open: menuOpen}" role="navigation" aria-label="Menu Navigasi">
@@ -1075,6 +1352,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <span x-text="'Sync ' + (lastSync || '—')"></span>
       </div>
       <div style="margin-top:4px" x-text="filteredRows.length + ' order unik'"></div>
+      <div x-show="currentUser" style="margin-top:6px;font-size:10px;color:var(--text-3);display:flex;align-items:center;gap:5px">
+        <span x-text="'👤 ' + (currentUser ? currentUser.nama : '')"></span>
+        <span x-show="currentUser && currentUser.role==='admin'" style="background:var(--brand-dim);color:var(--brand);border-radius:4px;padding:0 5px;font-weight:700;font-size:9px">ADMIN</span>
+      </div>
     </div>
   </aside>
 
@@ -1124,10 +1405,43 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <button class="theme-toggle" @click="toggleTheme()" :title="themeMode==='dark' ? 'Light Mode' : 'Dark Mode'" :aria-label="themeMode==='dark' ? 'Aktifkan Light Mode' : 'Aktifkan Dark Mode'">
         <span x-text="themeMode==='dark' ? '☀️' : '🌙'"></span>
       </button>
-      <button class="btn" @click="showConfig=true" aria-label="Konfigurasi API">
+      <!-- Gear/API — hanya admin -->
+      <button class="btn" @click="showConfig=true" aria-label="Konfigurasi API" x-show="currentUser && currentUser.role==='admin'">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         API
       </button>
+
+      <!-- PROFILE BUTTON + DROPDOWN -->
+      <div class="profile-wrap" x-data="{open:false}" @click.outside="open=false" x-show="currentUser">
+        <button class="profile-btn" @click="open=!open" aria-label="Menu profil" :aria-expanded="open">
+          <div class="profile-avatar" x-text="currentUser ? currentUser.nama.charAt(0).toUpperCase() : '?'"></div>
+          <span class="profile-name" x-text="currentUser ? currentUser.nama.split(' ')[0] : ''"></span>
+          <span class="profile-role-badge" :class="currentUser && currentUser.role==='admin' ? 'role-admin' : 'role-user'" x-text="currentUser ? currentUser.role : ''"></span>
+        </button>
+        <div class="profile-dropdown" x-show="open" x-transition style="display:none">
+          <div class="profile-dropdown-hdr">
+            <div class="pd-name" x-text="currentUser ? currentUser.nama : ''"></div>
+            <div class="pd-username">@<span x-text="currentUser ? currentUser.username : ''"></span></div>
+          </div>
+          <!-- Admin: kelola user -->
+          <button class="pd-item" x-show="currentUser && currentUser.role==='admin'" @click="open=false;showAdminPanel=true;adminFilter='pending';loadPendingUsers()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Kelola Pengguna
+          </button>
+          <div class="pd-sep" x-show="currentUser && currentUser.role==='admin'"></div>
+          <!-- Ganti password -->
+          <button class="pd-item" @click="open=false;showChangePassword=true;chpwdForm={old:'',new1:'',new2:''};chpwdError='';chpwdSuccess=''">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Ganti Password
+          </button>
+          <div class="pd-sep"></div>
+          <!-- Logout -->
+          <button class="pd-item danger" @click="open=false;doLogout()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Keluar
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- GLOSSARY MODAL -->
@@ -2511,6 +2825,28 @@ function getSFTier(prevPS) {
 // ============================================================
 function app() {
   return {
+    // ── AUTH STATE ──────────────────────────────────────────
+    currentUser:       JSON.parse(localStorage.getItem('wok_user') || 'null'),
+    sessionToken:      localStorage.getItem('wok_token') || '',
+    authView:          'login',   // 'login' | 'register'
+    authLoading:       false,
+    authError:         '',
+    authSuccess:       '',
+    authForm:          { username:'', password:'', password2:'', nama:'' },
+
+    // Admin panel
+    showAdminPanel:    false,
+    adminUsers:        [],
+    adminLoading:      false,
+    adminFilter:       'pending',
+
+    // Change password
+    showChangePassword: false,
+    chpwdForm:         { old:'', new1:'', new2:'' },
+    chpwdError:        '',
+    chpwdSuccess:      '',
+    chpwdLoading:      false,
+
     // State
     page: 'dashboard',
     cluster: 'Lampung Barat',
@@ -2556,14 +2892,45 @@ function app() {
     lastSync: localStorage.getItem('wok_last_sync') || '',
 
     // ── Init ──
-    init() {
+    async init() {
       // Apply saved theme
       document.documentElement.setAttribute('data-theme', this.themeMode);
-      if (this.cfg.gasUrl) {
-        this.loadData();
+
+      // Verifikasi session token jika ada
+      if (this.sessionToken && this.currentUser) {
+        try {
+          const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+          const url = gasBase + '?type=auth_verify&session_token=' + encodeURIComponent(this.sessionToken);
+          const res = await fetch(url);
+          const json = await res.json();
+          if (!json.ok) {
+            // Token expired/invalid → paksa login ulang
+            this.currentUser   = null;
+            this.sessionToken  = '';
+            localStorage.removeItem('wok_user');
+            localStorage.removeItem('wok_token');
+            return;
+          }
+          // Refresh user data
+          this.currentUser = json.user;
+          localStorage.setItem('wok_user', JSON.stringify(json.user));
+        } catch(e) {
+          // Network error: biarkan masuk (offline mode)
+        }
       } else {
-        this.showConfig = true;
+        // Tidak ada session → tampilkan login (auth-overlay sudah handle via x-show)
+        this.currentUser = null;
       }
+
+      // Jika sudah login, langsung muat data
+      if (this.currentUser) {
+        if (this.cfg.gasUrl) {
+          this.loadData();
+        } else {
+          this.showConfig = this.currentUser.role === 'admin';
+        }
+      }
+
       window.addEventListener('resize', () => {
         Object.values(this._charts).forEach(c => c && c.resize && c.resize());
       });
@@ -2578,6 +2945,155 @@ function app() {
         this.disposeCharts();
         this.renderCharts();
       }, 80);
+    },
+
+    // ════════════════════════════════════════════════════════
+    //  AUTH FUNCTIONS
+    // ════════════════════════════════════════════════════════
+
+    // SHA-256 → hex (Web Crypto API)
+    async sha256(str) {
+      const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    },
+
+    async doLogin() {
+      this.authError = '';
+      const { username, password } = this.authForm;
+      if (!username || !password) { this.authError = 'Username dan password wajib diisi.'; return; }
+      this.authLoading = true;
+      try {
+        const hash = await this.sha256(password);
+        const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+        if (!gasBase) { this.authError = 'GAS URL belum dikonfigurasi. Hubungi admin.'; return; }
+        const url = gasBase + '?type=auth_login&username=' + encodeURIComponent(username) + '&hash=' + hash;
+        const res  = await fetch(url);
+        const json = await res.json();
+        if (!json.ok) { this.authError = json.error; return; }
+        // Simpan session
+        this.currentUser  = json.user;
+        this.sessionToken = json.token;
+        localStorage.setItem('wok_user',  JSON.stringify(json.user));
+        localStorage.setItem('wok_token', json.token);
+        this.authForm = { username:'', password:'', password2:'', nama:'' };
+        // Muat data dashboard
+        if (this.cfg.gasUrl) this.loadData();
+      } catch(e) {
+        this.authError = 'Gagal terhubung ke server. Periksa koneksi internet.';
+      } finally {
+        this.authLoading = false;
+      }
+    },
+
+    async doRegister() {
+      this.authError = ''; this.authSuccess = '';
+      const { username, password, password2, nama } = this.authForm;
+      if (!nama) { this.authError = 'Nama lengkap wajib diisi.'; return; }
+      if (!username) { this.authError = 'Username wajib diisi.'; return; }
+      if (!/^[a-z0-9_]{3,20}$/.test(username)) { this.authError = 'Username: 3-20 karakter, huruf kecil/angka/underscore.'; return; }
+      if (!password || password.length < 6) { this.authError = 'Password minimal 6 karakter.'; return; }
+      if (password !== password2) { this.authError = 'Konfirmasi password tidak cocok.'; return; }
+      this.authLoading = true;
+      try {
+        const hash = await this.sha256(password);
+        const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+        if (!gasBase) { this.authError = 'GAS URL belum dikonfigurasi. Hubungi admin.'; return; }
+        const url = gasBase + '?type=auth_register&username=' + encodeURIComponent(username)
+                  + '&hash=' + hash + '&nama=' + encodeURIComponent(nama);
+        const res  = await fetch(url);
+        const json = await res.json();
+        if (!json.ok) { this.authError = json.error; return; }
+        this.authSuccess = json.message || 'Pendaftaran berhasil!';
+        this.authForm.password = ''; this.authForm.password2 = '';
+      } catch(e) {
+        this.authError = 'Gagal terhubung ke server.';
+      } finally {
+        this.authLoading = false;
+      }
+    },
+
+    async doLogout() {
+      try {
+        const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+        if (gasBase && this.sessionToken) {
+          fetch(gasBase + '?type=auth_logout&session_token=' + encodeURIComponent(this.sessionToken));
+        }
+      } catch(e) {}
+      this.currentUser  = null;
+      this.sessionToken = '';
+      localStorage.removeItem('wok_user');
+      localStorage.removeItem('wok_token');
+      // Reset data
+      this.allRows = [];
+      this.authView = 'login';
+      this.authError = '';
+      this.authSuccess = '';
+    },
+
+    async loadPendingUsers() {
+      if (!this.sessionToken) return;
+      this.adminLoading = true;
+      this.adminUsers = [];
+      try {
+        const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+        const url = gasBase + '?type=auth_pending_users&session_token=' + encodeURIComponent(this.sessionToken)
+                  + '&filter=' + this.adminFilter;
+        const res  = await fetch(url);
+        const json = await res.json();
+        if (json.ok) this.adminUsers = json.users || [];
+        else this.toast(json.error || 'Gagal memuat data user.', 'err');
+      } catch(e) {
+        this.toast('Gagal terhubung ke server.', 'err');
+      } finally {
+        this.adminLoading = false;
+      }
+    },
+
+    async approveUser(username, action) {
+      try {
+        const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+        const url = gasBase + '?type=auth_approve&session_token=' + encodeURIComponent(this.sessionToken)
+                  + '&target_username=' + encodeURIComponent(username) + '&action=' + action;
+        const res  = await fetch(url);
+        const json = await res.json();
+        if (json.ok) {
+          this.toast(json.message, 'ok');
+          this.loadPendingUsers();
+        } else {
+          this.toast(json.error || 'Gagal.', 'err');
+        }
+      } catch(e) {
+        this.toast('Gagal terhubung ke server.', 'err');
+      }
+    },
+
+    async doChangePassword() {
+      this.chpwdError = ''; this.chpwdSuccess = '';
+      const { old: oldPwd, new1, new2 } = this.chpwdForm;
+      if (!oldPwd) { this.chpwdError = 'Password lama wajib diisi.'; return; }
+      if (!new1 || new1.length < 6) { this.chpwdError = 'Password baru minimal 6 karakter.'; return; }
+      if (new1 !== new2) { this.chpwdError = 'Konfirmasi password baru tidak cocok.'; return; }
+      this.chpwdLoading = true;
+      try {
+        const oldHash = await this.sha256(oldPwd);
+        const newHash = await this.sha256(new1);
+        const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+        const url = gasBase + '?type=auth_change_password&session_token=' + encodeURIComponent(this.sessionToken)
+                  + '&old_hash=' + oldHash + '&new_hash=' + newHash;
+        const res  = await fetch(url);
+        const json = await res.json();
+        if (json.ok) {
+          this.chpwdSuccess = json.message || 'Password berhasil diubah!';
+          this.chpwdForm = { old:'', new1:'', new2:'' };
+          setTimeout(() => { this.showChangePassword = false; this.chpwdSuccess = ''; }, 2000);
+        } else {
+          this.chpwdError = json.error;
+        }
+      } catch(e) {
+        this.chpwdError = 'Gagal terhubung ke server.';
+      } finally {
+        this.chpwdLoading = false;
+      }
     },
 
     // ── Nav ──
@@ -2661,7 +3177,11 @@ function app() {
 
     // ── Load Data via GAS (filter per bulan di server) ──
     async loadData(forceRefresh = false) {
-      if (!this.cfg.gasUrl) { this.showConfig = true; return; }
+      if (!this.currentUser) return;  // belum login
+      if (!this.cfg.gasUrl) {
+        if (this.currentUser.role === 'admin') this.showConfig = true;
+        return;
+      }
       this.loading = true;
       const CACHE_TTL_MS    = 15 * 60 * 1000; // 15 menit
       const CACHE_BULAN_MS  = 60 * 60 * 1000; // list_bulan cache 1 jam
