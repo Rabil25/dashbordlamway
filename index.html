@@ -3478,7 +3478,7 @@ function app() {
         if (blnIO === bulan) map[kab].io++;
         if (blnRE === bulan) map[kab].re++;
         if (blnPS === bulan) map[kab].ps++;
-        if (blnPS === prevBulan) map[kab].prevPS++;
+        if (blnPS === prevBulan && this.inRange(r[C.TGL_PS])) map[kab].prevPS++;
       });
 
       return kabs.map(k => {
@@ -3537,7 +3537,7 @@ function app() {
           kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
           produk: r[C.PRODUK_KAT]||'',
         };
-        if ((r[C.BLN_PS]||'').toString()===prevBulan) map[code].prevPS++;
+        if ((r[C.BLN_PS]||'').toString()===prevBulan && this.inRange(r[C.TGL_PS])) map[code].prevPS++;
       });
 
       const arr = Object.values(map);
