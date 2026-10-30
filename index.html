@@ -1052,7 +1052,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         SF Performance
       </button>
-      <button class="nav-sub-item" :class="{active:page==='sf'}" @click="nav('sf');menuOpen=false" aria-label="Performa SF — Leaderboard">
+      <button class="nav-sub-item" :class="{active:page==='sfperf'&&sfpTab==='leaderboard'}" @click="nav('sfperf');sfpTab='leaderboard';menuOpen=false" aria-label="Leaderboard SF">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         Leaderboard SF
       </button>
@@ -2090,6 +2090,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <button class="sfp-tab" :class="{active:sfpTab==='scorecard'}" @click="sfpTab='scorecard'">Scorecard</button>
           <button class="sfp-tab" :class="{active:sfpTab==='tier'}" @click="sfpTab='tier';$nextTick(()=>renderSfpTier())">Distribusi Tier</button>
           <button class="sfp-tab" :class="{active:sfpTab==='daftar'}" @click="sfpTab='daftar'">Daftar SF</button>
+          <button class="sfp-tab" :class="{active:sfpTab==='leaderboard'}" @click="sfpTab='leaderboard'">Leaderboard</button>
         </div>
 
         <!-- Scorecard per kab -->
@@ -2136,14 +2137,20 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <!-- Tier distribution -->
         <div x-show="sfpTab==='tier'">
           <div class="card" style="margin-bottom:14px">
-            <div class="section-hdr"><div class="section-title">Distribusi Tier SF (berdasarkan PS bulan lalu)</div></div>
+            <div class="section-hdr"><div class="section-title">Distribusi Tier SF</div></div>
             <div id="chart-sfp-tier" style="height:240px"></div>
           </div>
           <div class="card" style="padding:0;overflow:hidden">
             <table class="sfp-tbl">
               <thead>
                 <tr>
-                  <th>Tier</th><th>Range PS LM</th><th>Jumlah SF</th><th>Target/SF</th><th>Action</th>
+                  <th>Tier</th>
+                  <th>Range PS</th>
+                  <th style="text-align:right">SF Bulan Lalu</th>
+                  <th style="text-align:right">SF Bulan Ini</th>
+                  <th style="text-align:right">Delta</th>
+                  <th style="text-align:right">Target/SF</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -2154,11 +2161,22 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                             x-text="t.icon+' '+t.name"></span>
                     </td>
                     <td x-text="t.rangeLabel"></td>
-                    <td x-text="sfperfTierDist[t.name]||0"></td>
-                    <td x-text="t.target"></td>
+                    <td style="text-align:right" x-text="sfperfTierDist.lm[t.name]||0"></td>
+                    <td style="text-align:right" x-text="sfperfTierDist.now[t.name]||0"></td>
+                    <td style="text-align:right"
+                      :style="'color:'+((sfperfTierDist.now[t.name]||0)-(sfperfTierDist.lm[t.name]||0)>0?'var(--success)':(sfperfTierDist.now[t.name]||0)-(sfperfTierDist.lm[t.name]||0)<0?'var(--danger)':'var(--text-2)')"
+                      x-text="(((sfperfTierDist.now[t.name]||0)-(sfperfTierDist.lm[t.name]||0))>0?'+':'')+((sfperfTierDist.now[t.name]||0)-(sfperfTierDist.lm[t.name]||0))">
+                    </td>
+                    <td style="text-align:right" x-text="t.target"></td>
                     <td x-text="t.action"></td>
                   </tr>
                 </template>
+                <tr style="background:var(--surface-elevated);font-weight:700">
+                  <td>TOTAL</td><td>—</td>
+                  <td style="text-align:right" x-text="TIER_CONFIG.reduce((s,t)=>s+(sfperfTierDist.lm[t.name]||0),0)"></td>
+                  <td style="text-align:right" x-text="TIER_CONFIG.reduce((s,t)=>s+(sfperfTierDist.now[t.name]||0),0)"></td>
+                  <td style="text-align:right">—</td><td>—</td><td>—</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -2170,7 +2188,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             <table class="sfp-tbl">
               <thead>
                 <tr>
-                  <th>SF</th><th>Kabupaten</th><th>Tier</th><th>PS LM</th><th>PS MTD</th><th>Target</th><th>Ach%</th>
+                  <th>SF</th><th>Kabupaten</th><th>Tier LM</th><th>Tier Ini</th><th>PS LM</th><th>PS MTD</th><th>Target</th><th>ACV%</th>
                 </tr>
               </thead>
               <tbody>
@@ -2185,6 +2203,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                     <td>
                       <span class="tier-badge" :class="'tier-'+sf.tier.toLowerCase()"
                             x-text="sf.tierIcon+' '+sf.tier"></span>
+                    </td>
+                    <td>
+                      <span class="tier-badge" :class="'tier-'+sf.tierNow.toLowerCase()"
+                            x-text="sf.tierNowIcon+' '+sf.tierNow"></span>
                     </td>
                     <td x-text="sf.prevPS"></td>
                     <td :style="sf.alertPS0?'color:var(--danger);font-weight:700':''" x-text="sf.ps"></td>
@@ -2205,6 +2227,118 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </template>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Leaderboard SF (gabungan dari page sf) -->
+        <div x-show="sfpTab==='leaderboard'">
+          <!-- Tier legend -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+            <template x-for="t in TIER_CONFIG" :key="t.name">
+              <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2)">
+                <span class="tier-badge" :class="'tier-'+t.name.toLowerCase()" x-text="t.icon+' '+t.name"></span>
+                <span x-text="'PS prev: '+t.rangeLabel+' → Target: '+t.target"></span>
+              </div>
+            </template>
+          </div>
+          <div class="tbl-wrap">
+            <div class="tbl-toolbar">
+              <input class="tbl-search" placeholder="Cari kode atau nama SF..." x-model="sfSearch">
+              <select class="select" x-model="sfKabFilter">
+                <option value="">Semua Kabupaten</option>
+                <template x-for="k in clusterKab" :key="k">
+                  <option :value="k" x-text="k"></option>
+                </template>
+              </select>
+              <select class="select" x-model="sfProdukFilter">
+                <option value="">Semua Produk</option>
+                <template x-for="p in sfProdukList.filter(p=>p!=='')" :key="p">
+                  <option :value="p" x-text="p"></option>
+                </template>
+              </select>
+              <select class="select" x-model="sfSort" style="font-size:11px;padding:5px 8px">
+                <option value="ps">Sort: PS Bulan Ini</option>
+                <option value="ach">Sort: ACV%</option>
+                <option value="tier">Sort: Tier LM</option>
+                <option value="prev">Sort: PS LM</option>
+              </select>
+            </div>
+            <div class="tbl-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>SF</th>
+                    <th>Kab</th>
+                    <th>Tier LM</th>
+                    <th>Tier Ini</th>
+                    <th style="text-align:right">PS LM</th>
+                    <th style="text-align:right">Target</th>
+                    <th style="text-align:right">RE</th>
+                    <th style="text-align:right">PS</th>
+                    <th style="min-width:110px">ACV%</th>
+                    <th style="text-align:right">PS/RE</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="(sf, idx) in filteredSF" :key="sf.code">
+                    <tr :style="sf.alertPS0 ? 'background:rgba(239,68,68,0.08);border-left:3px solid var(--danger)' : ''">
+                      <td style="color:var(--text-3);font-size:11px" x-text="idx+1"></td>
+                      <td>
+                        <div style="font-weight:500;font-size:12px" x-text="sf.nama||sf.code"></div>
+                        <div class="mono" style="font-size:10px;color:var(--text-2)" x-text="sf.code"></div>
+                        <template x-if="sf.alertPS0">
+                          <div style="font-size:10px;color:var(--danger);font-weight:600;margin-top:2px">⚠️ PS=0 &gt;15 hari</div>
+                        </template>
+                      </td>
+                      <td style="font-size:11px;color:var(--text-2)" x-text="sf.kab"></td>
+                      <td>
+                        <span class="tier-badge" :class="'tier-'+sf.tier.toLowerCase()" x-text="sf.tierIcon+' '+sf.tier"></span>
+                      </td>
+                      <td>
+                        <span class="tier-badge" :class="'tier-'+sf.tierNow.toLowerCase()" x-text="sf.tierNowIcon+' '+sf.tierNow"></span>
+                      </td>
+                      <td style="text-align:right;color:var(--text-2)" x-text="sf.prevPS"></td>
+                      <td style="text-align:right;color:var(--text-2);font-weight:600" x-text="sf.target"></td>
+                      <td style="text-align:right;color:var(--warning)" x-text="sf.re"></td>
+                      <td style="text-align:right;font-weight:700;font-size:14px" :style="sf.alertPS0?'color:var(--danger)':'color:var(--success)'" x-text="sf.ps"></td>
+                      <td>
+                        <div class="ach-wrap">
+                          <div class="ach-bar">
+                            <div class="ach-fill"
+                              :style="'width:'+Math.min(sf.ach,100)+'%;background:'+(sf.ach>=100?'var(--success)':sf.ach>=60?'var(--warning)':'var(--danger)')">
+                            </div>
+                          </div>
+                          <span class="ach-pct"
+                            :style="'color:'+(sf.ach>=100?'var(--success)':sf.ach>=60?'var(--warning)':'var(--danger)')"
+                            x-text="sf.ach+'%'"></span>
+                        </div>
+                      </td>
+                      <td style="text-align:right;font-size:11px"
+                        :style="'color:'+(sf.psRE>=60?'var(--success)':sf.psRE>=30?'var(--warning)':'var(--danger)')"
+                        x-text="sf.psRE+'%'"></td>
+                      <td>
+                        <span class="badge"
+                          :class="sf.action==='Counseling'?'b-danger':(sf.action==='Couching'?'b-warning':'b-success')"
+                          x-text="sf.action"></span>
+                      </td>
+                    </tr>
+                  </template>
+                  <tr x-show="filteredSF.length===0">
+                    <td colspan="12" class="empty">Tidak ada SF ditemukan</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="tbl-foot">
+              <span x-text="filteredSF.length + ' SF'"></span>
+              <span>Total RE: <strong style="color:var(--warning)" x-text="filteredSF.reduce((a,b)=>a+b.re,0)"></strong></span>
+              <span>Total PS: <strong style="color:var(--success)" x-text="filteredSF.reduce((a,b)=>a+b.ps,0)"></strong></span>
+              <span>Avg ACV: <strong
+                :style="'color:'+(avgAch>=100?'var(--success)':avgAch>=60?'var(--warning)':'var(--danger)')"
+                x-text="avgAch+'%'"></strong></span>
+            </div>
           </div>
         </div>
       </div>
@@ -2351,7 +2485,7 @@ function app() {
 
     // Filters
     sfSort: 'ps',
-    sfSearch: '', sfKabFilter: '',
+    sfSearch: '', sfKabFilter: '', sfProdukFilter: '',
     orderSearch: '', orderStatus: '', orderKab: '', orderProduk: '',
     orderPage: 0,
     kendalaSearch: '', kendalaCat: '',
@@ -2664,26 +2798,39 @@ function app() {
 
     buildSFTable() {
       const map = {};
-      const rows = this.filteredRows;
       const bulan = this.cfg.bulan;
       const prevBulan = this.prevBulan.toString();
 
-      rows.forEach(r => {
+      // Hitung PS bulan ini dari filteredRows
+      this.filteredRows.forEach(r => {
         const code = (r[C.CODE_SF]||'').trim();
         if (!code) return;
         if (!map[code]) map[code] = {
           code, nama: r[C.NAMA_SF]||'', channel: r[C.CHANNEL2]||'',
           kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
+          produk: r[C.PRODUK_KAT]||'',
         };
         const m = map[code];
         const blnIOsf = (r[C.BLN_IO]||'').toString();
         const blnPS   = (r[C.BLN_PS]||'').toString();
+        const blnRE   = (r[C.BLN_RE]||'').toString();
         if (blnIOsf===bulan) m.io++;
-        if ((r[C.BLN_RE]||'').toString()===bulan) m.re++;
+        if (blnRE===bulan) m.re++;
         if (blnPS===bulan) m.ps++;
-        if (blnPS===prevBulan) m.prevPS++;
         const fx = (r[C.STATUS_FNL]||'').toUpperCase();
         if (blnIOsf===bulan && (fx.includes('CANCEL') || fx.includes('BATAL'))) m.cancel++;
+      });
+
+      // Hitung prevPS dari filteredPrevRows (data bulan lalu yang benar)
+      this.filteredPrevRows.forEach(r => {
+        const code = (r[C.CODE_SF]||'').trim();
+        if (!code) return;
+        if (!map[code]) map[code] = {
+          code, nama: r[C.NAMA_SF]||'', channel: r[C.CHANNEL2]||'',
+          kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
+          produk: r[C.PRODUK_KAT]||'',
+        };
+        if ((r[C.BLN_PS]||'').toString()===prevBulan) map[code].prevPS++;
       });
 
       const arr = Object.values(map);
@@ -2693,15 +2840,20 @@ function app() {
       const isCurrentMonth = bulan === bulanIni;
 
       arr.forEach(sf => {
-        sf.los = sf.io > 0 ? Math.round((sf.ps / sf.io) * 100) : 0;
-        // Tier classification based on previous month PS
-        const tierInfo = getSFTier(sf.prevPS);
-        sf.tier     = tierInfo.name;
-        sf.tierIcon = tierInfo.icon;
-        sf.target   = tierInfo.target;
-        sf.action   = tierInfo.action;
+        // PS/RE conversion (menggantikan LOS yang salah)
+        sf.psRE = sf.re > 0 ? Math.round((sf.ps / sf.re) * 100) : 0;
+        // Tier berdasarkan PS bulan lalu (dari filteredPrevRows)
+        const tierPrev = getSFTier(sf.prevPS);
+        sf.tier     = tierPrev.name;
+        sf.tierIcon = tierPrev.icon;
+        sf.target   = tierPrev.target;
+        sf.action   = tierPrev.action;
         sf.ach      = sf.target > 0 ? Math.round((sf.ps / sf.target) * 100) : 0;
-        // Flag SF with PS=0 after day 15 of current month
+        // Tier bulan ini (berdasarkan PS bulan ini) — untuk tabel gabungan
+        const tierNow = getSFTier(sf.ps);
+        sf.tierNow     = tierNow.name;
+        sf.tierNowIcon = tierNow.icon;
+        // Flag SF dengan PS=0 setelah tanggal 15 bulan berjalan
         sf.alertPS0 = isCurrentMonth && hariIni > 15 && sf.ps === 0 && sf.io > 0;
       });
 
@@ -2715,6 +2867,7 @@ function app() {
       const q = this.sfSearch.toLowerCase();
       if (q) arr = arr.filter(sf => sf.code.toLowerCase().includes(q) || sf.nama.toLowerCase().includes(q));
       if (this.sfKabFilter) arr = arr.filter(sf => sf.kab.toUpperCase() === this.sfKabFilter.toUpperCase());
+      if (this.sfProdukFilter) arr = arr.filter(sf => sf.produk === this.sfProdukFilter);
       // Sort
       const tierOrder = ['Diamond','Platinum','Gold','Silver','Bronze','Black'];
       if (this.sfSort === 'ach')  arr = [...arr].sort((a,b) => b.ach - a.ach);
@@ -2722,6 +2875,12 @@ function app() {
       else if (this.sfSort === 'prev') arr = [...arr].sort((a,b) => b.prevPS - a.prevPS);
       // default 'ps' is already sorted in buildSFTable
       return arr;
+    },
+
+    get sfProdukList() {
+      const s = new Set();
+      this.sfTable.forEach(sf => { if (sf.produk) s.add(sf.produk); });
+      return ['', ...Array.from(s).sort()];
     },
 
     get avgAch() {
@@ -2880,17 +3039,8 @@ function app() {
 
     // ── SF Performance (New Page) ──
     get sfperfKpi() {
-      const bulan = this.cfg.bulan;
-      const prevBulan = this.prevBulan.toString();
-      const sfMap = {};
-      this.filteredRows.forEach(r => {
-        const code = (r[C.CODE_SF]||'').trim();
-        if (!code) return;
-        if (!sfMap[code]) sfMap[code] = { ps:0, prevPS:0 };
-        if ((r[C.BLN_PS]||'').toString()===bulan) sfMap[code].ps++;
-        if ((r[C.BLN_PS]||'').toString()===prevBulan) sfMap[code].prevPS++;
-      });
-      const all = Object.values(sfMap);
+      // Gunakan sfTable yang sudah fix prevPS dari filteredPrevRows
+      const all = this.sfTable;
       const total = all.length;
       const aktif = all.filter(s=>s.ps>=1).length;
       const produktif = all.filter(s=>s.ps>=10).length;
@@ -2899,23 +3049,15 @@ function app() {
     },
 
     get sfperfScorecard() {
-      const bulan = this.cfg.bulan;
-      const prevBulan = this.prevBulan.toString();
       const kabs = CLUSTER[this.cluster]?.kab || [];
-      const kabSF = {}; // kab → {code → {ps, prevPS}}
-      kabs.forEach(k => { kabSF[k] = {}; });
-
-      this.filteredRows.forEach(r => {
-        const kab = (r[C.VAL_KAB]||'').trim().toUpperCase();
-        const code = (r[C.CODE_SF]||'').trim();
-        if (!kabSF[kab] || !code) return;
-        if (!kabSF[kab][code]) kabSF[kab][code] = { ps:0, prevPS:0 };
-        if ((r[C.BLN_PS]||'').toString()===bulan) kabSF[kab][code].ps++;
-        if ((r[C.BLN_PS]||'').toString()===prevBulan) kabSF[kab][code].prevPS++;
+      const kabSF = {};
+      kabs.forEach(k => { kabSF[k] = []; });
+      this.sfTable.forEach(sf => {
+        const k = (sf.kab||'').trim().toUpperCase();
+        if (kabSF[k]) kabSF[k].push(sf);
       });
-
       return kabs.map(k => {
-        const sfs = Object.values(kabSF[k]||{});
+        const sfs = kabSF[k] || [];
         const total = sfs.length;
         const aktif = sfs.filter(s=>s.ps>=1).length;
         const produktif = sfs.filter(s=>s.ps>=10).length;
@@ -2925,23 +3067,16 @@ function app() {
     },
 
     get sfperfTierDist() {
-      const bulan = this.cfg.bulan;
-      const prevBulan = this.prevBulan.toString();
-      const codeMap = {};
-      this.filteredRows.forEach(r => {
-        const code = (r[C.CODE_SF]||'').trim();
-        if (!code) return;
-        if (!codeMap[code]) codeMap[code] = { ps:0, prevPS:0 };
-        if ((r[C.BLN_PS]||'').toString()===bulan) codeMap[code].ps++;
-        if ((r[C.BLN_PS]||'').toString()===prevBulan) codeMap[code].prevPS++;
+      // Tier LM (berdasarkan prevPS dari filteredPrevRows — via sfTable)
+      const distLM = {};
+      // Tier sekarang (berdasarkan PS bulan ini)
+      const distNow = {};
+      TIER_CONFIG.forEach(t => { distLM[t.name] = 0; distNow[t.name] = 0; });
+      this.sfTable.forEach(sf => {
+        distLM[sf.tier]++;
+        distNow[sf.tierNow]++;
       });
-      const dist = {};
-      TIER_CONFIG.forEach(t => { dist[t.name] = 0; });
-      Object.values(codeMap).forEach(sf => {
-        const t = getSFTier(sf.prevPS);
-        dist[t.name]++;
-      });
-      return dist;
+      return { lm: distLM, now: distNow };
     },
 
     // ── Orders ──
@@ -3434,14 +3569,22 @@ function app() {
       const colors = { Black:'#6b7280', Bronze:'#f0a060', Silver:'#cdd6e8', Gold:'#fcd34d', Platinum:'#00d4ff', Diamond:'#c084fc' };
       chart.setOption(Object.assign({}, getChartTheme(), {
         tooltip:{ ...getChartTheme().tooltip, trigger:'axis', axisPointer:{type:'shadow'} },
+        legend:{ data:['Bulan Lalu','Bulan Ini'], top:0, textStyle:{color:'#8b949e',fontSize:11} },
         xAxis:{ ...getChartTheme().xAxis, type:'category', data:tiers },
         yAxis:{ ...getChartTheme().yAxis, type:'value' },
-        series:[{
-          type:'bar', barMaxWidth:40,
-          data: tiers.map(t=>({ value: dist[t]||0, itemStyle:{ color:colors[t]||'#00c2ff', borderRadius:[4,4,0,0] } })),
-          label:{ show:true, position:'top', color:'#8b949e', fontSize:11, fontFamily:"'Poppins',sans-serif" },
-        }],
-        grid:{ left:30, right:10, top:30, bottom:10, containLabel:true },
+        series:[
+          {
+            name:'Bulan Lalu', type:'bar', barMaxWidth:30,
+            data: tiers.map(t=>({ value: dist.lm[t]||0, itemStyle:{ color:colors[t]||'#8b949e', opacity:0.4, borderRadius:[4,4,0,0] } })),
+            label:{ show:true, position:'top', color:'#8b949e', fontSize:10, fontFamily:"'Poppins',sans-serif" },
+          },
+          {
+            name:'Bulan Ini', type:'bar', barMaxWidth:30,
+            data: tiers.map(t=>({ value: dist.now[t]||0, itemStyle:{ color:colors[t]||'#00c2ff', borderRadius:[4,4,0,0] } })),
+            label:{ show:true, position:'top', color:'#8b949e', fontSize:10, fontFamily:"'Poppins',sans-serif" },
+          },
+        ],
+        grid:{ left:30, right:10, top:40, bottom:10, containLabel:true },
       }));
     },
 
