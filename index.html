@@ -1495,11 +1495,18 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
       <!-- NO CONFIG STATE -->
       <div x-show="!loading && allRows.length===0 && !showConfig" class="loading-wrap" role="status">
-        <div class="empty-state">
+        <!-- Admin: tampilkan tombol konfigurasi -->
+        <div class="empty-state" x-show="currentUser && currentUser.role==='admin'">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <div class="empty-state-title">Belum ada data</div>
           <div class="empty-state-sub">Klik tombol <strong>API</strong> di topbar untuk menghubungkan Google Sheets.</div>
           <button class="btn btn-primary" @click="showConfig=true">⚙ Konfigurasi API</button>
+        </div>
+        <!-- User biasa: tampilkan pesan hubungi admin -->
+        <div class="empty-state" x-show="!currentUser || currentUser.role!=='admin'">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div class="empty-state-title">Data belum tersedia</div>
+          <div class="empty-state-sub">Dashboard belum dikonfigurasi. Silakan hubungi admin untuk mengaktifkan data.</div>
         </div>
       </div>
 
