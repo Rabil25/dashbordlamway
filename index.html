@@ -521,6 +521,8 @@ tbody tr:hover td { background: var(--surface-hover); }
 .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 12px; color: var(--text-2); }
 .spinner { width: 32px; height: 32px; border: 3px solid var(--surface-border); border-top-color: var(--brand); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.filter-loading-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9999; background: linear-gradient(90deg, var(--brand) 0%, color-mix(in srgb, var(--brand) 60%, transparent) 50%, var(--brand) 100%); background-size: 200% 100%; animation: filterBarSlide 1s linear infinite; }
+@keyframes filterBarSlide { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 .empty { text-align: center; padding: 40px; color: var(--text-3); font-size: 13px; }
 
 /* ── TIGER EYES: HERO FUNNEL ── */
@@ -1462,14 +1464,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   'dp-in-range': !cell.other && cell.d>cfg.tglAwal && cell.d<cfg.tglAkhir
                 }"
                 x-text="cell.other ? '' : cell.d"
-                @click="if(!cell.other){ if(picking===0||picking===2){ cfg.tglAwal=cell.d; cfg.tglAkhir=cell.d; picking=1; } else { if(cell.d<cfg.tglAwal){ cfg.tglAkhir=cfg.tglAwal; cfg.tglAwal=cell.d; } else { cfg.tglAkhir=cell.d; } picking=2; open=false; setTimeout(()=>renderCharts(),50); } }"
+                @click="if(!cell.other){ if(picking===0||picking===2){ cfg.tglAwal=cell.d; cfg.tglAkhir=cell.d; picking=1; } else { if(cell.d<cfg.tglAwal){ cfg.tglAkhir=cfg.tglAwal; cfg.tglAwal=cell.d; } else { cfg.tglAkhir=cell.d; } picking=2; open=false; _deferredRender(); } }"
               ></div>
             </template>
           </div>
           <!-- Footer -->
           <div class="dp-footer">
             <span class="dp-footer-hint" x-text="cfg.tglAwal===cfg.tglAkhir ? ('Tgl '+cfg.tglAwal) : (cfg.tglAwal+' s/d '+cfg.tglAkhir)"></span>
-            <button class="dp-reset" @click="cfg.tglAwal=1; cfg.tglAkhir=new Date().getDate(); picking=0; open=false; setTimeout(()=>renderCharts(),50)">Reset</button>
+            <button class="dp-reset" @click="cfg.tglAwal=1; cfg.tglAkhir=new Date().getDate(); picking=0; open=false; _deferredRender()">Reset</button>
           </div>
         </div>
       </div>
@@ -1563,6 +1565,9 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
     <!-- CONTENT -->
     <div class="content">
+
+      <!-- FILTER LOADING BAR -->
+      <div class="filter-loading-bar" x-show="filterLoading" style="display:none" x-cloak></div>
 
       <!-- LOADING STATE (skeleton) -->
       <div x-show="loading" role="status" aria-live="polite" aria-label="Sedang memuat data">
@@ -2957,6 +2962,7 @@ function app() {
     page: 'dashboard',
     cluster: 'Lampung Barat',
     loading: false,
+    filterLoading: false,
     showConfig: false,
     themeMode: localStorage.getItem('dashTheme') || 'light',
     allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)
@@ -3000,6 +3006,9 @@ function app() {
 
     // ── Init ──
     async init() {
+      // Expose deferred render to window for nested x-data components (date picker)
+      window._deferredRender = () => this._deferredRender();
+
       // Apply saved theme
       document.documentElement.setAttribute('data-theme', this.themeMode);
 
@@ -3229,7 +3238,16 @@ function app() {
       this.sfKabFilter = '';
       this.orderKab = '';
       this.orderPage = 0;
-      this.$nextTick(() => this.renderCharts());
+      this._deferredRender();
+    },
+
+    _deferredRender() {
+      this.filterLoading = true;
+      clearTimeout(this._renderTimer);
+      this._renderTimer = setTimeout(() => {
+        this.filterLoading = false;
+        this.$nextTick(() => this.renderCharts());
+      }, 80);
     },
 
     get clusterKab() {
