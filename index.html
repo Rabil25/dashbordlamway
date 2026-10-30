@@ -3436,7 +3436,7 @@ function app() {
         maxZoom: 18,
       }).addTo(map);
 
-      if (allRows.length === 0) {
+      if (rows.length === 0) {
         map.setView([DEFAULT_LAT, DEFAULT_LNG], 9);
         return;
       }
