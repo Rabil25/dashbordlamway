@@ -3232,7 +3232,7 @@ function app() {
             cachedBulan && (nowMs - cachedBulan.ts) < CACHE_BULAN_MS) {
           // Semua data dari cache – tidak perlu request GAS sama sekali
           const d = cachedAll.data;
-          this.allRows  = [...(d.bulanIni || []), ...(d.bulanPrev || [])];
+          { const seen=new Set(); this.allRows=[...(d.bulanIni||[]),...(d.bulanPrev||[])].filter(r=>{ const id=(r[C.ID_ORDER]||'').toString().trim()||JSON.stringify(r); if(seen.has(id))return false; seen.add(id);return true; }); }
           this.sfMaster = d.updateSf || [];
           const nowStr  = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
           this.lastUpdate = nowStr;
@@ -3272,8 +3272,8 @@ function app() {
           }
         }
 
-        // Terapkan ke state
-        this.allRows  = [...allPayload.bulanIni, ...allPayload.bulanPrev];
+        // Terapkan ke state (dedup by ID_ORDER agar baris lintas-bulan tidak double-count)
+        { const seen=new Set(); this.allRows=[...allPayload.bulanIni,...allPayload.bulanPrev].filter(r=>{ const id=(r[C.ID_ORDER]||'').toString().trim()||JSON.stringify(r); if(seen.has(id))return false; seen.add(id);return true; }); }
         this.sfMaster = allPayload.updateSf;
 
         const nowStr = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
