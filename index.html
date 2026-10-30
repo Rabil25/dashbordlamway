@@ -1430,7 +1430,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <button class="cluster-btn" :class="{active:cluster==='Way Kanan'}" @click="setCluster('Way Kanan')">Way Kanan</button>
       </div>
       <!-- Bulan filter di topbar -->
-      <select class="select topbar-bulan-select" x-model="cfg.bulan" @input="loadData(false)" aria-label="Pilih bulan" title="Filter bulan">
+      <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="loadData(false)" aria-label="Pilih bulan" title="Filter bulan">
         <template x-for="m in availableMonths" :key="m.val">
           <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label + ' ' + new Date().getFullYear()"></option>
         </template>
