@@ -308,6 +308,21 @@ button { font-family: var(--font); cursor: pointer; }
   background: var(--surface-elevated); color: var(--text-2);
   cursor: pointer; height: 28px;
 }
+.topbar-tgl-label {
+  font-size: 11px; font-weight: 600; color: var(--text-3); white-space: nowrap;
+}
+.topbar-tgl-sep {
+  font-size: 12px; color: var(--text-3); padding: 0 1px;
+}
+.tgl-input {
+  width: 42px; font-size: 11px; font-weight: 600; text-align: center;
+  padding: 3px 4px; border-radius: var(--r); border: 1px solid var(--surface-border);
+  background: var(--surface-elevated); color: var(--text-2); height: 28px;
+  -moz-appearance: textfield;
+}
+.tgl-input::-webkit-outer-spin-button,
+.tgl-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.tgl-input:focus { outline: none; border-color: var(--brand); }
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: var(--r); font-size: 12px;
@@ -1085,9 +1100,16 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <!-- Bulan filter di topbar -->
       <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="loadData(true)" aria-label="Pilih bulan" title="Filter bulan">
         <template x-for="m in availableMonths" :key="m.val">
-          <option :value="m.val" x-text="m.label + ' 2026'"></option>
+          <option :value="m.val" x-text="m.label + ' ' + new Date().getFullYear()"></option>
         </template>
       </select>
+      <!-- Rentang tanggal filter -->
+      <span class="topbar-tgl-label">Tgl</span>
+      <input type="number" class="tgl-input" x-model.number="cfg.tglAwal" min="1" max="31"
+             @change="$nextTick(()=>renderCharts())" title="Tanggal awal" aria-label="Tanggal awal">
+      <span class="topbar-tgl-sep">–</span>
+      <input type="number" class="tgl-input" x-model.number="cfg.tglAkhir" min="1" max="31"
+             @change="$nextTick(()=>renderCharts())" title="Tanggal akhir" aria-label="Tanggal akhir">
       <button class="btn" @click="loadData()" :disabled="loading" aria-label="Refresh data">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="23,4 23,11 16,11"/><polyline points="1,20 1,13 8,13"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 11M1 13l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         <span x-text="loading ? 'Memuat...' : 'Refresh'"></span>
@@ -2312,14 +2334,17 @@ function app() {
     loading: false,
     showConfig: false,
     themeMode: localStorage.getItem('dashTheme') || 'light',
-    rows: [],         // raw rows from GAS
+    rows: [],         // raw rows from GAS (current bulan)
+    prevRows: [],     // raw rows dari bulan sebelumnya (untuk MoM)
     lastUpdate: '',
     TIER_CONFIG,      // expose to template
 
     // Config
     cfg: {
       gasUrl: localStorage.getItem('wok_gas_url') || DEFAULT_GAS_URL,
-      bulan: '10',
+      bulan: String(new Date().getMonth() + 1),   // default: bulan sekarang
+      tglAwal: 1,                                  // default: tanggal 1
+      tglAkhir: new Date().getDate(),              // default: hari ini (MTD)
       targets: JSON.parse(localStorage.getItem('wok_targets') || '{}'),
     },
 
@@ -2440,11 +2465,14 @@ function app() {
       this.loading = true;
       const CACHE_TTL_MS = 15 * 60 * 1000; // 15 menit
       try {
-        const [bulan, sfData] = await Promise.all([
+        const prevBulanStr = String(this.prevBulan);
+        const [bulan, sfData, prevBulanData] = await Promise.all([
           this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS),
           this.fetchGAS('update_sf', forceRefresh, CACHE_TTL_MS),
+          this.fetchGAS('bulan_ini', forceRefresh, CACHE_TTL_MS, prevBulanStr),
         ]);
         this.rows = bulan || [];
+        this.prevRows = prevBulanData || [];
         this.sfMaster = sfData || [];
         const now = new Date();
         const nowStr = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
@@ -2452,7 +2480,7 @@ function app() {
         this.lastSync = nowStr;
         localStorage.setItem('wok_last_sync', nowStr);
         this.$nextTick(() => this.renderCharts());
-        this.toast('Data berhasil dimuat · ' + this.rows.length + ' baris', 'ok');
+        this.toast('Data berhasil dimuat · ' + this.rows.length + ' baris (prev: ' + this.prevRows.length + ')', 'ok');
       } catch(e) {
         this.toast('Gagal memuat: ' + e.message, 'err');
       }
@@ -2460,8 +2488,8 @@ function app() {
     },
 
     // ── Fetch dari Google Apps Script Web App (dengan cache 15 menit, filter bulan di server) ──
-    async fetchGAS(type, forceRefresh = false, ttlMs = 15 * 60 * 1000) {
-      const bulan = this.cfg.bulan;
+    async fetchGAS(type, forceRefresh = false, ttlMs = 15 * 60 * 1000, bulanOverride = null) {
+      const bulan = bulanOverride || this.cfg.bulan;
       // Cache key menyertakan bulan agar ganti bulan otomatis invalidate cache
       const cacheKey = `wok_cache_${type}_b${bulan}`;
       const cacheTsKey = `wok_cache_ts_${type}_b${bulan}`;
@@ -2485,11 +2513,32 @@ function app() {
       return data;
     },
 
+    // ── Helper: apakah tanggal row masuk rentang tglAwal–tglAkhir? ──
+    inRange(dateStr) {
+      if (!dateStr) return false;
+      // dateStr bisa "yyyy-MM-dd" atau "yyyy-MM-dd HH:mm:ss"
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return false;
+      const day = d.getDate();
+      const a = parseInt(this.cfg.tglAwal) || 1;
+      const b = parseInt(this.cfg.tglAkhir) || new Date().getDate();
+      return day >= a && day <= b;
+    },
+
     // ── Filtered rows (cluster + dedup) ──
     get filteredRows() {
       const kab = CLUSTER[this.cluster]?.kab || [];
-      const bulan = parseInt(this.cfg.bulan);
       return this.rows.filter(r => {
+        if ((r[C.DEDUP]||'').trim() !== 'Unik') return false;
+        if (!kab.includes((r[C.VAL_KAB]||'').trim().toUpperCase())) return false;
+        return true;
+      });
+    },
+
+    // ── Filtered rows dari bulan sebelumnya (untuk MoM) ──
+    get filteredPrevRows() {
+      const kab = CLUSTER[this.cluster]?.kab || [];
+      return this.prevRows.filter(r => {
         if ((r[C.DEDUP]||'').trim() !== 'Unik') return false;
         if (!kab.includes((r[C.VAL_KAB]||'').trim().toUpperCase())) return false;
         return true;
@@ -2501,23 +2550,25 @@ function app() {
       const rows = this.filteredRows;
       let io=0, re=0, ps=0, cancel=0;
       const bulan = this.cfg.bulan;
-      const prevBulan = this.prevBulan.toString();
       const today = new Date();
-      const hariPS = today.getDate();
+      const hariPS = parseInt(this.cfg.tglAkhir) || today.getDate();
 
       // Weekly buckets for WoW (minggu ini = last 7 days, minggu lalu = 8-14 days ago)
       const now = today.getTime();
       const d7  = now - 7*86400000;
       const d14 = now - 14*86400000;
-      let psWk0=0, psWk1=0, ioPrevTotal=0, rePrevTotal=0, psPrevTotal=0;
+      let psWk0=0, psWk1=0;
 
       rows.forEach(r => {
         const blnIO = (r[C.BLN_IO]||'').toString();
         const blnRE = (r[C.BLN_RE]||'').toString();
         const blnPS = (r[C.BLN_PS]||'').toString();
-        if (blnIO === bulan) io++;
-        if (blnRE === bulan) re++;
-        if (blnPS === bulan) {
+        // IO: masuk rentang tanggal IO
+        if (blnIO === bulan && this.inRange(r[C.TGL_IO])) io++;
+        // RE: masuk rentang tanggal RE
+        if (blnRE === bulan && this.inRange(r[C.TGL_RE])) re++;
+        // PS: masuk rentang tanggal PS
+        if (blnPS === bulan && this.inRange(r[C.TGL_PS])) {
           ps++;
           // weekly PS
           const tgl = r[C.DATE_PS] || r[C.DATE_IO] || '';
@@ -2525,11 +2576,20 @@ function app() {
           if (ts > d7)       psWk0++;
           else if (ts > d14) psWk1++;
         }
-        if (blnPS === prevBulan) psPrevTotal++;
-        if (blnIO === prevBulan) ioPrevTotal++;
-        if (blnRE === prevBulan) rePrevTotal++;
         const fx = (r[C.STATUS_FNL]||'').toUpperCase();
-        if (blnIO === bulan && (fx.includes('CANCEL') || fx.includes('BATAL'))) cancel++;
+        if (blnIO === bulan && this.inRange(r[C.TGL_IO]) && (fx.includes('CANCEL') || fx.includes('BATAL'))) cancel++;
+      });
+
+      // MoM: hitung dari prevRows dengan rentang tanggal yang SAMA
+      const prevBulan = this.prevBulan.toString();
+      let ioPrevTotal=0, rePrevTotal=0, psPrevTotal=0;
+      this.filteredPrevRows.forEach(r => {
+        const blnIO = (r[C.BLN_IO]||'').toString();
+        const blnRE = (r[C.BLN_RE]||'').toString();
+        const blnPS = (r[C.BLN_PS]||'').toString();
+        if (blnPS === prevBulan && this.inRange(r[C.TGL_PS])) psPrevTotal++;
+        if (blnIO === prevBulan && this.inRange(r[C.TGL_IO])) ioPrevTotal++;
+        if (blnRE === prevBulan && this.inRange(r[C.TGL_RE])) rePrevTotal++;
       });
 
       // Total targets for cluster
