@@ -65,10 +65,14 @@ function cacheGetChunked(cache, key) {
     const metaStr = cache.get(key + '__meta');
     if (!metaStr) return null;
     const meta = JSON.parse(metaStr);
+    // Batch get semua chunk sekaligus (lebih cepat dari get satu per satu)
+    const keys = [];
+    for (let i = 0; i < meta.chunks; i++) keys.push(key + '__c' + i);
+    const chunks = cache.getAll(keys);
     let serialized = '';
     for (let i = 0; i < meta.chunks; i++) {
-      const chunk = cache.get(key + '__c' + i);
-      if (chunk === null) return null; // salah satu chunk expired → cache miss
+      const chunk = chunks[key + '__c' + i];
+      if (chunk === null || chunk === undefined) return null;
       serialized += chunk;
     }
     return JSON.parse(serialized);
@@ -382,8 +386,22 @@ function handleAuth(type, params) {
   }
 }
 
-// ── Verifikasi token: cek ada + belum expired ────────────────
+// ── Verifikasi token: cek cache dulu, baru baca sheet ────────
+const CACHE_TTL_SESSION = 300; // 5 menit cache session verify
+
 function verifyToken(token) {
+  const cache    = CacheService.getScriptCache();
+  const cacheKey = 'sess_' + token.substring(0, 40); // truncate aman untuk key
+
+  // Cek cache dulu
+  try {
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached); // langsung return tanpa baca sheet
+    }
+  } catch(e) {}
+
+  // Cache miss → baca Users sheet
   const row = findUserByToken(token);
   if (!row) return { ok:false, error:'Sesi tidak valid. Silakan login ulang.' };
 
@@ -394,10 +412,15 @@ function verifyToken(token) {
     return { ok:false, error:'Sesi kamu sudah habis. Silakan login ulang.' };
   }
 
-  return {
+  const result = {
     ok:   true,
     user: { username: row[U.USERNAME], nama: row[U.NAMA], role: row[U.ROLE] },
   };
+
+  // Simpan ke cache 5 menit
+  try { cache.put(cacheKey, JSON.stringify(result), CACHE_TTL_SESSION); } catch(e) {}
+
+  return result;
 }
 
 // ── Cari user by username (lowercase) ───────────────────────
