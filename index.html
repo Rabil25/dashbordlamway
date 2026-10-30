@@ -957,7 +957,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <label class="input-lbl">Bulan Aktif</label>
         <select class="select" x-model="cfg.bulan">
           <template x-for="m in availableMonths" :key="m.val">
-            <option :value="m.val" x-text="m.label + ' 2026'"></option>
+            <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label + ' ' + new Date().getFullYear()"></option>
           </template>
         </select>
       </div>
@@ -1100,7 +1100,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <!-- Bulan filter di topbar -->
       <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="loadData(true)" aria-label="Pilih bulan" title="Filter bulan">
         <template x-for="m in availableMonths" :key="m.val">
-          <option :value="m.val" x-text="m.label + ' ' + new Date().getFullYear()"></option>
+          <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label + ' ' + new Date().getFullYear()"></option>
         </template>
       </select>
       <!-- Rentang tanggal filter -->
