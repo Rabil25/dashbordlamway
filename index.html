@@ -302,6 +302,12 @@ button { font-family: var(--font); cursor: pointer; }
   box-shadow: 0 0 12px var(--brand-glow);
 }
 .cluster-btn:hover:not(.active) { color: var(--text-1); }
+.topbar-bulan-select {
+  font-size: 11px; font-weight: 600; padding: 4px 10px;
+  border-radius: var(--r); border: 1px solid var(--surface-border);
+  background: var(--surface-elevated); color: var(--text-2);
+  cursor: pointer; height: 28px;
+}
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: var(--r); font-size: 12px;
@@ -1076,6 +1082,12 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <button class="cluster-btn" :class="{active:cluster==='Lampung Barat'}" @click="setCluster('Lampung Barat')">Lampung Barat</button>
         <button class="cluster-btn" :class="{active:cluster==='Way Kanan'}" @click="setCluster('Way Kanan')">Way Kanan</button>
       </div>
+      <!-- Bulan filter di topbar -->
+      <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="loadData(true)" aria-label="Pilih bulan" title="Filter bulan">
+        <template x-for="m in availableMonths" :key="m.val">
+          <option :value="m.val" x-text="m.label + ' 2026'"></option>
+        </template>
+      </select>
       <button class="btn" @click="loadData()" :disabled="loading" aria-label="Refresh data">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="23,4 23,11 16,11"/><polyline points="1,20 1,13 8,13"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 11M1 13l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         <span x-text="loading ? 'Memuat...' : 'Refresh'"></span>
