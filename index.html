@@ -5111,14 +5111,14 @@ function djpPlanData() {
 function djpRealData() {
   return {
     csvRows: [],
-    preview: [],
+    csvPreview: [],
     fileName: '',
     uploading: false,
     msg: '',
     SHEET_URL: 'https://docs.google.com/spreadsheets/d/1ioPvgGbRZIHb_zP-ushATvz434b3p1LQvGcpn1OxBIQ/edit',
 
     init() {
-      window.addEventListener('page-djp_real', () => { this.csvRows=[]; this.preview=[]; this.msg=''; this.fileName=''; });
+      window.addEventListener('page-djp_real', () => { this.csvRows=[]; this.csvPreview=[]; this.msg=''; this.fileName=''; });
     },
 
     onDrop(e) {
@@ -5149,7 +5149,7 @@ function djpRealData() {
           return obj;
         }).filter(r => Object.values(r).some(v=>v));
         this.csvRows = rows;
-        this.preview = rows.slice(0,5);
+        this.csvPreview = rows.slice(0,5);
         this.msg = `📋 ${rows.length} baris terdeteksi dari ${file.name}`;
       };
       reader.readAsText(file, 'UTF-8');
@@ -5184,7 +5184,7 @@ function djpRealData() {
           this.msg = `Mengupload... ${Math.min(i+BATCH, this.csvRows.length)}/${this.csvRows.length}`;
         }
         this.msg = `✅ Upload selesai — ${inserted} baris baru, ${skipped} duplikat dilewati`;
-        this.csvRows = []; this.preview = []; this.fileName = '';
+        this.csvRows = []; this.csvPreview = []; this.fileName = '';
       } catch(e) { this.msg = '❌ ' + e.message; }
       this.uploading = false;
     },
