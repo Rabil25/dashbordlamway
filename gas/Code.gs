@@ -631,3 +631,148 @@ function jsonOut(data) {
   out.setMimeType(ContentService.MimeType.JSON);
   return out;
 }
+
+// ================================================================
+//  GITHUB PUSH — Push bulan_ini & listBulan ke GitHub sebagai
+//  static JSON (/data/bulan_ini.json & /data/list_bulan.json)
+//  Jalankan dari trigger time-based atau manual dari GAS editor.
+//
+//  Setup (satu kali):
+//    1. Buat GitHub Personal Access Token (PAT) dengan scope repo
+//    2. Di GAS: File → Project Properties → Script properties
+//       Tambah: GH_TOKEN = <PAT kamu>
+//               GH_OWNER = Rabil25
+//               GH_REPO  = dashbordlamway
+// ================================================================
+
+function pushBulanIniToGithub() {
+  const props    = PropertiesService.getScriptProperties().getProperties();
+  const ghToken  = props['GH_TOKEN'];
+  const ghOwner  = props['GH_OWNER'] || 'Rabil25';
+  const ghRepo   = props['GH_REPO']  || 'dashbordlamway';
+
+  if (!ghToken) {
+    Logger.log('ERROR: GH_TOKEN belum diset di Script Properties!');
+    return { ok: false, error: 'GH_TOKEN tidak ditemukan' };
+  }
+
+  // ── Ambil semua bulan yang tersedia ───────────────────────────
+  const listBulanResult = _getListBulanForPush();
+  const allBulan = listBulanResult.bulan || [];
+
+  // ── Ambil data semua bulan (gabungan) ─────────────────────────
+  const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName('Bulan_Ini');
+  const raw   = sheet.getRange('CE2:DT' + sheet.getLastRow()).getValues();
+
+  const allRows = [];
+  for (let i = 0; i < raw.length; i++) {
+    const row = raw[i];
+    const hasData = row.some(function(c){ return c !== '' && c !== null && c !== undefined; });
+    if (!hasData) continue;
+    // Konversi Date → string
+    const cleanRow = row.map(function(cell) {
+      if (cell instanceof Date) {
+        return Utilities.formatDate(cell, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+      }
+      return cell;
+    });
+    allRows.push(cleanRow);
+  }
+
+  const payload = {
+    ok:        true,
+    rows:      allRows.length,
+    bulanList: allBulan,
+    data:      allRows,
+    updatedAt: new Date().toISOString(),
+  };
+
+  // ── Push ke GitHub ────────────────────────────────────────────
+  const result = _pushFileToGithub(
+    ghToken, ghOwner, ghRepo,
+    'data/bulan_ini.json',
+    JSON.stringify(payload),
+    'chore: update bulan_ini data [auto]'
+  );
+
+  Logger.log('pushBulanIniToGithub: ' + JSON.stringify(result));
+  return result;
+}
+
+// ── Internal: push satu file ke GitHub via Contents API ──────
+function _pushFileToGithub(token, owner, repo, path, content, message) {
+  const apiUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/contents/' + path;
+  const headers = {
+    'Authorization': 'token ' + token,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+  };
+
+  // Ambil SHA file yang ada (diperlukan untuk update)
+  let sha = null;
+  try {
+    const getResp = UrlFetchApp.fetch(apiUrl, {
+      method: 'get',
+      headers: headers,
+      muteHttpExceptions: true,
+    });
+    if (getResp.getResponseCode() === 200) {
+      sha = JSON.parse(getResp.getContentText()).sha;
+    }
+  } catch(e) { /* file belum ada → sha tetap null */ }
+
+  // PUT file baru/update
+  const body = {
+    message: message,
+    content: Utilities.base64Encode(content, Utilities.Charset.UTF_8),
+  };
+  if (sha) body.sha = sha;
+
+  const putResp = UrlFetchApp.fetch(apiUrl, {
+    method: 'put',
+    headers: headers,
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true,
+  });
+
+  const code = putResp.getResponseCode();
+  if (code === 200 || code === 201) {
+    return { ok: true, status: code, path: path };
+  }
+  return { ok: false, status: code, error: putResp.getContentText() };
+}
+
+// ── Internal: baca list bulan dari sheet ─────────────────────
+function _getListBulanForPush() {
+  const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName('Bulan_Ini');
+  // Baca kolom CK(BLN_IO), CN(BLN_RE), CQ(BLN_PS) → dalam range CK:CQ indeks 0,3,6
+  const vals = sheet.getRange('CK2:CQ' + sheet.getLastRow()).getValues();
+  const bulanSet = {};
+  for (let i = 0; i < vals.length; i++) {
+    const row = vals[i];
+    [0, 3, 6].forEach(function(idx) {
+      const v = (row[idx] || '').toString().trim();
+      const n = parseInt(v);
+      if (!isNaN(n) && n >= 1 && n <= 12) bulanSet[n] = true;
+    });
+  }
+  const bulanList = Object.keys(bulanSet).map(Number).sort(function(a,b){return a-b;});
+  return { ok: true, bulan: bulanList };
+}
+
+// ── Setup trigger harian untuk auto-push bulan_ini ───────────
+function setupBulanIniPushTrigger() {
+  // Hapus trigger lama kalau ada
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'pushBulanIniToGithub') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  // Buat trigger baru: setiap jam (time-based)
+  ScriptApp.newTrigger('pushBulanIniToGithub')
+    .timeBased()
+    .everyHours(1)
+    .create();
+  Logger.log('Trigger pushBulanIniToGithub setiap 1 jam berhasil dibuat.');
+}

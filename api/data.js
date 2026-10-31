@@ -6,7 +6,7 @@
 //  Auth masih diteruskan ke GAS_AUTH_URL.
 // ================================================================
 
-const { getAllData, getRawSheetCached, getListBulan } = require('../lib/sheets');
+const { getAllData, getRawSheetCached, getListBulan, getTargetData } = require('../lib/sheets');
 
 const DATA_TOKEN = process.env.DATA_TOKEN || 'lpgLampung2026';
 
@@ -53,11 +53,20 @@ module.exports = async function handler(req, res) {
           },
         };
         break;
+      // sf_target: ringan – update_sf + target saja (bulan_ini kini dari GitHub static)
+      case 'sf_target': {
+        const [updateSf, target] = await Promise.all([
+          getRawSheetCached('Update SF', 'A2:AG', ''),
+          getTargetData(),
+        ]);
+        data = { ok: true, updateSf, target, updatedAt: new Date().toISOString() };
+        break;
+      }
       case 'ping':
         data = { ok: true, message: 'pong (Vercel)', updatedAt: new Date().toISOString() };
         break;
       default:
-        data = { ok: false, error: 'Unknown type. Use: all | bulan_ini | update_sf | list_bulan | wilayah | ping' };
+        data = { ok: false, error: 'Unknown type. Use: all | bulan_ini | update_sf | list_bulan | sf_target | wilayah | ping' };
     }
 
     return res.status(200).json(data);
