@@ -7,6 +7,19 @@
 //          Who can access: Anyone
 // ================================================================
 
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('📊 Dashboard')
+    .addItem('🔄 Push Semua Data ke GitHub', 'pushAllDataToGithub')
+    .addSeparator()
+    .addItem('Push Bulan Ini', 'pushBulanIniToGithub')
+    .addItem('Push Update SF', 'pushUpdateSfToGithub')
+    .addItem('Push Target', 'pushTargetToGithub')
+    .addSeparator()
+    .addItem('⏰ Setup Auto-Push (tiap jam)', 'setupBulanIniPushTrigger')
+    .addToUi();
+}
+
 const CONFIG = {
   SHEET_ID: '1IhU91CyYKQRDLysUYgpPn258ieoADixO30Cl5YS3YeM',
   TOKEN:    'lpgLampung2026',
