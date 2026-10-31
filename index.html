@@ -4970,7 +4970,7 @@ function djpPlanData() {
     sfList: [],
     // ODP
     _odpAll: [],
-    odpFilter: { cluster:'', kab:'', kec:'' },
+    odpFilter: { cluster:'', kabs:[], kab:'', kec:'' },
     odpClusters: [], odpKabList: [], odpKecList: [],
     selectedOdp: [],   // array of odp names (for x-model array checkbox)
     // Plan tersimpan
@@ -4994,10 +4994,9 @@ function djpPlanData() {
         const rootEl = document.querySelector('[x-data="app()"]');
         const rootCluster = rootEl && rootEl._x_dataStack && rootEl._x_dataStack[0] && rootEl._x_dataStack[0].cluster;
         if (rootCluster) {
-          // Filter berdasarkan kab, bukan cluster field
-          // 'Lampung Barat' → kab 'LAMPUNG BARAT', 'Way Kanan' → kab 'WAY KANAN'
           this.odpFilter.cluster = '';
-          this.odpFilter.kab = rootCluster.toUpperCase();
+          this.odpFilter.kabs = CLUSTER[rootCluster]?.kab || [];
+          this.odpFilter.kab = '';
           this.odpFilter.kec = '';
         }
       } catch(e) {}
@@ -5065,16 +5064,18 @@ function djpPlanData() {
 
     _updateKec() {
       let f = this._odpAll;
-      if (this.odpFilter.cluster) f = f.filter(o=>o.cluster===this.odpFilter.cluster);
-      if (this.odpFilter.kab)     f = f.filter(o=>o.kab===this.odpFilter.kab);
+      if (this.odpFilter.kabs.length) f = f.filter(o=>this.odpFilter.kabs.includes(o.kab));
+      if (this.odpFilter.cluster)     f = f.filter(o=>o.cluster===this.odpFilter.cluster);
+      if (this.odpFilter.kab)         f = f.filter(o=>o.kab===this.odpFilter.kab);
       this.odpKecList = [...new Set(f.map(o=>o.kec).filter(Boolean))].sort();
     },
 
     get odpFiltered() {
       let f = this._odpAll;
-      if (this.odpFilter.cluster) f = f.filter(o=>o.cluster===this.odpFilter.cluster);
-      if (this.odpFilter.kab)     f = f.filter(o=>o.kab===this.odpFilter.kab);
-      if (this.odpFilter.kec)     f = f.filter(o=>o.kec===this.odpFilter.kec);
+      if (this.odpFilter.kabs.length) f = f.filter(o=>this.odpFilter.kabs.includes(o.kab));
+      if (this.odpFilter.cluster)     f = f.filter(o=>o.cluster===this.odpFilter.cluster);
+      if (this.odpFilter.kab)         f = f.filter(o=>o.kab===this.odpFilter.kab);
+      if (this.odpFilter.kec)         f = f.filter(o=>o.kec===this.odpFilter.kec);
       return f;
     },
 
