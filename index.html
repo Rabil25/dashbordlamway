@@ -2851,7 +2851,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <!-- ═══════════════════════════════════════════════════
            HALAMAN DJP: PLAN
       ════════════════════════════════════════════════════ -->
-      <div class="page" x-show="page==='djp_plan'" x-data="djpPlanData()" @page-djp_plan.window="initPlan()">
+      <div class="page" :class="{active:page==='djp_plan'}" x-show="page==='djp_plan'" x-data="djpPlanData()" @page-djp_plan.window="initPlan()">
         <div class="section-hdr">
           <div class="section-title">Plan DJP</div>
           <div class="section-sub">Buat rencana kunjungan ODP harian untuk SF</div>
@@ -2993,7 +2993,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <!-- ═══════════════════════════════════════════════════
            HALAMAN DJP: REALISASI
       ════════════════════════════════════════════════════ -->
-      <div class="page" x-show="page==='djp_real'" x-data="djpRealData()">
+      <div class="page" :class="{active:page==='djp_real'}" x-show="page==='djp_real'" x-data="djpRealData()">
         <div class="section-hdr">
           <div class="section-title">Realisasi DJP</div>
           <div class="section-sub">Upload CSV hasil kunjungan dari Web Telkomsel</div>
@@ -3065,7 +3065,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <!-- ═══════════════════════════════════════════════════
            HALAMAN DJP: DAILY MONITOR
       ════════════════════════════════════════════════════ -->
-      <div class="page" x-show="page==='djp_daily'" x-data="djpDailyData()" @page-djp_daily.window="loadDaily()">
+      <div class="page" :class="{active:page==='djp_daily'}" x-show="page==='djp_daily'" x-data="djpDailyData()" @page-djp_daily.window="loadDaily()">
         <div class="section-hdr">
           <div class="section-title">DJP Daily</div>
           <div class="section-sub">Monitor kunjungan ODP hari ini</div>
