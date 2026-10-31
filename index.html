@@ -2247,9 +2247,9 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </label>
           <span style="font-size:11px;color:var(--text-3);margin-left:4px" x-text="koordinatRows.filter(r=>(r.type==='proses'&&petaFilter.io)||(r.type==='kendala'&&petaFilter.re)||(r.type==='ps'&&petaFilter.ps)).length + ' marker tampil'"></span>
           <!-- Toggle ODP -->
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#a78bfa;background:var(--card-bg);border:1.5px solid #a78bfa;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="showODP ? '' : 'opacity:.4'">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#a78bfa;background:var(--card-bg);border:1.5px solid #a78bfa;border-radius:20px;padding:4px 12px;transition:opacity .2s;margin-left:8px" :style="showODP ? '' : 'opacity:.4'">
             <input type="checkbox" x-model="showODP" @change="toggleODPLayer()" style="accent-color:#a78bfa;width:14px;height:14px">
-            📡 ODP
+            📡 Titik ODP
           </label>
           <!-- Toggle layer peta -->
           <div style="margin-left:auto;display:flex;gap:4px;background:var(--bg-2);border-radius:20px;padding:3px">
