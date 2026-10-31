@@ -4998,7 +4998,8 @@ function djpPlanData() {
     async _loadODP() {
       if (this._odpAll.length) return;   // already loaded
       const r = await fetch('data/odp.json');
-      const data = await r.json();
+      const raw = await r.json();
+      const data = Array.isArray(raw) ? raw : (raw.data || []);
       this._odpAll = data.filter(o => (o.avai||0) > 0);
       this.odpClusters = [...new Set(this._odpAll.map(o=>o.cluster).filter(Boolean))].sort();
       this.odpKabList  = [...new Set(this._odpAll.map(o=>o.kab).filter(Boolean))].sort();
