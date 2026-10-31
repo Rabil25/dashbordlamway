@@ -4994,9 +4994,10 @@ function djpPlanData() {
         const rootEl = document.querySelector('[x-data="app()"]');
         const rootCluster = rootEl && rootEl._x_dataStack && rootEl._x_dataStack[0] && rootEl._x_dataStack[0].cluster;
         if (rootCluster) {
-          // 'Lampung Barat' → 'LAMPUNG BARAT' sesuai nilai di odp.json
-          this.odpFilter.cluster = rootCluster.toUpperCase();
-          this.odpFilter.kab = '';
+          // Filter berdasarkan kab, bukan cluster field
+          // 'Lampung Barat' → kab 'LAMPUNG BARAT', 'Way Kanan' → kab 'WAY KANAN'
+          this.odpFilter.cluster = '';
+          this.odpFilter.kab = rootCluster.toUpperCase();
           this.odpFilter.kec = '';
         }
       } catch(e) {}
