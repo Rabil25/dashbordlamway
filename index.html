@@ -1383,6 +1383,21 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         Peta
       </button>
+
+      <!-- GROUP 4: DJP -->
+      <div class="nav-group-lbl" style="margin-top:8px">🧭 DJP</div>
+      <button class="nav-sub-item" :class="{active:page==='djp_plan'}" @click="nav('djp_plan');menuOpen=false" aria-label="Plan DJP">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/></svg>
+        Plan DJP
+      </button>
+      <button class="nav-sub-item" :class="{active:page==='djp_real'}" @click="nav('djp_real');menuOpen=false" aria-label="Realisasi DJP">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Realisasi DJP
+      </button>
+      <button class="nav-sub-item" :class="{active:page==='djp_daily'}" @click="nav('djp_daily');menuOpen=false" aria-label="DJP Daily">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+        DJP Daily
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -2833,6 +2848,320 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         </div>
       </div>
 
+      <!-- ═══════════════════════════════════════════════════
+           HALAMAN DJP: PLAN
+      ════════════════════════════════════════════════════ -->
+      <div class="page" x-show="page==='djp_plan'" x-data="djpPlanData()" @page-djp_plan.window="initPlan()">
+        <div class="section-hdr">
+          <div class="section-title">Plan DJP</div>
+          <div class="section-sub">Buat rencana kunjungan ODP harian untuk SF</div>
+        </div>
+
+        <!-- Form input plan -->
+        <div class="card" style="margin-bottom:14px;padding:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <!-- Tanggal -->
+            <div>
+              <label class="input-lbl">Tanggal</label>
+              <input type="date" class="select" style="width:100%" x-model="form.tgl">
+            </div>
+            <!-- Pilih SF -->
+            <div>
+              <label class="input-lbl">SF</label>
+              <select class="select" style="width:100%" x-model="form.username_sf" @change="onSFChange()">
+                <option value="">-- Pilih SF --</option>
+                <template x-for="u in sfList" :key="u.username">
+                  <option :value="u.username" x-text="u.nama + ' (' + u.username + ')'"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+
+          <!-- Filter ODP -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+            <div>
+              <label class="input-lbl">Cluster</label>
+              <select class="select" style="width:100%" x-model="odpFilter.cluster" @change="odpFilter.kab='';odpFilter.kec=''">
+                <option value="">Semua</option>
+                <template x-for="c in odpClusters" :key="c">
+                  <option :value="c" x-text="c"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="input-lbl">Kabupaten</label>
+              <select class="select" style="width:100%" x-model="odpFilter.kab" @change="odpFilter.kec=''">
+                <option value="">Semua</option>
+                <template x-for="k in odpKabList" :key="k">
+                  <option :value="k" x-text="k"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="input-lbl">Kecamatan</label>
+              <select class="select" style="width:100%" x-model="odpFilter.kec">
+                <option value="">Semua</option>
+                <template x-for="k in odpKecList" :key="k">
+                  <option :value="k" x-text="k"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+
+          <!-- Tabel pilih ODP -->
+          <div style="max-height:260px;overflow-y:auto;border:1.5px solid var(--border);border-radius:8px;margin-bottom:10px">
+            <table style="width:100%;font-size:12px;border-collapse:collapse">
+              <thead style="position:sticky;top:0;background:var(--surface-2);z-index:1">
+                <tr>
+                  <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">ODP</th>
+                  <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">Kec · Desa</th>
+                  <th style="padding:6px 4px;text-align:center;font-weight:600;color:var(--text-2)">Avai</th>
+                  <th style="padding:6px 4px;text-align:center;font-weight:600;color:var(--text-2)">Pilih</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="o in odpFiltered.slice(0,200)" :key="o.odp">
+                  <tr style="border-top:1px solid var(--border)" :style="selectedOdp.includes(o.odp)?'background:var(--brand-dim)':''">
+                    <td style="padding:5px 8px;font-weight:600;color:var(--text-1)" x-text="o.odp"></td>
+                    <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="o.kec + ' · ' + o.desa"></td>
+                    <td style="padding:5px 4px;text-align:center">
+                      <span :style="o.avai>0?'color:var(--success);font-weight:700':'color:var(--danger)'" x-text="o.avai"></span>
+                    </td>
+                    <td style="padding:5px 4px;text-align:center">
+                      <input type="checkbox" :value="o.odp" x-model="selectedOdp" style="cursor:pointer;width:15px;height:15px">
+                    </td>
+                  </tr>
+                </template>
+                <tr x-show="odpFiltered.length===0">
+                  <td colspan="4" style="padding:16px;text-align:center;color:var(--text-3)">Tidak ada ODP ditemukan</td>
+                </tr>
+                <tr x-show="odpFiltered.length>200">
+                  <td colspan="4" style="padding:8px;text-align:center;color:var(--text-3);font-size:11px" x-text="'Menampilkan 200 dari ' + odpFiltered.length + ' ODP. Gunakan filter untuk mempersempit.'"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--text-2)" x-text="selectedOdp.length + ' ODP dipilih'"></span>
+            <button class="btn" @click="selectedOdp=[]" x-show="selectedOdp.length>0" style="font-size:11px;padding:4px 10px">✕ Clear</button>
+            <div style="flex:1"></div>
+            <button class="btn" @click="savePlan()"
+              :disabled="!form.tgl || !form.username_sf || selectedOdp.length===0 || saving"
+              style="background:var(--brand);color:#fff">
+              <span x-show="!saving">💾 Simpan Plan (<span x-text="selectedOdp.length"></span> ODP)</span>
+              <span x-show="saving">Menyimpan…</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Plan yang sudah tersimpan -->
+        <div class="card" style="padding:16px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="font-weight:700;font-size:13px;color:var(--text-1)">Plan Tersimpan</div>
+            <input type="date" class="select" x-model="viewTgl" @change="loadPlan()" style="font-size:12px;padding:4px 8px">
+            <button class="btn" @click="loadPlan()" style="font-size:11px;padding:4px 10px">🔄 Muat</button>
+            <span style="font-size:12px;color:var(--text-2)" x-text="planData.length ? planData.length + ' rencana' : ''"></span>
+          </div>
+
+          <div x-show="planLoading" style="text-align:center;padding:20px;color:var(--text-3)">Memuat…</div>
+
+          <!-- Group by SF -->
+          <template x-for="sf in planBySF" :key="sf.username_sf">
+            <div style="margin-bottom:12px">
+              <div style="font-weight:700;font-size:12px;color:var(--brand);margin-bottom:6px;display:flex;align-items:center;gap:8px">
+                <span>👤 <span x-text="sf.nama_sf"></span></span>
+                <span style="color:var(--text-3);font-weight:400" x-text="'(' + sf.odps.length + ' ODP)'"></span>
+                <button @click="deletePlanSF(sf.username_sf)"
+                  style="font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid var(--danger);color:var(--danger);background:transparent;cursor:pointer;margin-left:auto">
+                  🗑 Hapus
+                </button>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <template x-for="odp in sf.odps" :key="odp.odp">
+                  <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border)" x-text="odp.odp + ' · ' + odp.desa"></span>
+                </template>
+              </div>
+            </div>
+          </template>
+          <div x-show="!planLoading && planData.length===0" style="text-align:center;padding:20px;color:var(--text-3)">
+            Belum ada plan untuk tanggal ini
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           HALAMAN DJP: REALISASI
+      ════════════════════════════════════════════════════ -->
+      <div class="page" x-show="page==='djp_real'" x-data="djpRealData()">
+        <div class="section-hdr">
+          <div class="section-title">Realisasi DJP</div>
+          <div class="section-sub">Upload CSV hasil kunjungan dari Web Telkomsel</div>
+        </div>
+
+        <div class="card" style="padding:16px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;color:var(--text-1);margin-bottom:10px">Upload CSV</div>
+
+          <!-- Drop zone -->
+          <label style="display:block;border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;color:var(--text-2);transition:border-color .15s"
+            @dragover.prevent="$el.style.borderColor='var(--brand)'"
+            @dragleave="$el.style.borderColor=''"
+            @drop.prevent="onDrop($event);$el.style.borderColor=''">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 8px;display:block;opacity:.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Drag &amp; drop file CSV di sini</div>
+            <div style="font-size:11px;color:var(--text-3)">atau klik untuk pilih file</div>
+            <input type="file" accept=".csv" style="display:none" @change="onFileSelect($event)">
+          </label>
+
+          <!-- Preview -->
+          <div x-show="csvRows.length>0" style="margin-top:12px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <span style="font-size:12px;font-weight:700;color:var(--text-1)" x-text="csvRows.length + ' baris ditemukan'"></span>
+              <button class="btn" @click="uploadCsv()" :disabled="uploading"
+                style="background:var(--brand);color:#fff;font-size:12px;padding:5px 14px">
+                <span x-show="!uploading">📤 Upload ke Spreadsheet</span>
+                <span x-show="uploading">Mengupload…</span>
+              </button>
+              <button class="btn" @click="csvRows=[];csvPreview=[]" style="font-size:11px;padding:4px 10px">✕ Batal</button>
+            </div>
+            <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+              <table style="width:100%;font-size:11px;border-collapse:collapse">
+                <thead style="position:sticky;top:0;background:var(--surface-2)">
+                  <tr>
+                    <template x-for="h in csvHeaders" :key="h">
+                      <th style="padding:5px 8px;text-align:left;font-weight:600;color:var(--text-2);white-space:nowrap" x-text="h"></th>
+                    </template>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="(row, i) in csvPreview" :key="i">
+                    <tr style="border-top:1px solid var(--border)">
+                      <template x-for="(val, j) in row" :key="j">
+                        <td style="padding:4px 8px;color:var(--text-1);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis" x-text="val"></td>
+                      </template>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:4px" x-show="csvRows.length>5" x-text="'Menampilkan 5 dari ' + csvRows.length + ' baris'"></div>
+          </div>
+        </div>
+
+        <!-- Riwayat upload -->
+        <div class="card" style="padding:16px">
+          <div style="font-weight:700;font-size:13px;color:var(--text-1);margin-bottom:4px">Riwayat Upload Terakhir</div>
+          <div style="font-size:11px;color:var(--text-3)">Data dikelola langsung di Google Sheets Monitoring DJP</div>
+          <div style="margin-top:10px">
+            <a href="https://docs.google.com/spreadsheets/d/1ioPvgGbRZIHb_zP-ushATvz434b3p1LQvGcpn1OxBIQ/edit" target="_blank"
+              style="font-size:12px;color:var(--brand);text-decoration:none;display:inline-flex;align-items:center;gap:5px">
+              📊 Buka Spreadsheet Monitoring DJP
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           HALAMAN DJP: DAILY MONITOR
+      ════════════════════════════════════════════════════ -->
+      <div class="page" x-show="page==='djp_daily'" x-data="djpDailyData()" @page-djp_daily.window="loadDaily()">
+        <div class="section-hdr">
+          <div class="section-title">DJP Daily</div>
+          <div class="section-sub">Monitor kunjungan ODP hari ini</div>
+        </div>
+
+        <!-- Filter tanggal + ringkasan -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <input type="date" class="select" x-model="dailyTgl" style="font-size:12px;padding:5px 10px">
+          <button class="btn" @click="loadDaily()" :disabled="loadingDaily" style="font-size:12px;padding:5px 14px">
+            <span x-show="!loadingDaily">🔄 Muat</span>
+            <span x-show="loadingDaily">Memuat…</span>
+          </button>
+          <div style="display:flex;gap:12px;flex-wrap:wrap" x-show="dailyData">
+            <div class="te-card" style="padding:8px 14px;min-width:0">
+              <div class="te-label">Total SF</div>
+              <div class="te-value" x-text="dailyData ? dailyData.total_sf : '—'"></div>
+            </div>
+            <div class="te-card" style="padding:8px 14px;min-width:0">
+              <div class="te-label">ODP Direncanakan</div>
+              <div class="te-value" x-text="dailyData ? dailyData.total_plan : '—'"></div>
+            </div>
+            <div class="te-card" style="padding:8px 14px;min-width:0">
+              <div class="te-label">ODP Terealisasi</div>
+              <div class="te-value" style="color:var(--success)" x-text="dailyData ? dailyData.total_real : '—'"></div>
+            </div>
+          </div>
+        </div>
+
+        <div x-show="loadingDaily" style="text-align:center;padding:40px;color:var(--text-3)">Memuat data…</div>
+        <div x-show="!loadingDaily && (!dailyData || dailyData.total_sf===0)" style="text-align:center;padding:40px;color:var(--text-3)">
+          Tidak ada plan DJP untuk tanggal ini
+        </div>
+
+        <!-- Per SF -->
+        <template x-for="sf in (dailyData ? dailyData.summary : [])" :key="sf.username_sf">
+          <div class="card" style="margin-bottom:12px;padding:14px">
+            <!-- Header SF -->
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+              <div style="font-weight:700;font-size:13px;color:var(--text-1)">👤 <span x-text="sf.nama_sf"></span></div>
+              <div style="font-size:11px;color:var(--text-3)" x-text="'@' + sf.username_sf"></div>
+              <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--surface-2);color:var(--text-2)"
+                  x-text="sf.odp_list.filter(o=>o.status!=='Belum').length + '/' + sf.odp_list.length + ' ODP'"></span>
+                <span style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:700"
+                  :style="sf.odp_list.filter(o=>o.status!=='Belum').length===sf.odp_list.length && sf.odp_list.length>0
+                    ? 'background:rgba(34,197,94,.15);color:var(--success)'
+                    : sf.odp_list.filter(o=>o.status!=='Belum').length>0
+                    ? 'background:rgba(234,179,8,.15);color:var(--warning)'
+                    : 'background:var(--surface-2);color:var(--text-3)'"
+                  x-text="sf.odp_list.filter(o=>o.status!=='Belum').length===sf.odp_list.length && sf.odp_list.length>0
+                    ? '✅ Selesai'
+                    : sf.odp_list.filter(o=>o.status!=='Belum').length>0
+                    ? '🔄 Sedang Jalan'
+                    : '⏳ Belum Mulai'">
+                </span>
+              </div>
+            </div>
+            <!-- Tabel ODP -->
+            <div style="overflow-x:auto">
+              <table style="width:100%;font-size:12px;border-collapse:collapse">
+                <thead>
+                  <tr style="background:var(--surface-2)">
+                    <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">ODP</th>
+                    <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">Lokasi</th>
+                    <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-2)">Status</th>
+                    <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-2)">Check-in</th>
+                    <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">Kondisi ODP</th>
+                    <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-2)">Prospek</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="odp in sf.odp_list" :key="odp.odp">
+                    <tr style="border-top:1px solid var(--border)">
+                      <td style="padding:6px 8px;font-weight:600;color:var(--text-1)" x-text="odp.odp"></td>
+                      <td style="padding:6px 8px;color:var(--text-2);font-size:11px" x-text="odp.kec + ' · ' + odp.desa"></td>
+                      <td style="padding:6px 8px;text-align:center">
+                        <span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700"
+                          :style="odp.status==='Belum'
+                            ? 'background:var(--surface-2);color:var(--text-3)'
+                            : odp.status.toLowerCase().includes('done')||odp.status.toLowerCase().includes('selesai')
+                            ? 'background:rgba(34,197,94,.15);color:var(--success)'
+                            : 'background:rgba(234,179,8,.15);color:var(--warning)'"
+                          x-text="odp.status"></span>
+                      </td>
+                      <td style="padding:6px 8px;text-align:center;color:var(--text-2);font-size:11px" x-text="odp.checkin || '—'"></td>
+                      <td style="padding:6px 8px;color:var(--text-2);font-size:11px" x-text="odp.odp_condition || '—'"></td>
+                      <td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--brand)" x-text="odp.prospect || '—'"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </template>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -3261,7 +3590,13 @@ function app() {
     nav(p) {
       this.page = p;
       this.orderPage = 0;
-      this.$nextTick(() => this.renderCharts());
+      this.$nextTick(() => {
+        this.renderCharts();
+        // dispatch event untuk DJP pages supaya auto-load
+        if (['djp_plan','djp_real','djp_daily'].includes(p)) {
+          window.dispatchEvent(new CustomEvent('page-' + p));
+        }
+      });
     },
 
     get pageTitle() {
@@ -3269,6 +3604,7 @@ function app() {
         dashboard:'Sales Dashboard', d2d:'D2D Sales', deepdive:'Deepdive Sales',
         outlook:'Outlook Sales', sfperf:'SF Performance',
         sf:'Performa SF', order:'Detail Order', kendala:'Kendala', peta:'Peta',
+        djp_plan:'Plan DJP', djp_real:'Realisasi DJP', djp_daily:'DJP Daily',
       };
       return map[this.page] || '';
     },
@@ -4620,6 +4956,275 @@ function app() {
       el.textContent = msg;
       wrap.appendChild(el);
       setTimeout(() => el.remove(), 4000);
+    },
+  };
+}
+
+// ════════════════════════════════════════════════════════
+// DJP – Plan DJP
+// ════════════════════════════════════════════════════════
+function djpPlanData() {
+  return {
+    // Form state
+    form: { tgl: new Date().toISOString().slice(0,10), username_sf: '' },
+    sfList: [],
+    // ODP
+    _odpAll: [],
+    odpFilter: { cluster:'', kab:'', kec:'' },
+    odpClusters: [], odpKabList: [], odpKecList: [],
+    selectedOdp: [],   // array of odp names (for x-model array checkbox)
+    // Plan tersimpan
+    viewTgl: new Date().toISOString().slice(0,10),
+    planData: [],
+    planLoading: false,
+    saving: false,
+    initError: '',
+
+    async init() {
+      try {
+        await Promise.all([this._loadODP(), this._loadSF()]);
+        await this.loadPlan();
+      } catch(e) { this.initError = e.message; }
+    },
+
+    // Called via @page-djp_plan.window
+    async initPlan() {
+      try {
+        await Promise.all([this._loadODP(), this._loadSF()]);
+        await this.loadPlan();
+      } catch(e) { this.initError = e.message; }
+    },
+
+    async _loadODP() {
+      if (this._odpAll.length) return;   // already loaded
+      const r = await fetch('data/odp.json');
+      const data = await r.json();
+      this._odpAll = data.filter(o => (o.avai||0) > 0);
+      this.odpClusters = [...new Set(this._odpAll.map(o=>o.cluster).filter(Boolean))].sort();
+      this.odpKabList  = [...new Set(this._odpAll.map(o=>o.kab).filter(Boolean))].sort();
+      this._updateKec();
+    },
+
+    async _loadSF() {
+      const gasUrl = this._gasUrl();
+      const st = localStorage.getItem('wok_session_token')||'';
+      const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}`);
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error||'Gagal load users');
+      this.sfList = d.users||[];
+    },
+
+    _gasUrl() {
+      const cfg = (typeof Alpine!=='undefined' && Alpine.store) ? Alpine.store('cfg') : null;
+      return (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
+    },
+
+    _updateKec() {
+      let f = this._odpAll;
+      if (this.odpFilter.cluster) f = f.filter(o=>o.cluster===this.odpFilter.cluster);
+      if (this.odpFilter.kab)     f = f.filter(o=>o.kab===this.odpFilter.kab);
+      this.odpKecList = [...new Set(f.map(o=>o.kec).filter(Boolean))].sort();
+    },
+
+    get odpFiltered() {
+      let f = this._odpAll;
+      if (this.odpFilter.cluster) f = f.filter(o=>o.cluster===this.odpFilter.cluster);
+      if (this.odpFilter.kab)     f = f.filter(o=>o.kab===this.odpFilter.kab);
+      if (this.odpFilter.kec)     f = f.filter(o=>o.kec===this.odpFilter.kec);
+      return f;
+    },
+
+    onSFChange() {},  // placeholder for future use
+
+    async savePlan() {
+      if (!this.form.username_sf) { alert('Pilih SF terlebih dahulu'); return; }
+      if (!this.selectedOdp.length) { alert('Pilih minimal 1 ODP'); return; }
+      const sf = this.sfList.find(u=>u.username===this.form.username_sf)||{};
+      const gasUrl = this._gasUrl();
+      const st = localStorage.getItem('wok_session_token')||'';
+      const dibuat = localStorage.getItem('wok_username')||'';
+      const items = this._odpAll.filter(o=>this.selectedOdp.includes(o.odp));
+      const rows = items.map(o=>[
+        this.form.tgl, this.form.username_sf, sf.nama||this.form.username_sf,
+        o.odp, o.cluster||'', o.kab||'', o.kec||'', o.desa||'',
+        o.lat||'', o.lng||'', o.avai||0, dibuat, new Date().toISOString()
+      ]);
+      this.saving = true;
+      try {
+        const r = await fetch(`${gasUrl}?type=djp_plan_save`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ session_token:st, tgl:this.form.tgl, username_sf:this.form.username_sf, rows })
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error||'Gagal simpan');
+        this.selectedOdp = [];
+        this.viewTgl = this.form.tgl;
+        await this.loadPlan();
+      } catch(e) { alert('❌ ' + e.message); }
+      this.saving = false;
+    },
+
+    async loadPlan() {
+      this.planLoading = true;
+      try {
+        const gasUrl = this._gasUrl();
+        const st = localStorage.getItem('wok_session_token')||'';
+        const r = await fetch(`${gasUrl}?type=djp_plan_get&session_token=${encodeURIComponent(st)}&tgl=${this.viewTgl}`);
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error||'Gagal load plan');
+        this.planData = d.rows||[];
+      } catch(e) { this.planData = []; }
+      this.planLoading = false;
+    },
+
+    async deletePlanSF(username_sf) {
+      if (!confirm(`Hapus semua plan ${username_sf} pada ${this.viewTgl}?`)) return;
+      const gasUrl = this._gasUrl();
+      const st = localStorage.getItem('wok_session_token')||'';
+      try {
+        const r = await fetch(`${gasUrl}?type=djp_plan_delete`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ session_token:st, tgl:this.viewTgl, username_sf })
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error||'Gagal hapus');
+        await this.loadPlan();
+      } catch(e) { alert('❌ ' + e.message); }
+    },
+
+    // Group planData rows by SF for display
+    get planBySF() {
+      const map = {};
+      (this.planData||[]).forEach(row => {
+        const sf = row[1];
+        if (!map[sf]) map[sf] = { username_sf: sf, nama_sf: row[2], odps: [] };
+        map[sf].odps.push({ odp: row[3], cluster: row[4], kab: row[5], kec: row[6], desa: row[7] });
+      });
+      return Object.values(map);
+    },
+  };
+}
+
+// ════════════════════════════════════════════════════════
+// DJP – Realisasi DJP (Upload CSV)
+// ════════════════════════════════════════════════════════
+function djpRealData() {
+  return {
+    csvRows: [],
+    preview: [],
+    fileName: '',
+    uploading: false,
+    msg: '',
+    SHEET_URL: 'https://docs.google.com/spreadsheets/d/1ioPvgGbRZIHb_zP-ushATvz434b3p1LQvGcpn1OxBIQ/edit',
+
+    init() {
+      window.addEventListener('page-djp_real', () => { this.csvRows=[]; this.preview=[]; this.msg=''; this.fileName=''; });
+    },
+
+    onDrop(e) {
+      e.preventDefault();
+      const f = e.dataTransfer.files[0];
+      if (f) this.readFile(f);
+    },
+
+    onFileChange(e) {
+      const f = e.target.files[0];
+      if (f) this.readFile(f);
+    },
+
+    readFile(file) {
+      this.fileName = file.name;
+      this.msg = '';
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        const lines = text.split(/\r?\n/).filter(l=>l.trim());
+        if (!lines.length) { this.msg='❌ File kosong'; return; }
+        const sep = lines[0].includes('\t') ? '\t' : ',';
+        const headers = lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
+        const rows = lines.slice(1).map(l => {
+          const cols = l.split(sep).map(c=>c.trim().replace(/^"|"$/g,''));
+          const obj = {};
+          headers.forEach((h,i) => obj[h] = cols[i]||'');
+          return obj;
+        }).filter(r => Object.values(r).some(v=>v));
+        this.csvRows = rows;
+        this.preview = rows.slice(0,5);
+        this.msg = `📋 ${rows.length} baris terdeteksi dari ${file.name}`;
+      };
+      reader.readAsText(file, 'UTF-8');
+    },
+
+    get csvHeaders() {
+      if (!this.csvRows.length) return [];
+      return Object.keys(this.csvRows[0]);
+    },
+
+    async upload() {
+      if (!this.csvRows.length) { this.msg='❌ Belum ada file CSV'; return; }
+      const cfg = (typeof Alpine!=='undefined' && Alpine.store) ? Alpine.store('cfg') : null;
+      const gasUrl = (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
+      const st = localStorage.getItem('wok_session_token')||'';
+      const uploader = localStorage.getItem('wok_username')||'';
+      this.uploading = true;
+      this.msg = 'Mengupload...';
+      try {
+        const BATCH = 500;
+        let inserted = 0, skipped = 0;
+        for (let i = 0; i < this.csvRows.length; i += BATCH) {
+          const batch = this.csvRows.slice(i, i + BATCH);
+          const r = await fetch(`${gasUrl}?type=djp_realisasi_upload`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ session_token:st, uploaded_by:uploader, rows:batch })
+          });
+          const d = await r.json();
+          if (!d.ok) throw new Error(d.error||'Upload gagal');
+          inserted += d.inserted||0;
+          skipped  += d.skipped||0;
+          this.msg = `Mengupload... ${Math.min(i+BATCH, this.csvRows.length)}/${this.csvRows.length}`;
+        }
+        this.msg = `✅ Upload selesai — ${inserted} baris baru, ${skipped} duplikat dilewati`;
+        this.csvRows = []; this.preview = []; this.fileName = '';
+      } catch(e) { this.msg = '❌ ' + e.message; }
+      this.uploading = false;
+    },
+  };
+}
+
+// ════════════════════════════════════════════════════════
+// DJP – DJP Daily (Monitor Harian)
+// ════════════════════════════════════════════════════════
+function djpDailyData() {
+  return {
+    dailyTgl: new Date().toISOString().slice(0,10),
+    dailyData: null,   // { total_sf, total_plan, total_real, summary: [{username_sf,nama_sf,odp_list:[{odp,kec,desa,status,checkin,odp_condition,prospect}]}] }
+    loadingDaily: false,
+
+    init() {
+      window.addEventListener('page-djp_daily', () => this.loadDaily());
+      this.loadDaily();
+    },
+
+    async loadDaily() {
+      const cfg = (typeof Alpine!=='undefined' && Alpine.store) ? Alpine.store('cfg') : null;
+      const gasUrl = (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
+      const st = localStorage.getItem('wok_session_token')||'';
+      this.loadingDaily = true;
+      this.dailyData = null;
+      try {
+        const url = `${gasUrl}?type=djp_daily&session_token=${encodeURIComponent(st)}&tgl=${this.dailyTgl}`;
+        const r = await fetch(url);
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error||'Gagal load');
+        // GAS returns { ok, total_sf, total_plan, total_real, summary, tgl }
+        this.dailyData = {
+          total_sf:   d.total_sf   || 0,
+          total_plan: d.total_plan || 0,
+          total_real: d.total_real || 0,
+          summary:    d.summary    || [],
+        };
+      } catch(e) { this.dailyData = { total_sf:0, total_plan:0, total_real:0, summary:[] }; }
+      this.loadingDaily = false;
     },
   };
 }

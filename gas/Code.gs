@@ -92,6 +92,17 @@ function doGet(e) {
   const AUTH_TYPES = ['auth_login','auth_register','auth_verify',
                       'auth_change_password','auth_pending_users',
                       'auth_approve','auth_logout'];
+
+  // ── DJP endpoints – pakai session_token (bukan CONFIG.TOKEN) ──
+  const DJP_TYPES = ['djp_users','djp_plan_save','djp_plan_get',
+                     'djp_plan_delete','djp_realisasi_upload','djp_daily'];
+  if (DJP_TYPES.indexOf(type) !== -1) {
+    try {
+      return jsonOut(handleDJP(type, params));
+    } catch(err) {
+      return jsonOut({ ok:false, error: err.message });
+    }
+  }
   if (AUTH_TYPES.indexOf(type) !== -1) {
     try {
       return jsonOut(handleAuth(type, params));
