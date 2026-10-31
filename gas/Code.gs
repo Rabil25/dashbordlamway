@@ -98,7 +98,19 @@ function doGet(e) {
                      'djp_plan_delete','djp_realisasi_upload','djp_daily'];
   if (DJP_TYPES.indexOf(type) !== -1) {
     try {
-      return jsonOut(handleDJP(type, params));
+      // Unpack payload JSON (frontend kirim data besar via ?payload=JSON)
+      let djpParams = params;
+      if (params.payload) {
+        try {
+          const unpacked = JSON.parse(decodeURIComponent(params.payload));
+          djpParams = Object.assign({}, params, unpacked);
+          // rows di dalam payload adalah array — langsung jadikan string JSON lagi
+          if (Array.isArray(djpParams.rows)) {
+            djpParams.rows = JSON.stringify(djpParams.rows);
+          }
+        } catch(e) {}
+      }
+      return jsonOut(handleDJP(type, djpParams));
     } catch(err) {
       return jsonOut({ ok:false, error: err.message });
     }
