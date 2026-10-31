@@ -760,19 +760,84 @@ function _getListBulanForPush() {
   return { ok: true, bulan: bulanList };
 }
 
-// ── Setup trigger harian untuk auto-push bulan_ini ───────────
+// ── Push update_sf ke GitHub ──────────────────────────────────
+function pushUpdateSfToGithub() {
+  const props   = PropertiesService.getScriptProperties().getProperties();
+  const ghToken = props['GH_TOKEN'];
+  const ghOwner = props['GH_OWNER'] || 'Rabil25';
+  const ghRepo  = props['GH_REPO']  || 'dashbordlamway';
+  if (!ghToken) return { ok: false, error: 'GH_TOKEN tidak ditemukan' };
+
+  const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName('Update SF');
+  const raw   = sheet.getRange('A2:AG' + sheet.getLastRow()).getValues();
+  const allRows = [];
+  for (let i = 0; i < raw.length; i++) {
+    const row = raw[i];
+    const hasData = row.some(function(c){ return c !== '' && c !== null && c !== undefined; });
+    if (!hasData) continue;
+    const cleanRow = row.map(function(cell) {
+      if (cell instanceof Date) return Utilities.formatDate(cell, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+      return cell;
+    });
+    allRows.push(cleanRow);
+  }
+  const payload = { ok: true, rows: allRows.length, data: allRows, updatedAt: new Date().toISOString() };
+  const result = _pushFileToGithub(ghToken, ghOwner, ghRepo, 'data/update_sf.json', JSON.stringify(payload), 'chore: update update_sf data [auto]');
+  Logger.log('pushUpdateSfToGithub: ' + JSON.stringify(result));
+  return result;
+}
+
+// ── Push target ke GitHub ─────────────────────────────────────
+function pushTargetToGithub() {
+  const props   = PropertiesService.getScriptProperties().getProperties();
+  const ghToken = props['GH_TOKEN'];
+  const ghOwner = props['GH_OWNER'] || 'Rabil25';
+  const ghRepo  = props['GH_REPO']  || 'dashbordlamway';
+  if (!ghToken) return { ok: false, error: 'GH_TOKEN tidak ditemukan' };
+
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  const ws = ss.getSheetByName('Target');
+  if (!ws) return { ok: false, error: 'Sheet Target tidak ditemukan' };
+  const raw = ws.getRange('A2:B' + ws.getLastRow()).getValues();
+  const targets = {};
+  for (let i = 0; i < raw.length; i++) {
+    const kab = (raw[i][0] || '').toString().trim();
+    const ps  = parseInt(raw[i][1]) || 0;
+    if (kab) targets[kab] = ps;
+  }
+  const payload = { ok: true, targets: targets, updatedAt: new Date().toISOString() };
+  const result = _pushFileToGithub(ghToken, ghOwner, ghRepo, 'data/target.json', JSON.stringify(payload), 'chore: update target data [auto]');
+  Logger.log('pushTargetToGithub: ' + JSON.stringify(result));
+  return result;
+}
+
+// ── Push semua data ke GitHub sekaligus ───────────────────────
+function pushAllDataToGithub() {
+  Logger.log('=== pushAllDataToGithub mulai ===');
+  const r1 = pushBulanIniToGithub();
+  const r2 = pushUpdateSfToGithub();
+  const r3 = pushTargetToGithub();
+  Logger.log('bulan_ini: ' + JSON.stringify(r1));
+  Logger.log('update_sf: ' + JSON.stringify(r2));
+  Logger.log('target:    ' + JSON.stringify(r3));
+  Logger.log('=== pushAllDataToGithub selesai ===');
+  return { bulanIni: r1, updateSf: r2, target: r3 };
+}
+
+// ── Setup trigger untuk auto-push semua data ──────────────────
 function setupBulanIniPushTrigger() {
-  // Hapus trigger lama kalau ada
+  // Hapus trigger lama
   const triggers = ScriptApp.getProjectTriggers();
   for (let i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === 'pushBulanIniToGithub') {
+    const fn = triggers[i].getHandlerFunction();
+    if (fn === 'pushBulanIniToGithub' || fn === 'pushAllDataToGithub') {
       ScriptApp.deleteTrigger(triggers[i]);
     }
   }
-  // Buat trigger baru: setiap jam (time-based)
-  ScriptApp.newTrigger('pushBulanIniToGithub')
+  // Buat trigger baru: setiap jam
+  ScriptApp.newTrigger('pushAllDataToGithub')
     .timeBased()
     .everyHours(1)
     .create();
-  Logger.log('Trigger pushBulanIniToGithub setiap 1 jam berhasil dibuat.');
+  Logger.log('Trigger pushAllDataToGithub setiap 1 jam berhasil dibuat.');
 }
