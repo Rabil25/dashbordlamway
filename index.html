@@ -2882,9 +2882,9 @@ const C = {
   KENDALA_CAT: 21,   // CZ
   IO_TIMES:    23,   // DB
   TIME_RANGE:  24,   // DC
-  DATE_IO:     26,   // DE (yyyymmdd)
-  DATE_RE:     27,   // DF
-  DATE_PS:     28,   // DG
+  DATE_IO:     29,   // DH (yyyymmdd)
+  DATE_RE:     30,   // DI (yyyymmdd)
+  DATE_PS:     31,   // DJ (yyyymmdd)
   ID_ORDER:    34,   // DM
   TGL_KENDALA: 35,   // DN
   HOMEPASS:    36,   // DO
@@ -3567,7 +3567,9 @@ function app() {
           ps++;
           // weekly PS
           const tgl = r[C.DATE_PS] || r[C.DATE_IO] || '';
-          const ts  = tgl ? new Date(tgl).getTime() : 0;
+          const tglFmt = (tgl && typeof tgl === 'string' && tgl.length === 8)
+            ? tgl.slice(0,4)+'-'+tgl.slice(4,6)+'-'+tgl.slice(6) : tgl;
+          const ts  = tglFmt ? new Date(tglFmt).getTime() : 0;
           if (ts > d7)       psWk0++;
           else if (ts > d14) psWk1++;
         }
@@ -3966,7 +3968,7 @@ function app() {
         statusIO:  r[C.VAL_IO]||'',
         statusPS:  r[C.VAL_PS]||'',
         statusFnl: r[C.STATUS_FNL]||'',
-        tglIO:     r[C.DATE_IO]||'',
+        tglIO:     (function(d){ if(!d||typeof d!=='string'||d.length!==8) return d||''; return d.slice(6)+'/'+d.slice(4,6)+'/'+d.slice(0,4); })(r[C.DATE_IO]),
         kendala:   r[C.KENDALA_CAT]||'',
         kendalaDetail: r[C.KENDALA_DTL]||'',
         blnIO:     (r[C.BLN_IO]||'').toString(),
