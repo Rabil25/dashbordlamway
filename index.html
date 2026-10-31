@@ -2870,7 +2870,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               <label class="input-lbl">SF</label>
               <select class="select" style="width:100%" x-model="form.username_sf" @change="onSFChange()">
                 <option value="">-- Pilih SF --</option>
-                <template x-for="u in sfList" :key="u.username">
+                <template x-for="u in sfFiltered" :key="u.username">
                   <option :value="u.username" x-text="u.nama + ' (' + u.username + ')'"></option>
                 </template>
               </select>
@@ -2890,7 +2890,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             </div>
             <div>
               <label class="input-lbl">Kabupaten</label>
-              <select class="select" style="width:100%" x-model="odpFilter.kab" @change="odpFilter.kec=''">
+              <select class="select" style="width:100%" x-model="odpFilter.kab" @change="odpFilter.kec='';_updateKabKec()">
                 <option value="">Semua</option>
                 <template x-for="k in odpKabList" :key="k">
                   <option :value="k" x-text="k"></option>
@@ -2920,7 +2920,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </tr>
               </thead>
               <tbody>
-                <template x-for="o in odpFiltered.slice(0,200)" :key="o.odp">
+                <template x-for="o in odpFiltered.slice(0,200)" :key="o.odp || o.id || $index">
                   <tr style="border-top:1px solid var(--border)" :style="selectedOdp.includes(o.odp)?'background:var(--brand-dim)':''">
                     <td style="padding:5px 8px;font-weight:600;color:var(--text-1)" x-text="o.odp"></td>
                     <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="o.kec + ' · ' + o.desa"></td>
@@ -4998,6 +4998,7 @@ function djpPlanData() {
           this.odpFilter.kabs = CLUSTER[rootCluster]?.kab || [];
           this.odpFilter.kab = '';
           this.odpFilter.kec = '';
+          this._updateKabKec();
         }
       } catch(e) {}
       try {
@@ -5011,10 +5012,10 @@ function djpPlanData() {
       const r = await fetch('data/odp.json');
       const raw = await r.json();
       const data = Array.isArray(raw) ? raw : (raw.data || []);
-      this._odpAll = data.filter(o => (o.avai||0) > 0);
+      this._odpAll = data.filter(o => (o.avai||0) > 0 && o.odp);
       this.odpClusters = [...new Set(this._odpAll.map(o=>o.cluster).filter(Boolean))].sort();
-      this.odpKabList  = [...new Set(this._odpAll.map(o=>o.kab).filter(Boolean))].sort();
-      this._updateKec();
+      this._odpAllKabList = [...new Set(this._odpAll.map(o=>o.kab).filter(Boolean))].sort();
+      this._updateKabKec();
     },
 
     async _loadSF() {
@@ -5036,8 +5037,8 @@ function djpPlanData() {
             return rows
               .filter(u => Array.isArray(u) ? (u[16]||'').toString().toUpperCase()==='ACTIVE' : true)
               .map(u => Array.isArray(u)
-                ? { username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user' }
-                : { username:(u.username||'').toString().trim(), nama:(u.nama||'').toString().trim(), role:'user' })
+                ? { username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user', kab:(u[20]||'').toString().trim(), sto:(u[19]||'').toString().trim() }
+                : { username:(u.username||'').toString().trim(), nama:(u.nama||'').toString().trim(), role:'user', kab:(u.kab||'').toString().trim(), sto:(u.sto||'').toString().trim() })
               .filter(u => { if(!u.username||seen.has(u.username)) return false; seen.add(u.username); return true; });
           };
           this.sfList = parseSF(arr);
@@ -5051,7 +5052,7 @@ function djpPlanData() {
           const seen = new Set();
           this.sfList = arr
             .filter(u => (u[16]||'').toString().toUpperCase()==='ACTIVE')
-            .map(u => ({ username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user' }))
+            .map(u => ({ username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user', kab:(u[20]||'').toString().trim(), sto:(u[19]||'').toString().trim() }))
             .filter(u => { if(!u.username||seen.has(u.username)) return false; seen.add(u.username); return true; });
         } catch(e2) { this.sfList = []; }
       }
@@ -5062,20 +5063,35 @@ function djpPlanData() {
       return (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
     },
 
-    _updateKec() {
+    _updateKabKec() {
+      const kabs = this.odpFilter.kabs || [];
+      // Kabupaten: hanya tampil kab yang ada di cluster aktif
+      if (kabs.length) {
+        this.odpKabList = (this._odpAllKabList||[]).filter(k=>kabs.includes(k));
+      } else {
+        this.odpKabList = this._odpAllKabList || [];
+      }
+      // Kecamatan: filter by kabs lalu kab tunggal
       let f = this._odpAll;
-      if (this.odpFilter.kabs.length) f = f.filter(o=>this.odpFilter.kabs.includes(o.kab));
-      if (this.odpFilter.cluster)     f = f.filter(o=>o.cluster===this.odpFilter.cluster);
-      if (this.odpFilter.kab)         f = f.filter(o=>o.kab===this.odpFilter.kab);
+      if (kabs.length)            f = f.filter(o=>kabs.includes(o.kab));
+      if (this.odpFilter.cluster) f = f.filter(o=>o.cluster===this.odpFilter.cluster);
+      if (this.odpFilter.kab)     f = f.filter(o=>o.kab===this.odpFilter.kab);
       this.odpKecList = [...new Set(f.map(o=>o.kec).filter(Boolean))].sort();
     },
 
+    get sfFiltered() {
+      const kabs = this.odpFilter.kabs || [];
+      if (!kabs.length) return this.sfList;
+      return this.sfList.filter(u => kabs.includes(u.kab));
+    },
+
     get odpFiltered() {
-      let f = this._odpAll;
-      if (this.odpFilter.kabs.length) f = f.filter(o=>this.odpFilter.kabs.includes(o.kab));
-      if (this.odpFilter.cluster)     f = f.filter(o=>o.cluster===this.odpFilter.cluster);
-      if (this.odpFilter.kab)         f = f.filter(o=>o.kab===this.odpFilter.kab);
-      if (this.odpFilter.kec)         f = f.filter(o=>o.kec===this.odpFilter.kec);
+      let f = this._odpAll || [];
+      const kabs = this.odpFilter.kabs || [];
+      if (kabs.length)            f = f.filter(o=>kabs.includes(o.kab));
+      if (this.odpFilter.cluster) f = f.filter(o=>o.cluster===this.odpFilter.cluster);
+      if (this.odpFilter.kab)     f = f.filter(o=>o.kab===this.odpFilter.kab);
+      if (this.odpFilter.kec)     f = f.filter(o=>o.kec===this.odpFilter.kec);
       return f;
     },
 
