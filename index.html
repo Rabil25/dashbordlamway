@@ -4989,6 +4989,17 @@ function djpPlanData() {
 
     // Called via @page-djp_plan.window
     async initPlan() {
+      // Sync filter cluster ke cluster aktif di header
+      try {
+        const rootEl = document.querySelector('[x-data="app()"]');
+        const rootCluster = rootEl && rootEl._x_dataStack && rootEl._x_dataStack[0] && rootEl._x_dataStack[0].cluster;
+        if (rootCluster) {
+          // 'Lampung Barat' → 'LAMPUNG BARAT' sesuai nilai di odp.json
+          this.odpFilter.cluster = rootCluster.toUpperCase();
+          this.odpFilter.kab = '';
+          this.odpFilter.kec = '';
+        }
+      } catch(e) {}
       try {
         await Promise.all([this._loadODP(), this._loadSF()]);
         await this.loadPlan();
