@@ -5104,7 +5104,10 @@ function djpPlanData() {
     get sfFiltered() {
       const kabs = this.odpFilter.kabs || [];
       if (!kabs.length) return this.sfList;
-      return this.sfList.filter(u => kabs.includes(u.kab));
+      // Jika tidak ada SF yang punya data kab (mis. dari GAS tanpa kab), tampilkan semua
+      const hasKabData = this.sfList.some(u => u.kab);
+      if (!hasKabData) return this.sfList;
+      return this.sfList.filter(u => kabs.includes((u.kab||'').toUpperCase()));
     },
 
     get odpFiltered() {
