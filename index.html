@@ -4103,12 +4103,12 @@ function app() {
 
     // ── CHARTS ──
     renderCharts() {
-      // Stagger chart renders: tiap chart di setTimeout terpisah agar browser bisa paint di antaranya
-      const self = this;
       if (this.page === 'dashboard') {
-        self.renderTren();
-        setTimeout(() => { self.renderProduk(); self.renderChannel(); }, 0);
-        setTimeout(() => { self.renderTime(); self.renderHP(); }, 0);
+        this.renderTren();
+        this.renderProduk();
+        this.renderChannel();
+        this.renderTime();
+        this.renderHP();
       } else if (this.page === 'd2d') {
         this.renderD2dTren();
       } else if (this.page === 'deepdive') {
