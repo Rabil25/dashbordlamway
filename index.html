@@ -2877,20 +2877,11 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             </div>
           </div>
 
-          <!-- Filter ODP -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-            <div>
-              <label class="input-lbl">Cluster</label>
-              <select class="select" style="width:100%" x-model="odpFilter.cluster" @change="odpFilter.kab='';odpFilter.kec=''">
-                <option value="">Semua</option>
-                <template x-for="c in odpClusters" :key="c">
-                  <option :value="c" x-text="c"></option>
-                </template>
-              </select>
-            </div>
+          <!-- Filter ODP: Kab · Kec · Desa · Occ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
             <div>
               <label class="input-lbl">Kabupaten</label>
-              <select class="select" style="width:100%" x-model="odpFilter.kab" @change="odpFilter.kec='';_updateKabKec()">
+              <select class="select" style="width:100%" x-model="odpFilter.kab" @change="odpFilter.kec='';odpFilter.desa=''">
                 <option value="">Semua</option>
                 <template x-for="k in odpKabList" :key="k">
                   <option :value="k" x-text="k"></option>
@@ -2899,10 +2890,28 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             </div>
             <div>
               <label class="input-lbl">Kecamatan</label>
-              <select class="select" style="width:100%" x-model="odpFilter.kec">
+              <select class="select" style="width:100%" x-model="odpFilter.kec" @change="odpFilter.desa=''">
                 <option value="">Semua</option>
                 <template x-for="k in odpKecList" :key="k">
                   <option :value="k" x-text="k"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="input-lbl">Desa</label>
+              <select class="select" style="width:100%" x-model="odpFilter.desa">
+                <option value="">Semua</option>
+                <template x-for="d in odpDesaList" :key="d">
+                  <option :value="d" x-text="d"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="input-lbl">Occ</label>
+              <select class="select" style="width:100%" x-model="odpFilter.occ">
+                <option value="">Semua</option>
+                <template x-for="c in odpOccList" :key="c">
+                  <option :value="c" x-text="c"></option>
                 </template>
               </select>
             </div>
@@ -2920,7 +2929,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </tr>
               </thead>
               <tbody>
-                <template x-for="o in odpFiltered.slice(0,200)" :key="o.odp || o.id || $index">
+                <template x-for="o in odpFiltered.slice(0,200)" :key="o.odp + '|' + o.kab + '|' + o.kec">
                   <tr style="border-top:1px solid var(--border)" :style="selectedOdp.includes(o.odp)?'background:var(--brand-dim)':''">
                     <td style="padding:5px 8px;font-weight:600;color:var(--text-1)" x-text="o.odp"></td>
                     <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="o.kec + ' · ' + o.desa"></td>
@@ -4970,8 +4979,7 @@ function djpPlanData() {
     sfList: [],
     // ODP
     _odpAll: [],
-    odpFilter: { cluster:'', kabs:[], kab:'', kec:'' },
-    odpClusters: [], odpKabList: [], odpKecList: [],
+    odpFilter: { kabs:[], kab:'', kec:'', desa:'', occ:'' },
     selectedOdp: [],   // array of odp names (for x-model array checkbox)
     // Plan tersimpan
     viewTgl: new Date().toISOString().slice(0,10),
@@ -4981,30 +4989,35 @@ function djpPlanData() {
     initError: '',
 
     async init() {
+      this._applyClusterFilter();
       try {
         await Promise.all([this._loadODP(), this._loadSF()]);
         await this.loadPlan();
       } catch(e) { this.initError = e.message; }
     },
 
-    // Called via @page-djp_plan.window
+    // Called via @page-djp_plan.window (saat user klik nav Plan DJP)
     async initPlan() {
-      // Sync filter cluster ke cluster aktif di header
-      try {
-        const rootEl = document.querySelector('[x-data="app()"]');
-        const rootCluster = rootEl && rootEl._x_dataStack && rootEl._x_dataStack[0] && rootEl._x_dataStack[0].cluster;
-        if (rootCluster) {
-          this.odpFilter.cluster = '';
-          this.odpFilter.kabs = CLUSTER[rootCluster]?.kab || [];
-          this.odpFilter.kab = '';
-          this.odpFilter.kec = '';
-          this._updateKabKec();
-        }
-      } catch(e) {}
+      this._applyClusterFilter();
       try {
         await Promise.all([this._loadODP(), this._loadSF()]);
         await this.loadPlan();
       } catch(e) { this.initError = e.message; }
+    },
+
+    // Baca cluster aktif dari root app() dan set odpFilter.kabs
+    _applyClusterFilter() {
+      try {
+        const rootEl = document.querySelector('[x-data="app()"]');
+        const rootCluster = rootEl?._x_dataStack?.[0]?.cluster;
+        if (rootCluster && CLUSTER[rootCluster]) {
+          this.odpFilter.kabs = [...CLUSTER[rootCluster].kab];
+          this.odpFilter.kab  = '';
+          this.odpFilter.kec  = '';
+          this.odpFilter.desa = '';
+          this.odpFilter.occ  = '';
+        }
+      } catch(e) {}
     },
 
     async _loadODP() {
@@ -5012,10 +5025,8 @@ function djpPlanData() {
       const r = await fetch('data/odp.json');
       const raw = await r.json();
       const data = Array.isArray(raw) ? raw : (raw.data || []);
-      this._odpAll = data.filter(o => (o.avai||0) > 0 && o.odp);
-      this.odpClusters = [...new Set(this._odpAll.map(o=>o.cluster).filter(Boolean))].sort();
-      this._odpAllKabList = [...new Set(this._odpAll.map(o=>o.kab).filter(Boolean))].sort();
-      this._updateKabKec();
+      // filter: avai > 0, punya odp name & kab
+      this._odpAll = data.filter(o => (o.avai||0) > 0 && o.odp && o.kab);
     },
 
     async _loadSF() {
@@ -5063,20 +5074,31 @@ function djpPlanData() {
       return (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
     },
 
-    _updateKabKec() {
+    // ── Computed getters untuk dropdown filter (selalu reactive) ──
+    get odpKabList() {
       const kabs = this.odpFilter.kabs || [];
-      // Kabupaten: hanya tampil kab yang ada di cluster aktif
-      if (kabs.length) {
-        this.odpKabList = (this._odpAllKabList||[]).filter(k=>kabs.includes(k));
-      } else {
-        this.odpKabList = this._odpAllKabList || [];
-      }
-      // Kecamatan: filter by kabs lalu kab tunggal
+      const all = [...new Set(this._odpAll.map(o=>o.kab).filter(Boolean))].sort();
+      return kabs.length ? all.filter(k => kabs.includes(k)) : all;
+    },
+    get odpKecList() {
+      const kabs = this.odpFilter.kabs || [];
       let f = this._odpAll;
-      if (kabs.length)            f = f.filter(o=>kabs.includes(o.kab));
-      if (this.odpFilter.cluster) f = f.filter(o=>o.cluster===this.odpFilter.cluster);
-      if (this.odpFilter.kab)     f = f.filter(o=>o.kab===this.odpFilter.kab);
-      this.odpKecList = [...new Set(f.map(o=>o.kec).filter(Boolean))].sort();
+      if (kabs.length)           f = f.filter(o => kabs.includes(o.kab));
+      if (this.odpFilter.kab)    f = f.filter(o => o.kab === this.odpFilter.kab);
+      return [...new Set(f.map(o=>o.kec).filter(Boolean))].sort();
+    },
+    get odpDesaList() {
+      const kabs = this.odpFilter.kabs || [];
+      let f = this._odpAll;
+      if (kabs.length)           f = f.filter(o => kabs.includes(o.kab));
+      if (this.odpFilter.kab)    f = f.filter(o => o.kab === this.odpFilter.kab);
+      if (this.odpFilter.kec)    f = f.filter(o => o.kec === this.odpFilter.kec);
+      return [...new Set(f.map(o=>o.desa).filter(Boolean))].sort();
+    },
+    get odpOccList() {
+      const kabs = this.odpFilter.kabs || [];
+      let f = kabs.length ? this._odpAll.filter(o => kabs.includes(o.kab)) : this._odpAll;
+      return [...new Set(f.map(o=>o.occ).filter(Boolean))].sort();
     },
 
     get sfFiltered() {
@@ -5086,13 +5108,16 @@ function djpPlanData() {
     },
 
     get odpFiltered() {
-      let f = this._odpAll || [];
-      const kabs = this.odpFilter.kabs || [];
-      if (kabs.length)            f = f.filter(o=>kabs.includes(o.kab));
-      if (this.odpFilter.cluster) f = f.filter(o=>o.cluster===this.odpFilter.cluster);
-      if (this.odpFilter.kab)     f = f.filter(o=>o.kab===this.odpFilter.kab);
-      if (this.odpFilter.kec)     f = f.filter(o=>o.kec===this.odpFilter.kec);
-      return f;
+      try {
+        const kabs = this.odpFilter.kabs || [];
+        let f = this._odpAll || [];
+        if (kabs.length)             f = f.filter(o => kabs.includes(o.kab));
+        if (this.odpFilter.kab)      f = f.filter(o => o.kab  === this.odpFilter.kab);
+        if (this.odpFilter.kec)      f = f.filter(o => o.kec  === this.odpFilter.kec);
+        if (this.odpFilter.desa)     f = f.filter(o => o.desa === this.odpFilter.desa);
+        if (this.odpFilter.occ)      f = f.filter(o => o.occ  === this.odpFilter.occ);
+        return f;
+      } catch(e) { return []; }
     },
 
     onSFChange() {},  // placeholder for future use
