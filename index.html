@@ -5031,7 +5031,7 @@ function djpPlanData() {
 
     async _loadSF() {
       const gasUrl = this._gasUrl();
-      const st = localStorage.getItem('wok_session_token')||'';
+      const st = localStorage.getItem('wok_token')||'';
       try {
         const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}`);
         const d = await r.json();
@@ -5127,8 +5127,8 @@ function djpPlanData() {
       if (!this.selectedOdp.length) { alert('Pilih minimal 1 ODP'); return; }
       const sf = this.sfList.find(u=>u.username===this.form.username_sf)||{};
       const gasUrl = this._gasUrl();
-      const st = localStorage.getItem('wok_session_token')||'';
-      const dibuat = localStorage.getItem('wok_username')||'';
+      const st = localStorage.getItem('wok_token')||'';
+      const dibuat = (JSON.parse(localStorage.getItem('wok_user')||'null')||{}).username||'';
       const items = this._odpAll.filter(o=>this.selectedOdp.includes(o.odp));
       const rows = items.map(o=>[
         this.form.tgl, this.form.username_sf, sf.nama||this.form.username_sf,
@@ -5152,7 +5152,7 @@ function djpPlanData() {
       this.planLoading = true;
       try {
         const gasUrl = this._gasUrl();
-        const st = localStorage.getItem('wok_session_token')||'';
+        const st = localStorage.getItem('wok_token')||'';
         const r = await fetch(`${gasUrl}?type=djp_plan_get&session_token=${encodeURIComponent(st)}&tgl=${this.viewTgl}`);
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal load plan');
@@ -5164,7 +5164,7 @@ function djpPlanData() {
     async deletePlanSF(username_sf) {
       if (!confirm(`Hapus semua plan ${username_sf} pada ${this.viewTgl}?`)) return;
       const gasUrl = this._gasUrl();
-      const st = localStorage.getItem('wok_session_token')||'';
+      const st = localStorage.getItem('wok_token')||'';
       try {
         const payload2 = encodeURIComponent(JSON.stringify({ session_token:st, tgl:this.viewTgl, username_sf }));
         const r = await fetch(`${gasUrl}?type=djp_plan_delete&payload=${payload2}`);
@@ -5246,8 +5246,8 @@ function djpRealData() {
       if (!this.csvRows.length) { this.msg='❌ Belum ada file CSV'; return; }
       const cfg = (typeof Alpine!=='undefined' && Alpine.store) ? Alpine.store('cfg') : null;
       const gasUrl = (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
-      const st = localStorage.getItem('wok_session_token')||'';
-      const uploader = localStorage.getItem('wok_username')||'';
+      const st = localStorage.getItem('wok_token')||'';
+      const uploader = (JSON.parse(localStorage.getItem('wok_user')||'null')||{}).username||'';
       this.uploading = true;
       this.msg = 'Mengupload...';
       try {
@@ -5288,7 +5288,7 @@ function djpDailyData() {
     async loadDaily() {
       const cfg = (typeof Alpine!=='undefined' && Alpine.store) ? Alpine.store('cfg') : null;
       const gasUrl = (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
-      const st = localStorage.getItem('wok_session_token')||'';
+      const st = localStorage.getItem('wok_token')||'';
       this.loadingDaily = true;
       this.dailyData = null;
       try {
