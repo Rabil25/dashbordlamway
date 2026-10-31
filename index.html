@@ -2083,8 +2083,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             <input class="tbl-search" placeholder="Cari ID Order / SF / Kendala..." x-model="orderSearch">
             <select class="select" x-model="orderProduk" style="font-size:11px;padding:5px 8px">
               <option value="">Semua Produk</option>
-              <template x-for="p in produkList" :key="p">
-                <option :value="p" x-text="p"></option>
+              <template x-for="p in produkList" :key="p.key">
+                <option :value="p.key" x-text="p.label"></option>
               </template>
             </select>
           </div>
@@ -3981,6 +3981,7 @@ function app() {
         namaSF:    r[C.NAMA_SF]||'',
         codeSF:    r[C.CODE_SF]||'',
         produk:    r[C.SPEED]||r[C.PRODUK_KAT]||'',
+        produkKey: ((r[C.PRODUK_KAT]||'').trim()) + '|' + ((r[C.SPEED]||'').toString().trim()),
         channel:   r[C.CHANNEL2]||'',
         statusIO:  r[C.VAL_IO]||'',
         statusPS:  r[C.VAL_PS]||'',
@@ -3997,7 +3998,7 @@ function app() {
         r.kendala.toLowerCase().includes(q)
       );
       if (this.orderKab) rows = rows.filter(r => r.kab.toUpperCase()===this.orderKab.toUpperCase());
-      if (this.orderProduk) rows = rows.filter(r => r.produk===this.orderProduk);
+      if (this.orderProduk) rows = rows.filter(r => r.produkKey===this.orderProduk);
       if (this.orderStatus === 'Put In Service') rows = rows.filter(r => r.statusPS==='Put In Service');
       else if (this.orderStatus === 'Valid IO')  rows = rows.filter(r => r.statusIO==='Valid IO');
       else if (this.orderStatus === 'Masih IO')  rows = rows.filter(r => !r.statusIO || r.statusIO==='Masih IO');
