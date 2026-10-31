@@ -5009,10 +5009,36 @@ function djpPlanData() {
     async _loadSF() {
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_session_token')||'';
-      const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}`);
-      const d = await r.json();
-      if (!d.ok) throw new Error(d.error||'Gagal load users');
-      this.sfList = d.users||[];
+      try {
+        const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}`);
+        const d = await r.json();
+        if (d.ok && d.users && d.users.length) {
+          this.sfList = d.users;
+        } else {
+          // GAS belum support djp_users — fallback ke update_sf.json
+          const r2 = await fetch('data/update_sf.json');
+          const sf2 = await r2.json();
+          const arr = sf2.data||[];
+          // update_sf data: array-of-arrays [0]=no [1]=nama [10]=username
+          this.sfList = arr.map(u=>({
+            username: (Array.isArray(u)?u[10]:(u.username||'')).toString().trim(),
+            nama:     (Array.isArray(u)?u[1] :(u.nama||'')).toString().trim(),
+            role:     'user',
+          })).filter(u=>u.username);
+        }
+      } catch(e) {
+        // fallback ke update_sf.json
+        try {
+          const r2 = await fetch('data/update_sf.json');
+          const sf2 = await r2.json();
+          const arr = sf2.data||[];
+          this.sfList = arr.map(u=>({
+            username: (Array.isArray(u)?u[10]:(u.username||'')).toString().trim(),
+            nama:     (Array.isArray(u)?u[1] :(u.nama||'')).toString().trim(),
+            role:     'user',
+          })).filter(u=>u.username);
+        } catch(e2) { this.sfList = []; }
+      }
     },
 
     _gasUrl() {
