@@ -4439,10 +4439,10 @@ function app() {
           renderer: this._odpCanvas,
           radius: 4,
           fillColor: clr,
-          color: clr,       // stroke = warna OCC (beda dari order yg stroke putih)
+          color: '#222',    // stroke hitam tipis — beda dari order yg stroke putih
           weight: 1,
-          fillOpacity: 0.75,
-          opacity: 1,
+          fillOpacity: 0.8,
+          opacity: 0.9,
         });
         circle.bindPopup(`<div style="font-family:'Poppins',sans-serif;font-size:12px;line-height:1.8">
           <b>${o.odp || '-'}</b><br>
