@@ -2246,11 +2246,6 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             PS
           </label>
           <span style="font-size:11px;color:var(--text-3);margin-left:4px" x-text="koordinatRows.filter(r=>(r.type==='proses'&&petaFilter.io)||(r.type==='kendala'&&petaFilter.re)||(r.type==='ps'&&petaFilter.ps)).length + ' marker tampil'"></span>
-          <!-- Toggle ODP -->
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#a78bfa;background:var(--card-bg);border:1.5px solid #a78bfa;border-radius:20px;padding:4px 12px;transition:opacity .2s;margin-left:8px" :style="showODP ? '' : 'opacity:.4'">
-            <input type="checkbox" x-model="showODP" @change="toggleODPLayer()" style="accent-color:#a78bfa;width:14px;height:14px">
-            📡 Titik ODP
-          </label>
           <!-- Toggle layer peta -->
           <div style="margin-left:auto;display:flex;gap:4px;background:var(--bg-2);border-radius:20px;padding:3px">
             <button @click="mapLayer='osm'; $nextTick(()=>renderPeta())"
@@ -2260,6 +2255,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               :style="mapLayer==='satellite' ? 'background:var(--brand);color:#fff' : 'background:transparent;color:var(--text-2)'"
               style="border:none;cursor:pointer;font-size:11px;font-weight:600;padding:4px 12px;border-radius:16px;transition:all .2s">🛰 Satelit</button>
           </div>
+        </div>
+        <!-- Baris ODP terpisah -->
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#a78bfa;background:var(--card-bg);border:1.5px solid #a78bfa;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="showODP ? '' : 'opacity:.4'">
+            <input type="checkbox" x-model="showODP" @change="toggleODPLayer()" style="accent-color:#a78bfa;width:14px;height:14px">
+            📡 Titik ODP
+          </label>
+          <span style="font-size:11px;color:var(--text-3)" x-show="showODP">4.061 titik ODP</span>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div id="leaflet-map" style="height:480px;width:100%" role="img" aria-label="Peta sebaran order dengan koordinat"></div>
