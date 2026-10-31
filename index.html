@@ -2959,6 +2959,14 @@ function getSFTier(prevPS) {
 
 
 // ============================================================
+//  FILTER CACHE — non-reactive closure variables
+//  filteredRows dipanggil 15-20x per render; cache ini memastikan
+//  filter 885 baris hanya dijalankan 1x per perubahan cluster/data
+// ============================================================
+let _frCache = null, _frKey = '';
+let _fprCache = null, _fprKey = '';
+
+// ============================================================
 //  ALPINE APP
 // ============================================================
 function app() {
@@ -3518,23 +3526,32 @@ function app() {
     },
 
     // ── Filtered rows (cluster + dedup) — dari allRows, filtering bulan dilakukan di getter KPI ──
+    // Cached via closure variable _frCache: filter 885 baris hanya 1x per perubahan cluster/data
     get filteredRows() {
+      const key = this.cluster + '|' + this.allRows.length;
+      if (_frKey === key && _frCache) return _frCache;
       const kab = CLUSTER[this.cluster]?.kab || [];
-      return this.allRows.filter(r => {
+      _frCache = this.allRows.filter(r => {
         if ((r[C.DEDUP]||'').trim() !== 'Unik') return false;
         if (!kab.includes((r[C.VAL_KAB]||'').trim().toUpperCase())) return false;
         return true;
       });
+      _frKey = key;
+      return _frCache;
     },
 
     // ── Filtered rows bulan sebelumnya (untuk MoM) — sama source, filter bulan di getter ──
     get filteredPrevRows() {
+      const key = this.cluster + '|' + this.allRows.length;
+      if (_fprKey === key && _fprCache) return _fprCache;
       const kab = CLUSTER[this.cluster]?.kab || [];
-      return this.allRows.filter(r => {
+      _fprCache = this.allRows.filter(r => {
         if ((r[C.DEDUP]||'').trim() !== 'Unik') return false;
         if (!kab.includes((r[C.VAL_KAB]||'').trim().toUpperCase())) return false;
         return true;
       });
+      _fprKey = key;
+      return _fprCache;
     },
 
     // ── KPI ──
@@ -4085,12 +4102,12 @@ function app() {
 
     // ── CHARTS ──
     renderCharts() {
+      // Stagger chart renders: tiap chart di setTimeout terpisah agar browser bisa paint di antaranya
+      const self = this;
       if (this.page === 'dashboard') {
-        this.renderTren();
-        this.renderProduk();
-        this.renderChannel();
-        this.renderTime();
-        this.renderHP();
+        self.renderTren();
+        setTimeout(() => { self.renderProduk(); self.renderChannel(); }, 0);
+        setTimeout(() => { self.renderTime(); self.renderHP(); }, 0);
       } else if (this.page === 'd2d') {
         this.renderD2dTren();
       } else if (this.page === 'deepdive') {
@@ -4100,8 +4117,8 @@ function app() {
       } else if (this.page === 'sfperf') {
         if (this.sfpTab === 'tier') this.renderSfpTier();
       } else if (this.page === 'kendala') {
-        this.renderKendalaCat();
-        this.renderKendalaTren();
+        self.renderKendalaCat();
+        setTimeout(() => self.renderKendalaTren(), 0);
       } else if (this.page === 'peta') {
         this.renderPeta();
       }
