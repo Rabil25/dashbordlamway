@@ -2848,11 +2848,6 @@ const DEFAULT_GAS_URL  = 'https://script.google.com/macros/s/AKfycbzBskwSjBBScoZ
 const DEFAULT_VERCEL_URL = 'https://dashbordlamway.vercel.app/api/data';
 const GAS_TOKEN        = 'lpgLampung2026';
 
-// Static JSON bulan_ini dari GitHub (tidak ada cold-start, super cepat)
-const GITHUB_BULAN_INI_URL = 'https://raw.githubusercontent.com/Rabil25/dashbordlamway/main/data/bulan_ini.json';
-const GITHUB_UPDATE_SF_URL = 'https://raw.githubusercontent.com/Rabil25/dashbordlamway/main/data/update_sf.json';
-const GITHUB_TARGET_URL    = 'https://raw.githubusercontent.com/Rabil25/dashbordlamway/main/data/target.json';
-
 // Pilih URL terbaik: data endpoint pakai Vercel jika tersedia, auth tetap GAS
 function getDataUrl(cfg) {
   const vercelUrl = (cfg && cfg.vercelUrl) || DEFAULT_VERCEL_URL;
@@ -3403,63 +3398,43 @@ function app() {
           return;
         }
 
-        // ── Fetch paralel: bulan_ini dari GitHub (static, cepat) + updateSf/target dari Vercel ──
-        // ── Fetch paralel: 3 static JSON dari GitHub (no cold start) ──
-        const [ghBulan, ghUpdateSf, ghTarget] = await Promise.all([
-          fetch(GITHUB_BULAN_INI_URL).then(r => r.ok ? r.json() : Promise.reject('GitHub bulan_ini ' + r.status)),
-          fetch(GITHUB_UPDATE_SF_URL).then(r => r.ok ? r.json() : Promise.reject('GitHub update_sf ' + r.status)),
-          fetch(GITHUB_TARGET_URL).then(r => r.ok ? r.json() : Promise.reject('GitHub target ' + r.status)),
-        ]);
-
-        // ── Parse bulan_ini JSON dari GitHub ──────────────────────
-        const allData = ghBulan.data || [];
-
-        // Filter bulanIni (bulan dipilih) & bulanPrev (bulan sebelumnya)
-        const bulanNum     = parseInt(bulanStr);
-        const prevBulanNum = parseInt(prevBulanStr);
-        const bulanIniRows  = allData.filter(r => {
-          const bIO = (r[C.BLN_IO]||'').toString().trim();
-          const bRE = (r[C.BLN_RE]||'').toString().trim();
-          const bPS = (r[C.BLN_PS]||'').toString().trim();
-          return bIO === bulanStr || bRE === bulanStr || bPS === bulanStr;
-        });
-        const bulanPrevRows = prevBulanNum > 0 ? allData.filter(r => {
-          const bIO = (r[C.BLN_IO]||'').toString().trim();
-          const bRE = (r[C.BLN_RE]||'').toString().trim();
-          const bPS = (r[C.BLN_PS]||'').toString().trim();
-          return bIO === prevBulanStr || bRE === prevBulanStr || bPS === prevBulanStr;
-        }) : [];
-
-        // ── Parse updateSf & target dari Vercel ───────────────────
-        const updateSfRows = ghUpdateSf?.data || [];
+        // Belum di cache atau forceRefresh → 1 request ke endpoint type=all
+        const base = getDataUrl(this.cfg);
+        const url  = `${base}?token=${GAS_TOKEN}&type=all&bulan=${bulanStr}`;
+        const res  = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || 'GAS error (all)');
 
         // Simpan ke in-memory cache
         const allPayload = {
-          bulanIni:  bulanIniRows,
-          bulanPrev: bulanPrevRows,
-          updateSf:  updateSfRows,
+          bulanIni:  json.bulanIni?.data  || [],
+          bulanPrev: json.bulanPrev?.data || [],
+          updateSf:  json.updateSf?.data  || [],
         };
         this._memCache.set(cacheKeyAll, { data: allPayload, ts: nowMs });
 
-        // Simpan list_bulan dari GitHub JSON (lebih fresh dari GAS)
-        if (ghBulan.bulanList && ghBulan.bulanList.length > 0) {
-          const listBulanRaw = ghBulan.bulanList;
-          this._memCache.set(cacheKeyBulan, { data: listBulanRaw, ts: nowMs });
-          const bulanAvail = listBulanRaw.map(String);
-          if (!bulanAvail.includes(bulanStr)) {
-            this.cfg.bulan = String(Math.max(...listBulanRaw));
-            this.saveCfg();
+        // Simpan list_bulan juga dari respons yang sama
+        if (json.listBulan?.ok && json.listBulan.bulan) {
+          this._memCache.set(cacheKeyBulan, { data: json.listBulan.bulan, ts: nowMs });
+          const listBulanRaw = json.listBulan.bulan;
+          if (listBulanRaw.length > 0) {
+            const bulanAvail = listBulanRaw.map(String);
+            if (!bulanAvail.includes(bulanStr)) {
+              this.cfg.bulan = String(Math.max(...listBulanRaw));
+              this.saveCfg();
+            }
+            this._availBulanList = listBulanRaw;
           }
-          this._availBulanList = listBulanRaw;
         }
 
         // Terapkan ke state (dedup by ID_ORDER agar baris lintas-bulan tidak double-count)
         { const seen=new Set(); this.allRows=[...allPayload.bulanIni,...allPayload.bulanPrev].filter(r=>{ const id=(r[C.ID_ORDER]||'').toString().trim()||JSON.stringify(r); if(seen.has(id))return false; seen.add(id);return true; }); }
         this.sfMaster = allPayload.updateSf;
 
-        // Ambil target dari Vercel/GAS
-        if (ghTarget?.ok && ghTarget.targets) {
-          this.cfg.targets = ghTarget.targets;
+        // Ambil target dari sheet (override localStorage)
+        if (json.target?.ok && json.target.targets) {
+          this.cfg.targets = json.target.targets;
         }
 
         const nowStr = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
@@ -3469,8 +3444,8 @@ function app() {
         this.$nextTick(() => this.renderCharts());
 
         this.toast(
-          bulanIniRows.length + ' baris bln ' + bulanStr +
-          ' + ' + bulanPrevRows.length + ' baris bln ' + prevBulanStr + ' + ' + updateSfRows.length + ' SF dimuat (static)',
+          allPayload.bulanIni.length + ' baris bln ' + bulanStr +
+          ' + ' + allPayload.bulanPrev.length + ' baris bln ' + prevBulanStr + ' dimuat',
           'ok'
         );
 
