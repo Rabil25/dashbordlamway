@@ -2929,7 +2929,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </tr>
               </thead>
               <tbody>
-                <template x-for="o in odpFiltered.slice(0,200)" :key="o.odp + '|' + o.kab + '|' + o.kec">
+                <template x-for="(o, _i) in odpFiltered.slice(0,200)" :key="_i + '|' + o.odp">
                   <tr style="border-top:1px solid var(--border)" :style="selectedOdp.includes(o.odp)?'background:var(--brand-dim)':''">
                     <td style="padding:5px 8px;font-weight:600;color:var(--text-1)" x-text="o.odp"></td>
                     <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="o.kec + ' · ' + o.desa"></td>
