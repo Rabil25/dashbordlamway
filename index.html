@@ -2246,6 +2246,11 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             PS
           </label>
           <span style="font-size:11px;color:var(--text-3);margin-left:4px" x-text="koordinatRows.filter(r=>(r.type==='proses'&&petaFilter.io)||(r.type==='kendala'&&petaFilter.re)||(r.type==='ps'&&petaFilter.ps)).length + ' marker tampil'"></span>
+          <!-- Toggle ODP -->
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#a78bfa;background:var(--card-bg);border:1.5px solid #a78bfa;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="showODP ? '' : 'opacity:.4'">
+            <input type="checkbox" x-model="showODP" @change="toggleODPLayer()" style="accent-color:#a78bfa;width:14px;height:14px">
+            📡 ODP
+          </label>
           <!-- Toggle layer peta -->
           <div style="margin-left:auto;display:flex;gap:4px;background:var(--bg-2);border-radius:20px;padding:3px">
             <button @click="mapLayer='osm'; $nextTick(()=>renderPeta())"
@@ -2990,6 +2995,9 @@ function app() {
     mapLayer: 'osm',  // 'osm' | 'satellite'
     petaFilterSTO: [],     // [] = semua STO, array untuk multi-select
     petaFilterProduk: '',  // '' = semua produk
+    showODP: false,        // toggle ODP markers, default off
+    _odpData: null,        // cache ODP JSON
+    _odpLayer: null,       // Leaflet layer group ODP
     lastUpdate: '',
     TIER_CONFIG,      // expose to template
 
@@ -4363,6 +4371,67 @@ function app() {
       if (bounds.length > 0) {
         map.fitBounds(L.latLngBounds(bounds), {padding: [20,20]});
       }
+
+      // Render ODP layer jika toggle aktif
+      if (this.showODP) this.renderODPLayer();
+    },
+
+    async toggleODPLayer() {
+      if (!this._leafletMap) return;
+      if (!this.showODP) {
+        // Sembunyikan layer
+        if (this._odpLayer) { this._odpLayer.clearLayers(); }
+        return;
+      }
+      await this.renderODPLayer();
+    },
+
+    async renderODPLayer() {
+      const map = this._leafletMap;
+      if (!map) return;
+
+      // Hapus layer lama
+      if (this._odpLayer) { this._odpLayer.clearLayers(); }
+      else { this._odpLayer = L.layerGroup().addTo(map); }
+
+      // Fetch JSON (cache)
+      if (!this._odpData) {
+        try {
+          const url = 'https://raw.githubusercontent.com/Rabil25/dashbordlamway/main/data/odp.json';
+          const resp = await fetch(url);
+          this._odpData = await resp.json();
+        } catch(e) {
+          console.error('Gagal load ODP JSON:', e);
+          return;
+        }
+      }
+
+      const colorMap = {
+        'GREEN':  '#22c55e',
+        'YELLOW': '#eab308',
+        'ORANGE': '#f97316',
+        'RED':    '#ef4444',
+        'BLACK':  '#6b7280',
+      };
+
+      (this._odpData.data || []).forEach(o => {
+        if (!o.lat || !o.lng) return;
+        const clr = colorMap[(o.cluster||'').toUpperCase()] || '#a78bfa';
+        const circle = L.circleMarker([o.lat, o.lng], {
+          radius: 5,
+          fillColor: clr,
+          color: '#fff',
+          weight: 1,
+          opacity: 0.9,
+          fillOpacity: 0.8,
+        });
+        circle.bindPopup(`<div style="font-family:'Poppins',sans-serif;font-size:12px;line-height:1.8">
+          <b>${o.odp || '-'}</b><br>
+          Avail: <b>${o.avai ?? '-'}</b> &nbsp;|&nbsp; Total Port: <b>${o.occ ?? '-'}</b><br>
+          <small style="color:#888">${o.kec || ''}, ${o.kab || ''}</small>
+        </div>`);
+        this._odpLayer.addLayer(circle);
+      });
     },
 
     // ── D2D Trend Chart ──
