@@ -3001,6 +3001,7 @@ function app() {
     showODP: false,        // toggle ODP markers, default off
     _odpData: null,        // cache ODP JSON
     _odpLayer: null,       // Leaflet layer group ODP
+    _odpCanvas: null,      // Canvas renderer (1 canvas untuk 4000+ titik, bukan per-DOM)
     lastUpdate: '',
     TIER_CONFIG,      // expose to template
 
@@ -4304,7 +4305,8 @@ function app() {
         this._leafletMap.remove();
         this._leafletMap = null;
         this._leafletMarkerLayer = null;
-        this._odpLayer = null; // reset karena map dihancurkan
+        this._odpLayer = null;  // reset karena map dihancurkan
+        this._odpCanvas = null; // canvas renderer juga ikut map lama
       }
 
       // Default center: Lampung Barat region
@@ -4394,6 +4396,10 @@ function app() {
       const map = this._leafletMap;
       if (!map) return;
 
+      // Canvas renderer — 1 canvas element untuk semua ODP, bukan 4000 DOM div
+      if (!this._odpCanvas || !map.hasLayer(this._odpCanvas)) {
+        this._odpCanvas = L.canvas({ padding: 0.5 });
+      }
       // Selalu buat ulang layer group (map mungkin sudah diganti)
       if (this._odpLayer) {
         this._odpLayer.clearLayers();
@@ -4427,20 +4433,23 @@ function app() {
       (this._odpData.data || []).forEach(o => {
         if (!o.lat || !o.lng) return;
         const clr = colorMap[(o.occ||'').toUpperCase()] || '#6b7280';
-        // Kotak kecil via divIcon agar beda dari marker order (bulat)
-        const icon = L.divIcon({
-          className: '',
-          html: `<div style="width:7px;height:7px;background:${clr};border:1.5px solid #fff;border-radius:1px;box-shadow:0 0 2px rgba(0,0,0,.4)"></div>`,
-          iconSize: [7, 7],
-          iconAnchor: [3.5, 3.5],
+        // circleMarker dgn canvas renderer — ringan, 1 canvas untuk 4000+ titik
+        // radius 4 (lebih kecil dari order radius 8) + stroke berwarna beda dari order
+        const circle = L.circleMarker([o.lat, o.lng], {
+          renderer: this._odpCanvas,
+          radius: 4,
+          fillColor: clr,
+          color: clr,       // stroke = warna OCC (beda dari order yg stroke putih)
+          weight: 1,
+          fillOpacity: 0.75,
+          opacity: 1,
         });
-        const marker = L.marker([o.lat, o.lng], { icon });
-        marker.bindPopup(`<div style="font-family:'Poppins',sans-serif;font-size:12px;line-height:1.8">
+        circle.bindPopup(`<div style="font-family:'Poppins',sans-serif;font-size:12px;line-height:1.8">
           <b>${o.odp || '-'}</b><br>
           Avail: <b>${o.avai ?? '-'}</b> &nbsp;|&nbsp; Total Port: <b>${o.occ ?? '-'}</b><br>
           <small style="color:#888">${o.kec || ''}, ${o.kab || ''}</small>
         </div>`);
-        this._odpLayer.addLayer(marker);
+        this._odpLayer.addLayer(circle);
       });
     },
 
