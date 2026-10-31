@@ -4454,8 +4454,8 @@ function app() {
       } else if (this.page === 'sfperf') {
         if (this.sfpTab === 'tier') this.renderSfpTier();
       } else if (this.page === 'kendala') {
-        self.renderKendalaCat();
-        setTimeout(() => self.renderKendalaTren(), 0);
+        this.renderKendalaCat();
+        setTimeout(() => this.renderKendalaTren(), 0);
       } else if (this.page === 'peta') {
         this.renderPeta();
       }
