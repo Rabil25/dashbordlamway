@@ -5019,12 +5019,17 @@ function djpPlanData() {
           const r2 = await fetch('data/update_sf.json');
           const sf2 = await r2.json();
           const arr = sf2.data||[];
-          // update_sf data: array-of-arrays [0]=no [1]=nama [10]=username
-          this.sfList = arr.map(u=>({
-            username: (Array.isArray(u)?u[10]:(u.username||'')).toString().trim(),
-            nama:     (Array.isArray(u)?u[1] :(u.nama||'')).toString().trim(),
-            role:     'user',
-          })).filter(u=>u.username);
+          // update_sf data: array-of-arrays [1]=nama [2]=NIK(unique) [16]=status
+          const parseSF = rows => {
+            const seen = new Set();
+            return rows
+              .filter(u => Array.isArray(u) ? (u[16]||'').toString().toUpperCase()==='ACTIVE' : true)
+              .map(u => Array.isArray(u)
+                ? { username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user' }
+                : { username:(u.username||'').toString().trim(), nama:(u.nama||'').toString().trim(), role:'user' })
+              .filter(u => { if(!u.username||seen.has(u.username)) return false; seen.add(u.username); return true; });
+          };
+          this.sfList = parseSF(arr);
         }
       } catch(e) {
         // fallback ke update_sf.json
@@ -5032,11 +5037,11 @@ function djpPlanData() {
           const r2 = await fetch('data/update_sf.json');
           const sf2 = await r2.json();
           const arr = sf2.data||[];
-          this.sfList = arr.map(u=>({
-            username: (Array.isArray(u)?u[10]:(u.username||'')).toString().trim(),
-            nama:     (Array.isArray(u)?u[1] :(u.nama||'')).toString().trim(),
-            role:     'user',
-          })).filter(u=>u.username);
+          const seen = new Set();
+          this.sfList = arr
+            .filter(u => (u[16]||'').toString().toUpperCase()==='ACTIVE')
+            .map(u => ({ username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user' }))
+            .filter(u => { if(!u.username||seen.has(u.username)) return false; seen.add(u.username); return true; });
         } catch(e2) { this.sfList = []; }
       }
     },
