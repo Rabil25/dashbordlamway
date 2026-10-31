@@ -5083,10 +5083,8 @@ function djpPlanData() {
       ]);
       this.saving = true;
       try {
-        const r = await fetch(`${gasUrl}?type=djp_plan_save`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ session_token:st, tgl:this.form.tgl, username_sf:this.form.username_sf, rows })
-        });
+        const payload = encodeURIComponent(JSON.stringify({ session_token:st, tgl:this.form.tgl, username_sf:this.form.username_sf, rows }));
+        const r = await fetch(`${gasUrl}?type=djp_plan_save&payload=${payload}`);
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal simpan');
         this.selectedOdp = [];
@@ -5114,10 +5112,8 @@ function djpPlanData() {
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_session_token')||'';
       try {
-        const r = await fetch(`${gasUrl}?type=djp_plan_delete`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ session_token:st, tgl:this.viewTgl, username_sf })
-        });
+        const payload2 = encodeURIComponent(JSON.stringify({ session_token:st, tgl:this.viewTgl, username_sf }));
+        const r = await fetch(`${gasUrl}?type=djp_plan_delete&payload=${payload2}`);
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal hapus');
         await this.loadPlan();
@@ -5205,10 +5201,8 @@ function djpRealData() {
         let inserted = 0, skipped = 0;
         for (let i = 0; i < this.csvRows.length; i += BATCH) {
           const batch = this.csvRows.slice(i, i + BATCH);
-          const r = await fetch(`${gasUrl}?type=djp_realisasi_upload`, {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ session_token:st, uploaded_by:uploader, rows:batch })
-          });
+          const rlPayload = encodeURIComponent(JSON.stringify({ session_token:st, uploaded_by:uploader, rows:batch }));
+          const r = await fetch(`${gasUrl}?type=djp_realisasi_upload&payload=${rlPayload}`);
           const d = await r.json();
           if (!d.ok) throw new Error(d.error||'Upload gagal');
           inserted += d.inserted||0;

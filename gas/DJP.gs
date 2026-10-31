@@ -34,6 +34,13 @@ const R = {
 //  MAIN HANDLER – dipanggil dari doGet di Code.gs
 // ================================================================
 function handleDJP(type, params) {
+  // Frontend kirim data via ?payload=JSON (GET) untuk hindari CORS preflight POST
+  if (params.payload) {
+    try {
+      var p = JSON.parse(params.payload);
+      for (var k in p) params[k] = p[k];
+    } catch(e) {}
+  }
   switch (type) {
     case 'djp_users':             return djpGetUsers(params);
     case 'djp_plan_save':         return djpPlanSave(params);
@@ -87,7 +94,7 @@ function djpPlanSave(params) {
 
   let rows;
   try {
-    rows = JSON.parse(params.rows || '[]');
+    rows = (typeof params.rows === 'string') ? JSON.parse(params.rows) : (params.rows || []);
   } catch(e) {
     return { ok:false, error:'Format rows tidak valid (harus JSON array).' };
   }
