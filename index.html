@@ -5656,21 +5656,48 @@ function djpOdpListData() {
       const gasUrl = (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
       const st = localStorage.getItem('wok_token')||'';
 
-      // ambil kabs dari cluster user
+      // ambil kabs dari cluster user untuk filter lokal
       const rootEl = document.querySelector('[x-data="app()"]');
       const rootCluster = rootEl?._x_dataStack?.[0]?.cluster;
-      const kabs = (rootCluster && typeof CLUSTER!=='undefined' && CLUSTER[rootCluster])
-        ? CLUSTER[rootCluster].kab : [];
+      const clusterKabs = (rootCluster && typeof CLUSTER!=='undefined' && CLUSTER[rootCluster])
+        ? CLUSTER[rootCluster].kab.map(k => k.toUpperCase()) : [];
 
       this.loading = true;
       this.odpData = [];
       try {
-        const kabsParam = encodeURIComponent(JSON.stringify(kabs));
-        const url = `${gasUrl}?type=djp_odp_list&session_token=${encodeURIComponent(st)}&bulan=${this.bulan}&kabs=${kabsParam}`;
-        const r = await fetch(url);
-        const d = await r.json();
-        if (!d.ok) throw new Error(d.error||'Gagal load ODP list');
-        this.odpData = d.odp_list || [];
+        // 1. ODP base data dari data/odp.json (sudah di-export script, cepat)
+        const [jsonRes, gasRes] = await Promise.all([
+          fetch('data/odp.json'),
+          fetch(`${gasUrl}?type=djp_odp_list&session_token=${encodeURIComponent(st)}&bulan=${this.bulan}`),
+        ]);
+        const allOdp = await jsonRes.json();   // array [{ODP, AVAI, USED, 'OCC 2', KAB, KEC, DESA, ...}]
+        const gasData = await gasRes.json();   // { ok, assign:[], visit:[] }
+
+        const assignSet = new Set((gasData.assign || []).map(s => s.trim()));
+        const visitSet  = new Set((gasData.visit  || []).map(s => s.trim()));
+
+        // 2. Filter by cluster kabs + merge assign/visit
+        const rows = (Array.isArray(allOdp) ? allOdp : [])
+          .filter(o => {
+            if (!clusterKabs.length) return true;
+            const kab = (o.KAB || o.kab || '').toString().toUpperCase().trim();
+            return clusterKabs.some(k => kab.includes(k) || k.includes(kab));
+          })
+          .map(o => {
+            const name = (o.ODP || o.odp || '').toString().trim();
+            return {
+              odp:   name,
+              occ:   o['OCC 2'] ?? o.OCC ?? o.occ ?? '',
+              avail: o.AVAI ?? o.avail ?? '',
+              kab:   o.KAB  || o.kab  || '',
+              kec:   o.KEC  || o.kec  || '',
+              desa:  o.DESA || o.desa || '',
+              assign: assignSet.has(name),
+              visit:  visitSet.has(name),
+            };
+          });
+
+        this.odpData = rows;
       } catch(e) { this.odpData = []; console.error('djpOdpList:', e); }
       this.loading = false;
     },

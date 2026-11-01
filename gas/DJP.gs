@@ -503,88 +503,47 @@ function djpDaily(params) {
 //  params.kabs  = JSON array kabupaten filter (opsional)
 //  Return: { ok, bulan, odp_list: [{odp, occ, avail, kab, kec, desa, assign, visit}] }
 // ================================================================
+// djpOdpList — hanya return set assign & visit (ODP base data dari data/odp.json di frontend)
 function djpOdpList(params) {
   const auth = verifyToken(params.session_token || '');
   if (!auth.ok) return auth;
 
-  const now     = new Date();
-  const bulan   = (params.bulan || Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM')).trim();
-  const [yr, mo] = bulan.split('-');
-
-  let kabFilter = [];
-  try {
-    if (params.kabs) {
-      kabFilter = typeof params.kabs === 'string' ? JSON.parse(params.kabs) : params.kabs;
-      kabFilter = kabFilter.map(k => k.toUpperCase().trim());
-    }
-  } catch(e) {}
+  const now   = new Date();
+  const bulan = (params.bulan || Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM')).trim();
 
   try {
     const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
+    const assignSet = {};
+    const visitSet  = {};
 
-    // ── 1. Baca ODPBot sheet (header dinamis) ──
-    const wsOdp = ss.getSheetByName(DJP_CONFIG.SHEET_ODP);
-    if (!wsOdp) return { ok:false, error:'Sheet ODPBot tidak ditemukan.' };
-    const odpRaw = wsOdp.getDataRange().getValues();
-    const odpHdr = odpRaw[0].map(h => h.toString().trim());
-    const idx = {
-      odp:     odpHdr.indexOf('ODP'),
-      avai:    odpHdr.indexOf('AVAI'),
-      used:    odpHdr.indexOf('USED'),
-      occ:     odpHdr.indexOf('OCC 2'),
-      kab:     odpHdr.indexOf('KAB'),
-      kec:     odpHdr.indexOf('KEC'),
-      desa:    odpHdr.indexOf('DESA'),
-      cluster: odpHdr.indexOf('Telkomsel Cluster'),
-    };
-
-    const odpMap = {}; // key=odp name
-    for (let i = 1; i < odpRaw.length; i++) {
-      const row = odpRaw[i];
-      const odp = (row[idx.odp] || '').toString().trim();
-      if (!odp) continue;
-      const kab = (row[idx.kab] || '').toString().trim().toUpperCase();
-      if (kabFilter.length > 0 && !kabFilter.some(k => kab === k || kab.includes(k))) continue;
-      odpMap[odp] = {
-        odp,
-        occ:   (row[idx.occ]  || '').toString().trim(),
-        avail: (row[idx.avai] || '').toString().trim(),
-        used:  (row[idx.used] || '').toString().trim(),
-        kab:   (row[idx.kab]  || '').toString().trim(),
-        kec:   (row[idx.kec]  || '').toString().trim(),
-        desa:  (row[idx.desa] || '').toString().trim(),
-        assign: false,
-        visit:  false,
-      };
-    }
-
-    // ── 2. Cek Assign: ODP yang ada di DJP_Plan bulan ini ──
+    // ── 1. Assign: ODP yang di-plan bulan ini ──
     const wsPlan = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
     if (wsPlan) {
-      const planRows = wsPlan.getDataRange().getValues().slice(1);
-      planRows.forEach(r => {
-        const tglStr = (r[P.TGL]||'').toString().trim();
-        // format yyyy-MM-dd — cek bulan
-        if (!tglStr.startsWith(bulan)) return;
-        const odp = (r[P.ODP]||'').toString().trim();
-        if (odpMap[odp]) odpMap[odp].assign = true;
+      wsPlan.getDataRange().getValues().slice(1).forEach(r => {
+        if ((r[P.TGL]||'').toString().trim().startsWith(bulan)) {
+          const odp = (r[P.ODP]||'').toString().trim();
+          if (odp) assignSet[odp] = true;
+        }
       });
     }
 
-    // ── 3. Cek Visit: ODP yang ada di DJP_Realisasi bulan ini ──
+    // ── 2. Visit: ODP yang ada di Realisasi bulan ini ──
     const wsReal = ss.getSheetByName(DJP_CONFIG.SHEET_REAL);
     if (wsReal) {
-      const realRows = wsReal.getDataRange().getValues().slice(1);
-      realRows.forEach(r => {
-        const tglStr = (r[R.TGL]||'').toString().trim();
-        if (!tglStr.startsWith(bulan)) return;
-        const odp = (r[R.ODP]||'').toString().trim();
-        if (odpMap[odp]) odpMap[odp].visit = true;
+      wsReal.getDataRange().getValues().slice(1).forEach(r => {
+        if ((r[R.TGL]||'').toString().trim().startsWith(bulan)) {
+          const odp = (r[R.ODP]||'').toString().trim();
+          if (odp) visitSet[odp] = true;
+        }
       });
     }
 
-    const odp_list = Object.values(odpMap);
-    return { ok:true, bulan, total: odp_list.length, odp_list };
+    return {
+      ok:     true,
+      bulan,
+      assign: Object.keys(assignSet),   // array nama ODP yang sudah assign
+      visit:  Object.keys(visitSet),    // array nama ODP yang sudah visit
+    };
   } catch(e) {
     return { ok:false, error:'djpOdpList: ' + e.message };
   }
