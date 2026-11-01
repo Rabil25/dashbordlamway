@@ -169,10 +169,20 @@ function djpPlanGet(params) {
     if (!ws) return { ok:false, error:'Sheet DJP_Plan tidak ditemukan.' };
 
     const rows = ws.getDataRange().getValues().slice(1); // skip header
+
+    // Helper: Sheets sering auto-convert string tanggal ke Date object
+    function formatTgl(val) {
+      if (!val) return '';
+      if (val instanceof Date) {
+        return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      }
+      return val.toString().trim();
+    }
+
     const data = rows
-      .filter(r => (r[P.TGL]||'').toString().trim() === tgl)
+      .filter(r => formatTgl(r[P.TGL]) === tgl)
       .map(r => ({
-        tgl:          (r[P.TGL]||'').toString().trim(),
+        tgl:          formatTgl(r[P.TGL]),
         username_sf:  (r[P.USERNAME_SF]||'').toString().trim(),
         nama_sf:      (r[P.NAMA_SF]||'').toString().trim(),
         odp:          (r[P.ODP]||'').toString().trim(),
