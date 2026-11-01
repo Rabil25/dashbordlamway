@@ -3212,7 +3212,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <div x-show="csvRows.length>0" style="margin-top:12px">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
               <span style="font-size:12px;font-weight:700;color:var(--text-1)" x-text="csvRows.length + ' baris ditemukan'"></span>
-              <button class="btn" @click="uploadCsv()" :disabled="uploading"
+              <button class="btn" @click="upload()" :disabled="uploading"
                 style="background:var(--brand);color:#fff;font-size:12px;padding:5px 14px">
                 <span x-show="!uploading">📤 Upload ke Spreadsheet</span>
                 <span x-show="uploading">Mengupload…</span>
@@ -5344,8 +5344,7 @@ function djpPlanData() {
       }));
       this.saving = true;
       try {
-        const payload = encodeURIComponent(JSON.stringify({ session_token:st, tgl:this.form.tgl, username_sf:this.form.username_sf, rows }));
-        const r = await fetch(`${gasUrl}?type=djp_plan_save&payload=${payload}`);
+        const r = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:this.form.tgl, username_sf:this.form.username_sf, rows }) });
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal simpan');
         const n = this.selectedOdp.length;
@@ -5375,8 +5374,7 @@ function djpPlanData() {
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_token')||'';
       try {
-        const payload2 = encodeURIComponent(JSON.stringify({ session_token:st, tgl:this.viewTgl, username_sf }));
-        const r = await fetch(`${gasUrl}?type=djp_plan_delete&payload=${payload2}`);
+        const r = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_plan_delete', session_token:st, tgl:this.viewTgl, username_sf }) });
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal hapus');
         await this.loadPlan();
@@ -5478,8 +5476,7 @@ function djpRealData() {
         let inserted = 0, skipped = 0;
         for (let i = 0; i < this.csvRows.length; i += BATCH) {
           const batch = this.csvRows.slice(i, i + BATCH);
-          const rlPayload = encodeURIComponent(JSON.stringify({ session_token:st, uploaded_by:uploader, rows:batch }));
-          const r = await fetch(`${gasUrl}?type=djp_realisasi_upload&payload=${rlPayload}`);
+          const r = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_realisasi_upload', session_token:st, uploaded_by:uploader, rows:batch }) });
           const d = await r.json();
           if (!d.ok) throw new Error(d.error||'Upload gagal');
           inserted += d.inserted||0;

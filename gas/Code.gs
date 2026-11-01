@@ -648,6 +648,26 @@ function getRawSheet(sheetName, range, filterBulan) {
   };
 }
 
+// ── doPost – handle write operations via POST (no redirect, faster) ──
+function doPost(e) {
+  try {
+    var body = {};
+    if (e && e.postData && e.postData.contents) {
+      body = JSON.parse(e.postData.contents);
+    }
+    const type = (body.type || '').toLowerCase();
+    const DJP_WRITE = ['djp_plan_save','djp_plan_delete','djp_realisasi_upload'];
+    if (DJP_WRITE.indexOf(type) !== -1) {
+      // rows array langsung (tidak perlu stringify)
+      var djpParams = Object.assign({}, body);
+      return jsonOut(handleDJP(type, djpParams));
+    }
+    return jsonOut({ ok:false, error:'POST type tidak dikenal: ' + type });
+  } catch(err) {
+    return jsonOut({ ok:false, error:'doPost error: ' + err.message });
+  }
+}
+
 // ── Helper: output JSON ───────────────────────────────────────
 function jsonOut(data) {
   const out = ContentService.createTextOutput(JSON.stringify(data));
