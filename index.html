@@ -1535,6 +1535,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
         DJP Daily
       </button>
+      <button class="nav-sub-item" :class="{active:page==='djp_odp_list'}" @click="nav('djp_odp_list');menuOpen=false" aria-label="List ODP">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+        List ODP
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -3131,46 +3135,74 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
         <!-- Plan yang sudah tersimpan -->
         <div class="card" style="padding:16px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-            <div style="font-weight:700;font-size:13px;color:var(--text-1)">Plan Tersimpan</div>
-            <input type="date" class="select" x-model="viewTgl" @change="loadPlan()" style="font-size:12px;padding:4px 8px;max-width:160px">
-            <button class="btn" @click="loadPlan()" :disabled="planLoading" style="font-size:11px;padding:4px 10px">
-              <span x-show="!planLoading">🔄 Muat</span>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+            <div style="font-weight:700;font-size:13px;color:var(--text-1);white-space:nowrap">Plan Tersimpan</div>
+            <!-- Filter Tanggal -->
+            <input type="date" class="select" x-model="viewTgl" @change="loadPlan()" style="font-size:12px;padding:4px 8px;max-width:148px">
+            <!-- Filter Tahun -->
+            <select class="select" x-model="viewTahun" @change="loadPlan()" style="font-size:12px;padding:4px 8px;max-width:90px">
+              <template x-for="y in [2024,2025,2026,2027]" :key="y">
+                <option :value="y.toString()" x-text="y"></option>
+              </template>
+            </select>
+            <button class="btn" @click="loadPlan()" :disabled="planLoading" style="font-size:11px;padding:4px 10px;white-space:nowrap">
+              <span x-show="!planLoading">🔄</span>
               <span x-show="planLoading">…</span>
             </button>
-            <span x-show="planData.length>0" style="font-size:12px;color:var(--text-2)"
+            <span x-show="planData.length>0" style="font-size:12px;color:var(--text-2);white-space:nowrap"
               x-text="planData.length + ' ODP · ' + planBySF.length + ' SF'"></span>
           </div>
 
-          <!-- Loading skeleton -->
-          <div x-show="planLoading" style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">
-            ⏳ Memuat plan…
-          </div>
+          <!-- Loading -->
+          <div x-show="planLoading" style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">⏳ Memuat plan…</div>
 
-          <!-- Group by SF -->
+          <!-- Tabel per SF (Fix #2) -->
           <div x-show="!planLoading">
             <template x-for="sf in planBySF" :key="sf.username_sf">
-              <div style="margin-bottom:14px;padding:12px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface-2)">
-                <!-- SF header -->
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                  <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">👤</div>
+              <div style="margin-bottom:14px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
+                <!-- SF header bar -->
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface-2);border-bottom:1px solid var(--border)">
+                  <span style="font-size:14px">👤</span>
                   <div style="flex:1;min-width:0">
-                    <div style="font-weight:700;font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" x-text="sf.nama_sf"></div>
-                    <div style="font-size:11px;color:var(--text-3)" x-text="sf.username_sf + ' · ' + sf.odps.length + ' ODP direncanakan'"></div>
+                    <span style="font-weight:700;font-size:13px;color:var(--text-1)" x-text="sf.nama_sf"></span>
+                    <span style="font-size:11px;color:var(--text-3);margin-left:6px" x-text="'@' + sf.username_sf"></span>
                   </div>
+                  <span style="font-size:11px;color:var(--text-2);white-space:nowrap" x-text="sf.odps.length + ' ODP'"></span>
                   <button @click="deletePlanSF(sf.username_sf)"
-                    style="font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid var(--danger);color:var(--danger);background:transparent;cursor:pointer;flex-shrink:0;white-space:nowrap">
+                    style="font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid var(--danger);color:var(--danger);background:transparent;cursor:pointer;white-space:nowrap">
                     🗑 Hapus
                   </button>
                 </div>
-                <!-- ODP chips -->
-                <div style="display:flex;flex-wrap:wrap;gap:5px">
-                  <template x-for="odp in sf.odps" :key="odp.odp">
-                    <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--card-bg);color:var(--text-1);border:1px solid var(--border);display:inline-flex;align-items:center;gap:5px">
-                      <span x-text="odp.odp"></span>
-                      <span style="color:var(--text-3);font-size:10px" x-text="'· ' + (odp.desa||odp.kec||'')"></span>
-                    </span>
-                  </template>
+                <!-- Mini tabel ODP -->
+                <div style="overflow-x:auto">
+                  <table style="width:100%;font-size:12px;border-collapse:collapse">
+                    <thead>
+                      <tr style="background:var(--card-bg)">
+                        <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2);white-space:nowrap">#</th>
+                        <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2)">Nama ODP</th>
+                        <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2)">Kab</th>
+                        <th style="padding:5px 8px;text-align:left;font-weight:600;color:var(--text-2)">Kec · Desa</th>
+                        <th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--text-2)">Avai</th>
+                        <th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--text-2)">Visit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="(odp, i) in sf.odps" :key="odp.odp">
+                        <tr style="border-top:1px solid var(--border)" :style="i%2===1?'background:var(--surface-2)':''">
+                          <td style="padding:5px 10px;color:var(--text-3);font-size:11px" x-text="i+1"></td>
+                          <td style="padding:5px 10px;color:var(--text-1);font-weight:600;font-size:11px;white-space:nowrap" x-text="odp.odp"></td>
+                          <td style="padding:5px 10px;color:var(--text-2);font-size:11px;white-space:nowrap" x-text="odp.kab||'—'"></td>
+                          <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
+                          <td style="padding:5px 8px;text-align:center;color:var(--text-1);font-size:11px" x-text="odp.avai||'—'"></td>
+                          <!-- Kolom Visit: cek dari planVisited (didapat dari djp_odp_list jika sudah load, fallback tanda tanya) -->
+                          <td style="padding:5px 8px;text-align:center;font-size:12px">
+                            <span x-show="odp.visit" style="color:var(--success)" title="Sudah visit bulan ini">✅</span>
+                            <span x-show="!odp.visit" style="color:var(--text-3)">—</span>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </template>
@@ -3291,71 +3323,117 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         </div>
 
         <div x-show="loadingDaily" style="text-align:center;padding:40px;color:var(--text-3)">Memuat data…</div>
-        <div x-show="!loadingDaily && (!dailyData || dailyData.total_sf===0)" style="text-align:center;padding:40px;color:var(--text-3)">
+        <div x-show="!loadingDaily && (!dailyData || !dailyData.rows || dailyData.rows.length===0)" style="text-align:center;padding:40px;color:var(--text-3)">
           Tidak ada plan DJP untuk tanggal ini
         </div>
 
-        <!-- Per SF -->
-        <template x-for="sf in (dailyData ? dailyData.summary : [])" :key="sf.username_sf">
-          <div class="card" style="margin-bottom:12px;padding:14px">
-            <!-- Header SF -->
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-              <div style="font-weight:700;font-size:13px;color:var(--text-1)">👤 <span x-text="sf.nama_sf"></span></div>
-              <div style="font-size:11px;color:var(--text-3)" x-text="'@' + sf.username_sf"></div>
-              <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-                <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--surface-2);color:var(--text-2)"
-                  x-text="sf.odp_list.filter(o=>o.status!=='Belum').length + '/' + sf.odp_list.length + ' ODP'"></span>
-                <span style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:700"
-                  :style="sf.odp_list.filter(o=>o.status!=='Belum').length===sf.odp_list.length && sf.odp_list.length>0
-                    ? 'background:rgba(34,197,94,.15);color:var(--success)'
-                    : sf.odp_list.filter(o=>o.status!=='Belum').length>0
-                    ? 'background:rgba(234,179,8,.15);color:var(--warning)'
-                    : 'background:var(--surface-2);color:var(--text-3)'"
-                  x-text="sf.odp_list.filter(o=>o.status!=='Belum').length===sf.odp_list.length && sf.odp_list.length>0
-                    ? '✅ Selesai'
-                    : sf.odp_list.filter(o=>o.status!=='Belum').length>0
-                    ? '🔄 Sedang Jalan'
-                    : '⏳ Belum Mulai'">
-                </span>
-              </div>
-            </div>
-            <!-- Tabel ODP -->
-            <div style="overflow-x:auto">
-              <table style="width:100%;font-size:12px;border-collapse:collapse">
-                <thead>
-                  <tr style="background:var(--surface-2)">
-                    <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">ODP</th>
-                    <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">Lokasi</th>
-                    <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-2)">Status</th>
-                    <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-2)">Check-in</th>
-                    <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">Kondisi ODP</th>
-                    <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-2)">Prospek</th>
+        <!-- Flat table (Fix #4): Nama SF | Nama ODP | Clock In | Realisasi -->
+        <div class="card" x-show="!loadingDaily && dailyData && dailyData.rows && dailyData.rows.length>0" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto">
+            <table style="width:100%;font-size:12px;border-collapse:collapse">
+              <thead>
+                <tr style="background:var(--surface-2);position:sticky;top:0">
+                  <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-2);white-space:nowrap">#</th>
+                  <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-2);white-space:nowrap">Nama SF</th>
+                  <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-2);white-space:nowrap">Nama ODP</th>
+                  <th style="padding:8px 10px;text-align:center;font-weight:700;color:var(--text-2);white-space:nowrap">Clock In</th>
+                  <th style="padding:8px 10px;text-align:center;font-weight:700;color:var(--text-2);white-space:nowrap">Realisasi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(row, i) in (dailyData ? dailyData.rows : [])" :key="row.odp + '_' + row.username_sf">
+                  <tr style="border-top:1px solid var(--border)" :style="i%2===1?'background:var(--surface-2)':''">
+                    <td style="padding:7px 10px;color:var(--text-3);font-size:11px" x-text="i+1"></td>
+                    <td style="padding:7px 10px;color:var(--text-1);font-weight:600;white-space:nowrap">
+                      <span style="font-size:11px" x-text="row.nama_sf"></span>
+                      <div style="font-size:10px;color:var(--text-3)" x-text="'@' + (row.username_sf||'')"></div>
+                    </td>
+                    <td style="padding:7px 10px;color:var(--text-1);font-size:11px;font-weight:600;white-space:nowrap" x-text="row.odp"></td>
+                    <td style="padding:7px 10px;text-align:center;color:var(--text-2);font-size:12px;font-weight:600"
+                      x-text="row.checkin_jam || '—'"></td>
+                    <td style="padding:7px 10px;text-align:center">
+                      <span x-show="row.realisasi==='Done'" style="font-size:11px;padding:2px 10px;border-radius:12px;font-weight:700;background:rgba(34,197,94,.15);color:var(--success)">✅ Done</span>
+                      <span x-show="!row.realisasi" style="font-size:11px;color:var(--text-3)">—</span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  <template x-for="odp in sf.odp_list" :key="odp.odp">
-                    <tr style="border-top:1px solid var(--border)">
-                      <td style="padding:6px 8px;font-weight:600;color:var(--text-1)" x-text="odp.odp"></td>
-                      <td style="padding:6px 8px;color:var(--text-2);font-size:11px" x-text="odp.kec + ' · ' + odp.desa"></td>
-                      <td style="padding:6px 8px;text-align:center">
-                        <span style="font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700"
-                          :style="odp.status==='Belum'
-                            ? 'background:var(--surface-2);color:var(--text-3)'
-                            : odp.status.toLowerCase().includes('done')||odp.status.toLowerCase().includes('selesai')
-                            ? 'background:rgba(34,197,94,.15);color:var(--success)'
-                            : 'background:rgba(234,179,8,.15);color:var(--warning)'"
-                          x-text="odp.status"></span>
-                      </td>
-                      <td style="padding:6px 8px;text-align:center;color:var(--text-2);font-size:11px" x-text="odp.checkin || '—'"></td>
-                      <td style="padding:6px 8px;color:var(--text-2);font-size:11px" x-text="odp.odp_condition || '—'"></td>
-                      <td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--brand)" x-text="odp.prospect || '—'"></td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
+                </template>
+              </tbody>
+            </table>
           </div>
-        </template>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           Fix #5 – List ODP
+           ============================================================ -->
+      <div class="page" :class="{active:page==='djp_odp_list'}" x-show="page==='djp_odp_list'"
+           x-data="djpOdpListData()" @page-djp_odp_list.window="loadOdpList()">
+        <div class="section-hdr">
+          <div class="section-title">List ODP</div>
+          <div class="section-sub">Status ODP bulan ini: assign & visit</div>
+        </div>
+
+        <!-- Filter bulan -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <input type="month" class="select" x-model="bulan" style="font-size:12px;padding:5px 10px;max-width:160px">
+          <button class="btn" @click="loadOdpList()" :disabled="loading" style="font-size:12px;padding:5px 14px">
+            <span x-show="!loading">🔄 Muat</span>
+            <span x-show="loading">Memuat…</span>
+          </button>
+          <span x-show="odpData.length>0" style="font-size:12px;color:var(--text-2)"
+            x-text="odpData.length + ' ODP'"></span>
+          <span x-show="odpData.length>0" style="font-size:12px;color:var(--success)"
+            x-text="odpData.filter(o=>o.assign).length + ' Assign'"></span>
+          <span x-show="odpData.length>0" style="font-size:12px;color:var(--brand)"
+            x-text="odpData.filter(o=>o.visit).length + ' Visit'"></span>
+        </div>
+
+        <!-- Loading / empty -->
+        <div x-show="loading" style="text-align:center;padding:40px;color:var(--text-3)">Memuat data ODP…</div>
+        <div x-show="!loading && odpData.length===0" style="text-align:center;padding:40px;color:var(--text-3)">
+          <div style="font-size:28px;margin-bottom:8px">📭</div>
+          <div style="font-size:13px">Tidak ada data ODP ditemukan</div>
+        </div>
+
+        <!-- Tabel List ODP -->
+        <div class="card" x-show="!loading && odpData.length>0" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto">
+            <table style="width:100%;font-size:12px;border-collapse:collapse">
+              <thead>
+                <tr style="background:var(--surface-2)">
+                  <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-2);white-space:nowrap">#</th>
+                  <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-2);white-space:nowrap">Nama ODP</th>
+                  <th style="padding:8px 6px;text-align:center;font-weight:700;color:var(--text-2)">OCC</th>
+                  <th style="padding:8px 6px;text-align:center;font-weight:700;color:var(--text-2)">Avail</th>
+                  <th style="padding:8px 6px;text-align:left;font-weight:700;color:var(--text-2)">Kab</th>
+                  <th style="padding:8px 6px;text-align:center;font-weight:700;color:var(--text-2);white-space:nowrap">Assign?</th>
+                  <th style="padding:8px 6px;text-align:center;font-weight:700;color:var(--text-2);white-space:nowrap">Visit?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(odp, i) in odpData" :key="odp.odp">
+                  <tr style="border-top:1px solid var(--border)" :style="i%2===1?'background:var(--surface-2)':''">
+                    <td style="padding:7px 10px;color:var(--text-3);font-size:11px" x-text="i+1"></td>
+                    <td style="padding:7px 10px;font-weight:600;color:var(--text-1);font-size:11px;white-space:nowrap" x-text="odp.odp"></td>
+                    <td style="padding:7px 6px;text-align:center;color:var(--text-1);font-size:12px;font-weight:700" x-text="odp.occ ?? '—'"></td>
+                    <td style="padding:7px 6px;text-align:center;font-size:12px;font-weight:700"
+                      :style="(odp.avail>0)?'color:var(--success)':'color:var(--text-3)'"
+                      x-text="odp.avail ?? '—'"></td>
+                    <td style="padding:7px 6px;color:var(--text-2);font-size:11px;white-space:nowrap" x-text="odp.kab||'—'"></td>
+                    <td style="padding:7px 6px;text-align:center">
+                      <span x-show="odp.assign" style="font-size:12px" title="Sudah assign bulan ini">✅</span>
+                      <span x-show="!odp.assign" style="font-size:11px;color:var(--text-3)">—</span>
+                    </td>
+                    <td style="padding:7px 6px;text-align:center">
+                      <span x-show="odp.visit" style="font-size:12px" title="Sudah visit bulan ini">🚗</span>
+                      <span x-show="!odp.visit" style="font-size:11px;color:var(--text-3)">—</span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
     </div><!-- /content -->
@@ -3789,7 +3867,7 @@ function app() {
       this.$nextTick(() => {
         this.renderCharts();
         // dispatch event untuk DJP pages supaya auto-load
-        if (['djp_plan','djp_real','djp_daily'].includes(p)) {
+        if (['djp_plan','djp_real','djp_daily','djp_odp_list'].includes(p)) {
           window.dispatchEvent(new CustomEvent('page-' + p));
         }
       });
@@ -3800,7 +3878,7 @@ function app() {
         dashboard:'Sales Dashboard', d2d:'D2D Sales', deepdive:'Deepdive Sales',
         outlook:'Outlook Sales', sfperf:'SF Performance',
         sf:'Performa SF', order:'Detail Order', kendala:'Kendala', peta:'Peta',
-        djp_plan:'Plan DJP', djp_real:'Realisasi DJP', djp_daily:'DJP Daily',
+        djp_plan:'Plan DJP', djp_real:'Realisasi DJP', djp_daily:'DJP Daily', djp_odp_list:'List ODP',
       };
       return map[this.page] || '';
     },
@@ -5170,6 +5248,7 @@ function djpPlanData() {
     selectedOdp: [],   // array of odp names (for x-model array checkbox)
     // Plan tersimpan
     viewTgl: new Date().toISOString().slice(0,10),
+    viewTahun: new Date().getFullYear().toString(),
     planData: [],
     planLoading: false,
     saving: false,
@@ -5219,8 +5298,13 @@ function djpPlanData() {
     async _loadSF() {
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_token')||'';
+      // Kirim filter kabupaten sesuai cluster aktif
+      const rootEl = document.querySelector('[x-data="app()"]');
+      const rootCluster = rootEl?._x_dataStack?.[0]?.cluster;
+      const kabs = (rootCluster && CLUSTER[rootCluster]) ? CLUSTER[rootCluster].kab : [];
+      const kabsParam = encodeURIComponent(JSON.stringify(kabs));
       try {
-        const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}`);
+        const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}&kabs=${kabsParam}`);
         const d = await r.json();
         if (d.ok && d.users && d.users.length) {
           this.sfList = d.users;
@@ -5232,8 +5316,19 @@ function djpPlanData() {
           // update_sf data: array-of-arrays [1]=nama [2]=NIK(unique) [16]=status
           const parseSF = rows => {
             const seen = new Set();
+            const clusterKabs = kabs.map(k => k.toUpperCase());
             return rows
-              .filter(u => Array.isArray(u) ? (u[16]||'').toString().toUpperCase()==='ACTIVE' : true)
+              .filter(u => {
+                if (Array.isArray(u)) {
+                  if ((u[16]||'').toString().toUpperCase() !== 'ACTIVE') return false;
+                  if (clusterKabs.length > 0) {
+                    const ukab = (u[20]||'').toString().toUpperCase().trim();
+                    return clusterKabs.includes(ukab);
+                  }
+                  return true;
+                }
+                return true;
+              })
               .map(u => Array.isArray(u)
                 ? { username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user', kab:(u[20]||'').toString().trim(), sto:(u[19]||'').toString().trim() }
                 : { username:(u.username||'').toString().trim(), nama:(u.nama||'').toString().trim(), role:'user', kab:(u.kab||'').toString().trim(), sto:(u.sto||'').toString().trim() })
@@ -5248,8 +5343,16 @@ function djpPlanData() {
           const sf2 = await r2.json();
           const arr = sf2.data||[];
           const seen = new Set();
+          const clusterKabs = kabs.map(k => k.toUpperCase());
           this.sfList = arr
-            .filter(u => (u[16]||'').toString().toUpperCase()==='ACTIVE')
+            .filter(u => {
+              if ((u[16]||'').toString().toUpperCase() !== 'ACTIVE') return false;
+              if (clusterKabs.length > 0) {
+                const ukab = (u[20]||'').toString().toUpperCase().trim();
+                return clusterKabs.includes(ukab);
+              }
+              return true;
+            })
             .map(u => ({ username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user', kab:(u[20]||'').toString().trim(), sto:(u[19]||'').toString().trim() }))
             .filter(u => { if(!u.username||seen.has(u.username)) return false; seen.add(u.username); return true; });
         } catch(e2) { this.sfList = []; }
@@ -5338,10 +5441,11 @@ function djpPlanData() {
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_token')||'';
       const items = this._odpAll.filter(o=>this.selectedOdp.includes(o.odp));
+      const tahun = (this.form.tgl||'').slice(0,4) || this.viewTahun;
       const rows = items.map(o=>({
         tgl: this.form.tgl, username_sf: this.form.username_sf, nama_sf: sf.nama||this.form.username_sf,
         odp: o.odp, cluster: o.cluster||'', kab: o.kab||'', kec: o.kec||'', desa: o.desa||'',
-        lat: o.lat||'', lng: o.lng||'', avai: o.avai||0
+        lat: o.lat||'', lng: o.lng||'', avai: o.avai||0, tahun
       }));
       this.saving = true;
       try {
@@ -5362,7 +5466,7 @@ function djpPlanData() {
       try {
         const gasUrl = this._gasUrl();
         const st = localStorage.getItem('wok_token')||'';
-        const r = await fetch(`${gasUrl}?type=djp_plan_get&session_token=${encodeURIComponent(st)}&tgl=${this.viewTgl}`);
+        const r = await fetch(`${gasUrl}?type=djp_plan_get&session_token=${encodeURIComponent(st)}&tgl=${this.viewTgl}&tahun=${this.viewTahun}`);
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal load plan');
         this.planData = d.data||[];
@@ -5402,6 +5506,7 @@ function djpPlanData() {
           kec:     row.kec     || row[6] || '',
           desa:    row.desa    || row[7] || '',
           avai:    row.avai    || 0,
+          visit:   row.visit   || false,   // populated from GAS if available
         });
       });
       return Object.values(map);
@@ -5517,15 +5622,57 @@ function djpDailyData() {
         const r = await fetch(url);
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal load');
-        // GAS returns { ok, total_sf, total_plan, total_real, summary, tgl }
+        // GAS returns { ok, total_sf, total_plan, total_real, rows:[{nama_sf,username_sf,odp,checkin_jam,realisasi}], summary }
         this.dailyData = {
           total_sf:   d.total_sf   || 0,
           total_plan: d.total_plan || 0,
           total_real: d.total_real || 0,
+          rows:       d.rows       || [],
           summary:    d.summary    || [],
         };
-      } catch(e) { this.dailyData = { total_sf:0, total_plan:0, total_real:0, summary:[] }; }
+      } catch(e) { this.dailyData = { total_sf:0, total_plan:0, total_real:0, rows:[], summary:[] }; }
       this.loadingDaily = false;
+    },
+  };
+}
+
+// ════════════════════════════════════════════════════════
+// DJP – List ODP (Fix #5)
+// ════════════════════════════════════════════════════════
+function djpOdpListData() {
+  const todayYM = () => new Date().toISOString().slice(0,7); // yyyy-MM
+  return {
+    bulan: todayYM(),
+    loading: false,
+    odpData: [],   // [{odp, occ, avail, kab, kec, desa, assign, visit}]
+
+    init() {
+      window.addEventListener('page-djp_odp_list', () => this.loadOdpList());
+      this.loadOdpList();
+    },
+
+    async loadOdpList() {
+      const cfg = (typeof Alpine!=='undefined' && Alpine.store) ? Alpine.store('cfg') : null;
+      const gasUrl = (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
+      const st = localStorage.getItem('wok_token')||'';
+
+      // ambil kabs dari cluster user
+      const rootEl = document.querySelector('[x-data="app()"]');
+      const rootCluster = rootEl?._x_dataStack?.[0]?.cluster;
+      const kabs = (rootCluster && typeof CLUSTER!=='undefined' && CLUSTER[rootCluster])
+        ? CLUSTER[rootCluster].kab : [];
+
+      this.loading = true;
+      this.odpData = [];
+      try {
+        const kabsParam = encodeURIComponent(JSON.stringify(kabs));
+        const url = `${gasUrl}?type=djp_odp_list&session_token=${encodeURIComponent(st)}&bulan=${this.bulan}&kabs=${kabsParam}`;
+        const r = await fetch(url);
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error||'Gagal load ODP list');
+        this.odpData = d.odp_list || [];
+      } catch(e) { this.odpData = []; console.error('djpOdpList:', e); }
+      this.loading = false;
     },
   };
 }
