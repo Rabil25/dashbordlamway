@@ -253,7 +253,7 @@ function djpRealisasiUpload(params) {
 
   let rows;
   try {
-    rows = JSON.parse(params.rows || '[]');
+    rows = Array.isArray(params.rows) ? params.rows : JSON.parse(params.rows || '[]');
   } catch(e) {
     return { ok:false, error:'Format rows tidak valid.' };
   }

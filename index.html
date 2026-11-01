@@ -3217,8 +3217,9 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 <span x-show="!uploading">📤 Upload ke Spreadsheet</span>
                 <span x-show="uploading">Mengupload…</span>
               </button>
-              <button class="btn" @click="csvRows=[];csvPreview=[]" style="font-size:11px;padding:4px 10px">✕ Batal</button>
+              <button class="btn" @click="csvRows=[];csvPreview=[];msg=''" style="font-size:11px;padding:4px 10px">✕ Batal</button>
             </div>
+            <div x-show="msg" x-text="msg" style="font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;background:var(--surface-2);color:var(--text-1);margin-bottom:8px"></div>
             <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
               <table style="width:100%;font-size:11px;border-collapse:collapse">
                 <thead style="position:sticky;top:0;background:var(--surface-2)">
@@ -5479,7 +5480,7 @@ function djpRealData() {
           const r = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_realisasi_upload', session_token:st, uploaded_by:uploader, rows:batch }) });
           const d = await r.json();
           if (!d.ok) throw new Error(d.error||'Upload gagal');
-          inserted += d.inserted||0;
+          inserted += d.saved||d.inserted||0;
           skipped  += d.skipped||0;
           this.msg = `Mengupload... ${Math.min(i+BATCH, this.csvRows.length)}/${this.csvRows.length}`;
         }
