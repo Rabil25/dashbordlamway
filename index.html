@@ -3028,8 +3028,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             </div>
           </div>
 
-          <!-- Filter ODP: Kab · Kec · Desa · Occ -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+          <!-- Filter ODP: Kab · Kec · Desa · Occ · Tahun ODP -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
             <div>
               <label class="input-lbl">Kabupaten</label>
               <select class="select" style="width:100%" x-model="odpFilter.kab" @change="odpFilter.kec='';odpFilter.desa=''">
@@ -3063,6 +3063,15 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 <option value="">Semua</option>
                 <template x-for="c in odpOccList" :key="c">
                   <option :value="c" x-text="c"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="input-lbl">Tahun ODP</label>
+              <select class="select" style="width:100%" x-model="odpFilter.tahun">
+                <option value="">Semua</option>
+                <template x-for="y in odpTahunList" :key="y">
+                  <option :value="y" x-text="y"></option>
                 </template>
               </select>
             </div>
@@ -5244,7 +5253,7 @@ function djpPlanData() {
     sfList: [],
     // ODP
     _odpAll: [],
-    odpFilter: { kabs:[], kab:'', kec:'', desa:'', occ:'' },
+    odpFilter: { kabs:[], kab:'', kec:'', desa:'', occ:'', tahun:'' },
     selectedOdp: [],   // array of odp names (for x-model array checkbox)
     // Plan tersimpan
     viewTgl: new Date().toISOString().slice(0,10),
@@ -5391,6 +5400,12 @@ function djpPlanData() {
       return [...new Set(f.map(o=>o.occ).filter(Boolean))].sort();
     },
 
+    get odpTahunList() {
+      const kabs = this.odpFilter.kabs || [];
+      let f = kabs.length ? this._odpAll.filter(o => kabs.includes(o.kab)) : this._odpAll;
+      return [...new Set(f.map(o=>o.tahun_odp||'').filter(Boolean))].sort();
+    },
+
     get sfFiltered() {
       const kabs = this.odpFilter.kabs || [];
       if (!kabs.length) return this.sfList;
@@ -5409,6 +5424,7 @@ function djpPlanData() {
         if (this.odpFilter.kec)      f = f.filter(o => o.kec  === this.odpFilter.kec);
         if (this.odpFilter.desa)     f = f.filter(o => o.desa === this.odpFilter.desa);
         if (this.odpFilter.occ)      f = f.filter(o => o.occ  === this.odpFilter.occ);
+        if (this.odpFilter.tahun)    f = f.filter(o => (o.tahun_odp||'').toString() === this.odpFilter.tahun);
         return f;
       } catch(e) { return []; }
     },
@@ -5623,11 +5639,24 @@ function djpDailyData() {
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal load');
         // GAS returns { ok, total_sf, total_plan, total_real, rows:[{nama_sf,username_sf,odp,checkin_jam,realisasi}], summary }
+        // Fallback: jika rows tidak ada (GAS lama), build dari summary
+        let rows = d.rows || [];
+        if (!rows.length && (d.summary || []).length) {
+          rows = (d.summary || []).flatMap(sf =>
+            (sf.plans || []).map(p => ({
+              nama_sf:     sf.nama_sf     || sf.username_sf || '',
+              username_sf: sf.username_sf || '',
+              odp:         p.odp         || p.ODP || '',
+              checkin_jam: p.checkin_jam  || '',
+              realisasi:   p.status === 'Done' ? 'Done' : '',
+            }))
+          );
+        }
         this.dailyData = {
           total_sf:   d.total_sf   || 0,
           total_plan: d.total_plan || 0,
           total_real: d.total_real || 0,
-          rows:       d.rows       || [],
+          rows,
           summary:    d.summary    || [],
         };
       } catch(e) { this.dailyData = { total_sf:0, total_plan:0, total_real:0, rows:[], summary:[] }; }
@@ -5670,14 +5699,19 @@ function djpOdpListData() {
           fetch('data/odp.json'),
           fetch(`${gasUrl}?type=djp_odp_list&session_token=${encodeURIComponent(st)}&bulan=${this.bulan}`),
         ]);
-        const allOdp = await jsonRes.json();   // array [{ODP, AVAI, USED, 'OCC 2', KAB, KEC, DESA, ...}]
-        const gasData = await gasRes.json();   // { ok, assign:[], visit:[] }
+        const rawJson = await jsonRes.json();
+        // odp.json bisa { updated, total, data:[...] } atau langsung array
+        const allOdp = Array.isArray(rawJson) ? rawJson : (rawJson.data || []);
 
-        const assignSet = new Set((gasData.assign || []).map(s => s.trim()));
-        const visitSet  = new Set((gasData.visit  || []).map(s => s.trim()));
+        let assignSet = new Set(), visitSet = new Set();
+        try {
+          const gasData = await gasRes.json();   // { ok, assign:[], visit:[] }
+          assignSet = new Set((gasData.assign || []).map(s => s.trim()));
+          visitSet  = new Set((gasData.visit  || []).map(s => s.trim()));
+        } catch(e) {}
 
         // 2. Filter by cluster kabs + merge assign/visit
-        const rows = (Array.isArray(allOdp) ? allOdp : [])
+        const rows = allOdp
           .filter(o => {
             if (!clusterKabs.length) return true;
             const kab = (o.KAB || o.kab || '').toString().toUpperCase().trim();
@@ -5686,14 +5720,15 @@ function djpOdpListData() {
           .map(o => {
             const name = (o.ODP || o.odp || '').toString().trim();
             return {
-              odp:   name,
-              occ:   o['OCC 2'] ?? o.OCC ?? o.occ ?? '',
-              avail: o.AVAI ?? o.avail ?? '',
-              kab:   o.KAB  || o.kab  || '',
-              kec:   o.KEC  || o.kec  || '',
-              desa:  o.DESA || o.desa || '',
-              assign: assignSet.has(name),
-              visit:  visitSet.has(name),
+              odp:       name,
+              occ:       o['OCC 2'] ?? o.occ ?? '',
+              avail:     o.AVAI  ?? o.avai  ?? '',
+              kab:       o.KAB   || o.kab   || '',
+              kec:       o.KEC   || o.kec   || '',
+              desa:      o.DESA  || o.desa  || '',
+              tahun_odp: o.tahun_odp || '',
+              assign:    assignSet.has(name),
+              visit:     visitSet.has(name),
             };
           });
 
