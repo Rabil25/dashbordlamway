@@ -389,11 +389,18 @@ function djpDaily(params) {
   try {
     const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
 
+    // Helper: normalize tanggal dari Sheets (bisa Date object atau string)
+    function normTgl(val) {
+      if (!val) return '';
+      if (val instanceof Date) return Utilities.formatDate(val, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+      return val.toString().trim().slice(0, 10); // ambil 10 karakter "yyyy-MM-dd"
+    }
+
     // Baca Plan
     const wsPlan = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
     const planRows = wsPlan ? wsPlan.getDataRange().getValues().slice(1) : [];
     const plan = planRows
-      .filter(r => (r[P.TGL]||'').toString().trim() === tgl)
+      .filter(r => normTgl(r[P.TGL]) === tgl)
       .map(r => ({
         username_sf: (r[P.USERNAME_SF]||'').toString().trim(),
         nama_sf:     (r[P.NAMA_SF]||'').toString().trim(),
@@ -410,7 +417,7 @@ function djpDaily(params) {
     const wsReal = ss.getSheetByName(DJP_CONFIG.SHEET_REAL);
     const realRows = wsReal ? wsReal.getDataRange().getValues().slice(1) : [];
     const realisasi = realRows
-      .filter(r => (r[R.TGL]||'').toString().trim() === tgl)
+      .filter(r => normTgl(r[R.TGL]) === tgl)
       .map(r => ({
         schedule_id:      (r[R.SCHEDULE_ID]||'').toString().trim(),
         nama_sf:          (r[R.NAMA_SF]||'').toString().trim(),
