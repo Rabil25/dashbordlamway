@@ -3099,49 +3099,88 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div>
 
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <span style="font-size:12px;color:var(--text-2)" x-text="selectedOdp.length + ' ODP dipilih'"></span>
-            <button class="btn" @click="selectedOdp=[]" x-show="selectedOdp.length>0" style="font-size:11px;padding:4px 10px">✕ Clear</button>
+            <span style="font-size:12px;"
+              :style="selectedOdp.length>0 ? 'color:var(--brand);font-weight:600' : 'color:var(--text-3)'"
+              x-text="selectedOdp.length>0 ? selectedOdp.length + ' ODP dipilih' : 'Centang ODP di tabel'"></span>
+            <button class="btn" @click="selectedOdp=[]" x-show="selectedOdp.length>0"
+              style="font-size:11px;padding:4px 10px;background:transparent;border-color:var(--text-3);color:var(--text-2)">
+              ✕ Clear
+            </button>
             <div style="flex:1"></div>
             <button class="btn" @click="savePlan()"
               :disabled="!form.tgl || !form.username_sf || selectedOdp.length===0 || saving"
-              style="background:var(--brand);color:#fff">
-              <span x-show="!saving">💾 Simpan Plan (<span x-text="selectedOdp.length"></span> ODP)</span>
-              <span x-show="saving">Menyimpan…</span>
+              :style="(form.tgl && form.username_sf && selectedOdp.length>0 && !saving)
+                ? 'background:var(--brand);color:#fff;opacity:1'
+                : 'background:var(--surface-2);color:var(--text-3);cursor:not-allowed;border-color:var(--border)'">
+              <span x-show="!saving">💾 Simpan Plan
+                <span x-show="selectedOdp.length>0">(<span x-text="selectedOdp.length"></span> ODP)</span>
+              </span>
+              <span x-show="saving">⏳ Menyimpan…</span>
             </button>
+          </div>
+          <!-- Feedback info -->
+          <div x-show="!form.username_sf && selectedOdp.length===0"
+            style="margin-top:8px;font-size:11px;color:var(--text-3);text-align:right">
+            Pilih SF dan ODP terlebih dahulu
+          </div>
+          <div x-show="form.username_sf && selectedOdp.length===0"
+            style="margin-top:8px;font-size:11px;color:var(--text-3);text-align:right">
+            Centang ODP yang ingin dikunjungi
           </div>
         </div>
 
         <!-- Plan yang sudah tersimpan -->
         <div class="card" style="padding:16px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
             <div style="font-weight:700;font-size:13px;color:var(--text-1)">Plan Tersimpan</div>
-            <input type="date" class="select" x-model="viewTgl" @change="loadPlan()" style="font-size:12px;padding:4px 8px">
-            <button class="btn" @click="loadPlan()" style="font-size:11px;padding:4px 10px">🔄 Muat</button>
-            <span style="font-size:12px;color:var(--text-2)" x-text="planData.length ? planData.length + ' rencana' : ''"></span>
+            <input type="date" class="select" x-model="viewTgl" @change="loadPlan()" style="font-size:12px;padding:4px 8px;max-width:160px">
+            <button class="btn" @click="loadPlan()" :disabled="planLoading" style="font-size:11px;padding:4px 10px">
+              <span x-show="!planLoading">🔄 Muat</span>
+              <span x-show="planLoading">…</span>
+            </button>
+            <span x-show="planData.length>0" style="font-size:12px;color:var(--text-2)"
+              x-text="planData.length + ' ODP · ' + planBySF.length + ' SF'"></span>
           </div>
 
-          <div x-show="planLoading" style="text-align:center;padding:20px;color:var(--text-3)">Memuat…</div>
+          <!-- Loading skeleton -->
+          <div x-show="planLoading" style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">
+            ⏳ Memuat plan…
+          </div>
 
           <!-- Group by SF -->
-          <template x-for="sf in planBySF" :key="sf.username_sf">
-            <div style="margin-bottom:12px">
-              <div style="font-weight:700;font-size:12px;color:var(--brand);margin-bottom:6px;display:flex;align-items:center;gap:8px">
-                <span>👤 <span x-text="sf.nama_sf"></span></span>
-                <span style="color:var(--text-3);font-weight:400" x-text="'(' + sf.odps.length + ' ODP)'"></span>
-                <button @click="deletePlanSF(sf.username_sf)"
-                  style="font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid var(--danger);color:var(--danger);background:transparent;cursor:pointer;margin-left:auto">
-                  🗑 Hapus
-                </button>
+          <div x-show="!planLoading">
+            <template x-for="sf in planBySF" :key="sf.username_sf">
+              <div style="margin-bottom:14px;padding:12px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface-2)">
+                <!-- SF header -->
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                  <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">👤</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-weight:700;font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" x-text="sf.nama_sf"></div>
+                    <div style="font-size:11px;color:var(--text-3)" x-text="sf.username_sf + ' · ' + sf.odps.length + ' ODP direncanakan'"></div>
+                  </div>
+                  <button @click="deletePlanSF(sf.username_sf)"
+                    style="font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid var(--danger);color:var(--danger);background:transparent;cursor:pointer;flex-shrink:0;white-space:nowrap">
+                    🗑 Hapus
+                  </button>
+                </div>
+                <!-- ODP chips -->
+                <div style="display:flex;flex-wrap:wrap;gap:5px">
+                  <template x-for="odp in sf.odps" :key="odp.odp">
+                    <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--card-bg);color:var(--text-1);border:1px solid var(--border);display:inline-flex;align-items:center;gap:5px">
+                      <span x-text="odp.odp"></span>
+                      <span style="color:var(--text-3);font-size:10px" x-text="'· ' + (odp.desa||odp.kec||'')"></span>
+                    </span>
+                  </template>
+                </div>
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px">
-                <template x-for="odp in sf.odps" :key="odp.odp">
-                  <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border)" x-text="odp.odp + ' · ' + odp.desa"></span>
-                </template>
-              </div>
+            </template>
+
+            <!-- Empty state -->
+            <div x-show="planData.length===0" style="text-align:center;padding:32px 20px;color:var(--text-3)">
+              <div style="font-size:28px;margin-bottom:8px">📋</div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px">Belum ada plan</div>
+              <div style="font-size:12px">Pilih SF dan ODP di atas, lalu klik Simpan Plan</div>
             </div>
-          </template>
-          <div x-show="!planLoading && planData.length===0" style="text-align:center;padding:20px;color:var(--text-3)">
-            Belum ada plan untuk tanggal ini
           </div>
         </div>
       </div>
@@ -5272,13 +5311,31 @@ function djpPlanData() {
 
     onSFChange() {},  // placeholder for future use
 
+    _toast(msg, type='info') {
+      // Simple toast: pakai existing notif system jika ada, otherwise console
+      const colors = { success:'#22c55e', error:'#ef4444', info:'#3b82f6' };
+      const t = document.createElement('div');
+      t.textContent = msg;
+      Object.assign(t.style, {
+        position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
+        background: type==='success'?'#166534':type==='error'?'#7f1d1d':'#1e3a5f',
+        color:'#fff', padding:'10px 20px', borderRadius:'10px',
+        fontSize:'13px', fontWeight:'600', zIndex:'9999',
+        boxShadow:'0 4px 16px rgba(0,0,0,0.3)',
+        borderLeft: '4px solid ' + (colors[type]||colors.info),
+        maxWidth:'90vw', textAlign:'center',
+        transition:'opacity 0.3s',
+      });
+      document.body.appendChild(t);
+      setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(), 300); }, 2800);
+    },
+
     async savePlan() {
-      if (!this.form.username_sf) { alert('Pilih SF terlebih dahulu'); return; }
-      if (!this.selectedOdp.length) { alert('Pilih minimal 1 ODP'); return; }
+      if (!this.form.username_sf) { this._toast('Pilih SF terlebih dahulu', 'error'); return; }
+      if (!this.selectedOdp.length) { this._toast('Centang minimal 1 ODP', 'error'); return; }
       const sf = this.sfList.find(u=>u.username===this.form.username_sf)||{};
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_token')||'';
-      const dibuat = (JSON.parse(localStorage.getItem('wok_user')||'null')||{}).username||'';
       const items = this._odpAll.filter(o=>this.selectedOdp.includes(o.odp));
       const rows = items.map(o=>({
         tgl: this.form.tgl, username_sf: this.form.username_sf, nama_sf: sf.nama||this.form.username_sf,
@@ -5291,10 +5348,12 @@ function djpPlanData() {
         const r = await fetch(`${gasUrl}?type=djp_plan_save&payload=${payload}`);
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal simpan');
+        const n = this.selectedOdp.length;
         this.selectedOdp = [];
         this.viewTgl = this.form.tgl;
         await this.loadPlan();
-      } catch(e) { alert('❌ ' + e.message); }
+        this._toast(`✅ ${n} ODP berhasil disimpan untuk ${sf.nama||this.form.username_sf}`, 'success');
+      } catch(e) { this._toast('❌ ' + e.message, 'error'); }
       this.saving = false;
     },
 
@@ -5321,16 +5380,30 @@ function djpPlanData() {
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal hapus');
         await this.loadPlan();
-      } catch(e) { alert('❌ ' + e.message); }
+        this._toast(`🗑 Plan ${username_sf} dihapus`, 'info');
+      } catch(e) { this._toast('❌ ' + e.message, 'error'); }
     },
 
     // Group planData rows by SF for display
+    // GAS returns objects (row.username_sf, row.odp, ...) bukan arrays
     get planBySF() {
       const map = {};
       (this.planData||[]).forEach(row => {
-        const sf = row[1];
-        if (!map[sf]) map[sf] = { username_sf: sf, nama_sf: row[2], odps: [] };
-        map[sf].odps.push({ odp: row[3], cluster: row[4], kab: row[5], kec: row[6], desa: row[7] });
+        const sf = row.username_sf || row[1] || '';
+        if (!sf) return;
+        if (!map[sf]) map[sf] = {
+          username_sf: sf,
+          nama_sf: row.nama_sf || row[2] || sf,
+          odps: []
+        };
+        map[sf].odps.push({
+          odp:     row.odp     || row[3] || '',
+          cluster: row.cluster || row[4] || '',
+          kab:     row.kab     || row[5] || '',
+          kec:     row.kec     || row[6] || '',
+          desa:    row.desa    || row[7] || '',
+          avai:    row.avai    || 0,
+        });
       });
       return Object.values(map);
     },
