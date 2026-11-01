@@ -5133,11 +5133,11 @@ function djpPlanData() {
       const st = localStorage.getItem('wok_token')||'';
       const dibuat = (JSON.parse(localStorage.getItem('wok_user')||'null')||{}).username||'';
       const items = this._odpAll.filter(o=>this.selectedOdp.includes(o.odp));
-      const rows = items.map(o=>[
-        this.form.tgl, this.form.username_sf, sf.nama||this.form.username_sf,
-        o.odp, o.cluster||'', o.kab||'', o.kec||'', o.desa||'',
-        o.lat||'', o.lng||'', o.avai||0, dibuat, new Date().toISOString()
-      ]);
+      const rows = items.map(o=>({
+        tgl: this.form.tgl, username_sf: this.form.username_sf, nama_sf: sf.nama||this.form.username_sf,
+        odp: o.odp, cluster: o.cluster||'', kab: o.kab||'', kec: o.kec||'', desa: o.desa||'',
+        lat: o.lat||'', lng: o.lng||'', avai: o.avai||0
+      }));
       this.saving = true;
       try {
         const payload = encodeURIComponent(JSON.stringify({ session_token:st, tgl:this.form.tgl, username_sf:this.form.username_sf, rows }));
@@ -5159,7 +5159,7 @@ function djpPlanData() {
         const r = await fetch(`${gasUrl}?type=djp_plan_get&session_token=${encodeURIComponent(st)}&tgl=${this.viewTgl}`);
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal load plan');
-        this.planData = d.rows||[];
+        this.planData = d.data||[];
       } catch(e) { this.planData = []; }
       this.planLoading = false;
     },
