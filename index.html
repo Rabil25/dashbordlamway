@@ -3205,7 +3205,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 8px;display:block;opacity:.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <div style="font-size:13px;font-weight:600;margin-bottom:4px">Drag &amp; drop file CSV di sini</div>
             <div style="font-size:11px;color:var(--text-3)">atau klik untuk pilih file</div>
-            <input type="file" accept=".csv" style="display:none" @change="onFileSelect($event)">
+            <input type="file" accept=".csv" style="display:none" @change="onFileChange($event)">
           </label>
 
           <!-- Preview -->
