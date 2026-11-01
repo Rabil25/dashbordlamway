@@ -1126,6 +1126,143 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
   border-radius: var(--r-lg); padding: 24px; max-width: 380px; width: 100%;
 }
 .chpwd-title { font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 16px; }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — HP Android & iPhone
+   ════════════════════════════════════════════════════════════ */
+
+/* Shared helpers */
+.grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-4col { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+
+@media (max-width: 768px) {
+  /* ── 1. Switch dari "internal scroll" SPA ke natural page scroll ── */
+  html, body {
+    overflow: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    height: auto !important;
+  }
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible !important;
+  }
+  .main {
+    overflow: visible !important;
+    min-width: 0;
+    width: 100%;
+  }
+  .content {
+    overflow: visible !important;
+    padding: 14px 14px 80px;
+    flex: none;
+  }
+
+  /* ── 2. Topbar ── scrollable di mobile ── */
+  .topbar {
+    height: auto !important;
+    min-height: 48px;
+    padding: 8px 12px;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    scrollbar-width: none;
+  }
+  .topbar::-webkit-scrollbar { display: none; }
+  .topbar-title { font-size: 13px; white-space: nowrap; min-width: 80px; flex: 0 0 auto; }
+  .cluster-toggle { flex-shrink: 0; }
+  .cluster-btn { padding: 4px 10px; font-size: 10px; white-space: nowrap; }
+  .topbar-bulan-select { flex-shrink: 0; font-size: 10px; height: 28px; padding: 2px 6px; }
+  .datepicker-btn { font-size: 11px; white-space: nowrap; }
+  .btn { white-space: nowrap; font-size: 11px; padding: 5px 10px; flex-shrink: 0; }
+  .glossary-btn { flex-shrink: 0; }
+  .theme-toggle { flex-shrink: 0; }
+  /* Date picker popup — jangan terlebar layar */
+  .datepicker-popup { right: 0; left: auto; max-width: 95vw; }
+  .tab { padding: 5px 10px; font-size: 11px; }
+
+  /* ── 3. Grids responsive ── */
+  .kpi-grid { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .charts-grid, .charts-grid-3, .two-col { grid-template-columns: 1fr; }
+  .grid-4col { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .grid-2col { grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Inline 4-col grids — override via attribute selector */
+  [style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* ── 4. Kartu dan section ── */
+  .card { padding: 12px 14px; }
+  .stat-card { padding: 12px 14px; }
+  .stat-card__val { font-size: 26px; }
+  .section-hdr { margin-bottom: 10px; }
+  .section-title { font-size: 15px; }
+
+  /* ── 5. Tabel — horizontal scroll ── */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tbl-scroll { max-height: 320px; }
+  table { min-width: 420px; }
+  /* Tabel yang tidak di dalam .tbl-wrap */
+  .heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .djp-tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── 6. DJP Plan ── */
+  .djp-odp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── 7. Funnel ── */
+  .funnel-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    padding-bottom: 8px;
+  }
+
+  /* ── 8. Modal ── */
+  .modal-card { width: 96vw !important; max-width: none !important; padding: 20px 16px !important; }
+
+  /* ── 9. DD cards (filter bar) ── */
+  .dd-cards { flex-wrap: wrap; }
+  .dd-card { flex: 1 1 calc(50% - 8px); min-width: 110px; }
+
+  /* ── 10. SFP tabel ── */
+  .sfp-row { flex-direction: column; gap: 6px; }
+
+  /* ── 11. Auth card ── */
+  .auth-card { padding: 24px 20px; }
+
+  /* ── 12. Prevent overflow bursting ── */
+  .content * { max-width: 100%; box-sizing: border-box; }
+  img, video, canvas { max-width: 100%; height: auto; }
+}
+
+/* ── Tiny phone (≤400px) ── */
+@media (max-width: 400px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .grid-2col { grid-template-columns: 1fr; }
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  .stat-card__val { font-size: 22px; }
+  .content { padding: 10px 10px 80px; }
+  .tab { padding: 4px 8px; font-size: 10px; }
+}
 </style>
 </head>
 
@@ -2918,7 +3055,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div>
 
           <!-- Tabel pilih ODP -->
-          <div style="max-height:260px;overflow-y:auto;border:1.5px solid var(--border);border-radius:8px;margin-bottom:10px">
+          <div class="djp-odp-table-wrap" style="max-height:260px;overflow-y:auto;overflow-x:auto;border:1.5px solid var(--border);border-radius:8px;margin-bottom:10px">
             <table style="width:100%;font-size:12px;border-collapse:collapse">
               <thead style="position:sticky;top:0;background:var(--surface-2);z-index:1">
                 <tr>
