@@ -4632,7 +4632,7 @@ function app() {
       try {
         // Fetch GAS (PS per kec/desa) + odp.json (port available per kec/desa) in parallel
         const [gasRes, odpRes] = await Promise.all([
-          fetch(this.gasUrl + '?action=deepdive_odp&bulan=' + encodeURIComponent(this.cfg.bulan)),
+          fetch(this.gasUrl + '?token=' + encodeURIComponent(GAS_TOKEN) + '&type=deepdive_odp&bulan=' + encodeURIComponent(this.cfg.bulan)),
           fetch('data/odp.json')
         ]);
         const gasText = await gasRes.text();
