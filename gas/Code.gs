@@ -155,6 +155,9 @@ function doGet(e) {
       case 'target':
         data = getTargetData();
         break;
+      case 'deepdive_odp':
+        data = getDeepdiveOdp(bulan);
+        break;
       default:
         data = { ok:false, error:'Unknown type. Use: bulan_ini | list_bulan | update_sf | wilayah | ping | all' };
     }
@@ -223,6 +226,66 @@ function getTargetData() {
   const result = { ok:true, targets: targets, updatedAt: new Date().toISOString() };
   try { cache.put(cacheKey, JSON.stringify(result), 600); } catch(e) {}
   return result;
+}
+
+// ================================================================
+//  getDeepdiveOdp – penetrasi penjualan PS per Kec/Desa
+//  Range CE2:DV — DU(42)=Kec, DV(43)=Desa, CQ(12)=bulan PS
+// ================================================================
+function getDeepdiveOdp(bulan) {
+  const cache    = CacheService.getScriptCache();
+  const cacheKey = 'deepdive_odp_' + (bulan || 'all');
+  try {
+    const cached = cache.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+  } catch(e) {}
+
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+    const ws = ss.getSheetByName('Bulan_Ini');
+    if (!ws) return { ok:false, error:'Sheet "Bulan_Ini" tidak ditemukan.' };
+
+    // Range diperlebar ke DV agar dapat kolom Kec(DU) & Desa(DV)
+    const lastRow = ws.getLastRow();
+    if (lastRow < 2) return { ok:true, data:[], bulan };
+
+    // Ambil CE2:DV (CE=col 83, DV=col 126 → 44 kolom)
+    const range  = ws.getRange(2, 83, lastRow - 1, 44);
+    const values = range.getValues();
+
+    // Index 0-based dari CE:
+    // IDX_BLN_PS = 12 (CQ), IDX_KEC = 42 (DU), IDX_DESA = 43 (DV)
+    const IDX_PS   = 12;
+    const IDX_KEC  = 42;
+    const IDX_DESA = 43;
+
+    const map = {}; // key = "kec||desa"
+    for (let i = 0; i < values.length; i++) {
+      const row    = values[i];
+      const blnPS  = (row[IDX_PS] || '').toString().trim();
+      if (!blnPS) continue;                       // baris belum PS
+      if (bulan && blnPS !== bulan) continue;     // filter bulan
+
+      const kec  = (row[IDX_KEC]  || '').toString().trim();
+      const desa = (row[IDX_DESA] || '').toString().trim();
+      if (!kec && !desa) continue;
+
+      const key = kec + '||' + desa;
+      map[key] = (map[key] || 0) + 1;
+    }
+
+    const data = Object.entries(map).map(([key, ps]) => {
+      const [kec, desa] = key.split('||');
+      return { kec, desa, ps };
+    });
+
+    const result = { ok:true, bulan, data, updatedAt: new Date().toISOString() };
+    try { cache.put(cacheKey, JSON.stringify(result), 300); } catch(e) {}
+    return result;
+
+  } catch(e) {
+    return { ok:false, error:'getDeepdiveOdp: ' + e.message };
+  }
 }
 
 // ================================================================

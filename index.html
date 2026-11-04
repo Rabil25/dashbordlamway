@@ -385,6 +385,11 @@ button { font-family: var(--font); cursor: pointer; }
   box-shadow: 0 0 12px var(--brand-glow);
 }
 .btn-primary:hover { opacity: .9; }
+.btn-sm { padding: 4px 12px; font-size: 12px; border-radius: var(--r); cursor: pointer; font-family: var(--font); font-weight: 600; border: 1px solid transparent; }
+.btn-outline { background: transparent; border-color: var(--border); color: var(--text-1); }
+.btn-outline:hover { background: var(--surface-elevated); }
+.btn-outline:disabled { opacity: .5; cursor: not-allowed; }
+.alert-warn { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); color: var(--danger, #f85149); border-radius: var(--r); padding: 8px 12px; font-size: 12px; }
 
 /* ── CONTENT ── */
 .content { flex: 1; overflow-y: auto; padding: 20px 20px 40px; }
@@ -467,6 +472,12 @@ button { font-family: var(--font); cursor: pointer; }
 .b-warning { background: rgba(210,153,34,.12); color: var(--warning); }
 .b-danger  { background: rgba(248,81,73,.12);  color: var(--danger); }
 .b-neutral { background: rgba(139,148,158,.12); color: var(--text-2); }
+.badge-green  { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:rgba(34,197,94,.15); color:#16a34a; }
+.badge-yellow { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:rgba(234,179,8,.15);  color:#b45309; }
+.badge-red    { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:rgba(248,81,73,.15);  color:#dc2626; }
+[data-theme=dark] .badge-green  { background:rgba(34,197,94,.2);  color:#4ade80; }
+[data-theme=dark] .badge-yellow { background:rgba(234,179,8,.2);  color:#fbbf24; }
+[data-theme=dark] .badge-red    { background:rgba(248,81,73,.2);  color:#f87171; }
 
 /* ── PROGRESS BAR ── */
 .pb { height: 5px; background: var(--surface-elevated); border-radius: 999px; overflow: hidden; margin: 4px 0; }
@@ -2572,6 +2583,70 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             </tbody>
           </table>
         </div>
+
+        <!-- ══ Penetrasi ODP ══ -->
+        <div class="section-hdr" style="margin-top:22px">
+          <div>
+            <div class="section-title">Penetrasi ODP</div>
+            <div class="section-sub">Port Available vs Penjualan PS · <span x-text="cluster"></span></div>
+          </div>
+          <button class="btn-sm btn-outline" @click="loadPenetrasiOdp()"
+                  :disabled="penetrasiLoading"
+                  x-text="penetrasiLoading ? 'Memuat…' : 'Muat Data'"></button>
+        </div>
+
+        <!-- Error -->
+        <div x-show="penetrasiError" class="alert-warn" x-text="'Error: '+penetrasiError" style="margin-bottom:10px"></div>
+
+        <!-- Filters (shown after data loaded) -->
+        <div x-show="penetrasiData.length > 0" class="filter-row" style="gap:8px;margin-bottom:10px">
+          <select class="select" x-model="penetrasiKabFilter" @change="penetrasiKecFilter=''">
+            <option value="">Semua Kabupaten</option>
+            <template x-for="kab in penetrasiKabList" :key="kab">
+              <option :value="kab" x-text="kab"></option>
+            </template>
+          </select>
+          <select class="select" x-model="penetrasiKecFilter">
+            <option value="">Semua Kecamatan</option>
+            <template x-for="kec in penetrasiKecList" :key="kec">
+              <option :value="kec" x-text="kec"></option>
+            </template>
+          </select>
+        </div>
+
+        <!-- Penetrasi table -->
+        <div x-show="penetrasiData.length > 0" class="card" style="padding:0;overflow:hidden">
+          <table class="te-tbl">
+            <thead>
+              <tr>
+                <th>Kabupaten</th>
+                <th>Kecamatan</th>
+                <th>Desa</th>
+                <th style="text-align:right">Port Avail</th>
+                <th style="text-align:right">PS</th>
+                <th style="text-align:right">Penetrasi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(r, i) in penetrasiFiltered" :key="i">
+                <tr>
+                  <td x-text="r.kab||'—'"></td>
+                  <td x-text="r.kec||'—'"></td>
+                  <td x-text="r.desa||'—'"></td>
+                  <td style="text-align:right" x-text="r.avai.toLocaleString()"></td>
+                  <td style="text-align:right" x-text="r.ps.toLocaleString()"></td>
+                  <td style="text-align:right">
+                    <span :class="r.penetrasi>=20?'badge-green':r.penetrasi>=10?'badge-yellow':'badge-red'"
+                          x-text="r.penetrasi+'%'"></span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <div x-show="penetrasiFiltered.length===0" style="padding:16px;text-align:center;color:var(--clr-muted)">
+            Tidak ada data
+          </div>
+        </div>
       </div>
 
       <!-- ══ PAGE: OUTLOOK ══ -->
@@ -3640,6 +3715,13 @@ function app() {
     orderPage: 0,
     kendalaSearch: '', kendalaCat: '',
 
+    // Penetrasi ODP state
+    penetrasiData: [],
+    penetrasiLoading: false,
+    penetrasiError: '',
+    penetrasiKabFilter: '',
+    penetrasiKecFilter: '',
+
     // New page tabs
     ddTab: 'channel',
     olTab: 'ringkasan',
@@ -3900,6 +3982,9 @@ function app() {
         this.sfKabFilter = '';
         this.orderKab = '';
         this.orderPage = 0;
+        this.penetrasiKabFilter = '';
+        this.penetrasiKecFilter = '';
+        this.penetrasiData = [];
         this.filterLoading = false;
         this.$nextTick(() => {
           this.renderCharts();
@@ -4503,6 +4588,117 @@ function app() {
       if (this.ddTab === 'channel') return this.deepdiveChannel;
       if (this.ddTab === 'produk')  return this.deepdiveProduk;
       return this.deepdiveSpeed;
+    },
+
+    // ── Penetrasi ODP ──
+    get penetrasiKabList() {
+      const clusterKabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
+      const set = new Set();
+      this.penetrasiData.forEach(r => {
+        const kab = (r.kab||'').trim().toUpperCase();
+        if (clusterKabs.includes(kab)) set.add(kab);
+      });
+      return [...set].sort();
+    },
+
+    get penetrasiKecList() {
+      const kabF = this.penetrasiKabFilter.toUpperCase();
+      const set = new Set();
+      this.penetrasiData.forEach(r => {
+        if (kabF && (r.kab||'').trim().toUpperCase() !== kabF) return;
+        const kec = (r.kec||'').trim();
+        if (kec) set.add(kec);
+      });
+      return [...set].sort();
+    },
+
+    get penetrasiFiltered() {
+      const clusterKabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
+      const kabF = this.penetrasiKabFilter.toUpperCase();
+      const kecF = this.penetrasiKecFilter.toUpperCase();
+      return this.penetrasiData.filter(r => {
+        const kab = (r.kab||'').trim().toUpperCase();
+        if (!clusterKabs.includes(kab)) return false;
+        if (kabF && kab !== kabF) return false;
+        if (kecF && (r.kec||'').trim().toUpperCase() !== kecF) return false;
+        return true;
+      }).sort((a,b)=>(b.avai - a.avai));
+    },
+
+    async loadPenetrasiOdp() {
+      if (this.penetrasiLoading) return;
+      this.penetrasiLoading = true;
+      this.penetrasiError = '';
+      try {
+        // Fetch GAS (PS per kec/desa) + odp.json (port available per kec/desa) in parallel
+        const [gasRes, odpRes] = await Promise.all([
+          fetch(this.gasUrl + '?action=deepdive_odp&bulan=' + encodeURIComponent(this.cfg.bulan)),
+          fetch('data/odp.json')
+        ]);
+        const gasJson = await gasRes.json();
+        const odpRaw  = await odpRes.json();
+
+        if (!gasJson.ok) throw new Error(gasJson.error || 'GAS error');
+
+        const allOdp = Array.isArray(odpRaw) ? odpRaw : (odpRaw.data || []);
+
+        // Build avai map: key = "KEC||DESA" → {kab, avai_sum}
+        const availMap = {};
+        allOdp.forEach(o => {
+          const kab  = (o.kab  || '').trim().toUpperCase();
+          const kec  = (o.kec  || '').trim().toUpperCase();
+          const desa = (o.desa || '').trim().toUpperCase();
+          const key  = kec + '||' + desa;
+          if (!availMap[key]) availMap[key] = { kab, avai: 0 };
+          availMap[key].avai += parseInt(o.avai || 0, 10);
+        });
+
+        // Build PS map from GAS
+        const psMap = {};
+        (gasJson.data || []).forEach(r => {
+          const kec  = (r.kec  || '').trim().toUpperCase();
+          const desa = (r.desa || '').trim().toUpperCase();
+          const key  = kec + '||' + desa;
+          psMap[key] = (psMap[key] || 0) + (r.ps || 0);
+        });
+
+        // Merge
+        const merged = {};
+        // Add all avai entries
+        Object.entries(availMap).forEach(([key, v]) => {
+          if (!merged[key]) merged[key] = { kab: v.kab, kec: key.split('||')[0], desa: key.split('||')[1], avai: 0, ps: 0 };
+          merged[key].avai += v.avai;
+        });
+        // Add PS
+        Object.entries(psMap).forEach(([key, ps]) => {
+          if (!merged[key]) {
+            const [kec, desa] = key.split('||');
+            // Try to find kab from availMap
+            const kabFromAvail = availMap[key]?.kab || '';
+            merged[key] = { kab: kabFromAvail, kec, desa, avai: 0, ps: 0 };
+          }
+          merged[key].ps += ps;
+        });
+
+        this.penetrasiData = Object.values(merged)
+          .filter(r => r.kec || r.desa)
+          .map(r => ({
+            ...r,
+            kab:  r.kab  || '',
+            kec:  this._titleCase(r.kec),
+            desa: this._titleCase(r.desa),
+            penetrasi: r.avai > 0 ? Math.round(r.ps / r.avai * 100) : 0,
+          }));
+      } catch(e) {
+        this.penetrasiError = e.message;
+      } finally {
+        this.penetrasiLoading = false;
+      }
+    },
+
+    _titleCase(str) {
+      if (!str) return '';
+      return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
     },
 
     // ── Outlook ──
