@@ -2619,12 +2619,22 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <table class="te-tbl">
             <thead>
               <tr>
-                <th>Kabupaten</th>
-                <th>Kecamatan</th>
+                <th @click="penetrasiSortBy('kab')" style="cursor:pointer;user-select:none">
+                  Kabupaten <span x-text="penetrasiSort.key==='kab'?(penetrasiSort.dir===1?'↑':'↓'):'↕'"></span>
+                </th>
+                <th @click="penetrasiSortBy('kec')" style="cursor:pointer;user-select:none">
+                  Kecamatan <span x-text="penetrasiSort.key==='kec'?(penetrasiSort.dir===1?'↑':'↓'):'↕'"></span>
+                </th>
                 <th>Desa</th>
-                <th style="text-align:right">Port Avail</th>
-                <th style="text-align:right">PS</th>
-                <th style="text-align:right">Penetrasi</th>
+                <th @click="penetrasiSortBy('avai')" style="cursor:pointer;user-select:none;text-align:right">
+                  Port Avail <span x-text="penetrasiSort.key==='avai'?(penetrasiSort.dir===1?'↑':'↓'):'↕'"></span>
+                </th>
+                <th @click="penetrasiSortBy('ps')" style="cursor:pointer;user-select:none;text-align:right">
+                  PS <span x-text="penetrasiSort.key==='ps'?(penetrasiSort.dir===1?'↑':'↓'):'↕'"></span>
+                </th>
+                <th @click="penetrasiSortBy('penetrasi')" style="cursor:pointer;user-select:none;text-align:right">
+                  Penetrasi <span x-text="penetrasiSort.key==='penetrasi'?(penetrasiSort.dir===1?'↑':'↓'):'↕'"></span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -3721,6 +3731,7 @@ function app() {
     penetrasiError: '',
     penetrasiKabFilter: '',
     penetrasiKecFilter: '',
+    penetrasiSort: { key: 'penetrasi', dir: 1 },
 
     // New page tabs
     ddTab: 'channel',
@@ -3985,6 +3996,7 @@ function app() {
         this.penetrasiKabFilter = '';
         this.penetrasiKecFilter = '';
         this.penetrasiData = [];
+        this.penetrasiSort = { key: 'penetrasi', dir: 1 };
         this.filterLoading = false;
         this.$nextTick(() => {
           this.renderCharts();
@@ -4616,13 +4628,17 @@ function app() {
       const clusterKabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
       const kabF = this.penetrasiKabFilter.toUpperCase();
       const kecF = this.penetrasiKecFilter.toUpperCase();
+      const { key, dir } = this.penetrasiSort;
       return this.penetrasiData.filter(r => {
         const kab = (r.kab||'').trim().toUpperCase();
         if (!clusterKabs.includes(kab)) return false;
         if (kabF && kab !== kabF) return false;
         if (kecF && (r.kec||'').trim().toUpperCase() !== kecF) return false;
         return true;
-      }).sort((a,b)=>(b.avai - a.avai));
+      }).sort((a,b) => {
+        const av = typeof a[key]==='string' ? a[key].localeCompare(b[key]) : (a[key]||0)-(b[key]||0);
+        return av * dir;
+      });
     },
 
     async loadPenetrasiOdp() {
@@ -4698,6 +4714,16 @@ function app() {
         this.penetrasiError = e.message;
       } finally {
         this.penetrasiLoading = false;
+      }
+    },
+
+    penetrasiSortBy(key) {
+      if (this.penetrasiSort.key === key) {
+        this.penetrasiSort.dir *= -1;
+      } else {
+        // Default dir: angka → desc (besar dulu), string → asc (A dulu)
+        const numKeys = ['avai','ps','penetrasi'];
+        this.penetrasiSort = { key, dir: numKeys.includes(key) ? -1 : 1 };
       }
     },
 
