@@ -4635,9 +4635,14 @@ function app() {
           fetch(this.gasUrl + '?action=deepdive_odp&bulan=' + encodeURIComponent(this.cfg.bulan)),
           fetch('data/odp.json')
         ]);
-        const gasJson = await gasRes.json();
+        const gasText = await gasRes.text();
         const odpRaw  = await odpRes.json();
 
+        let gasJson;
+        try { gasJson = JSON.parse(gasText); }
+        catch(e) {
+          throw new Error('GAS belum di-redeploy. Buka Apps Script → Deploy ulang terlebih dahulu.');
+        }
         if (!gasJson.ok) throw new Error(gasJson.error || 'GAS error');
 
         const allOdp = Array.isArray(odpRaw) ? odpRaw : (odpRaw.data || []);
