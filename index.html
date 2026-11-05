@@ -5573,8 +5573,10 @@ function djpPlanData() {
       const r = await fetch('data/odp.json');
       const raw = await r.json();
       const data = Array.isArray(raw) ? raw : (raw.data || []);
-      // filter: avai > 0, punya odp name & kab
-      this._odpAll = data.filter(o => (o.avai||0) > 0 && o.odp && o.kab);
+      // filter: avai > 0, punya odp name & kab; normalisasi kab ke UPPERCASE agar match CLUSTER config
+      this._odpAll = data
+        .filter(o => (o.avai||0) > 0 && o.odp && o.kab)
+        .map(o => ({ ...o, kab: (o.kab||'').toUpperCase() }));
     },
 
     async _loadSF() {
