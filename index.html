@@ -3218,13 +3218,27 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <!-- Error -->
         <div x-show="prioritasError" class="alert-warn" x-text="'Error: '+prioritasError" style="margin-bottom:10px"></div>
 
-        <!-- Legend skor -->
-        <div x-show="prioritasDesaList.length > 0" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;font-size:11px;color:var(--text-2)">
-          <span>Skor Prioritas:</span>
-          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:rgb(255,50,50)"></span> Tinggi (&gt;70)</span>
-          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:rgb(200,150,50)"></span> Sedang (40–70)</span>
-          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:rgb(50,200,50)"></span> Rendah (&lt;40)</span>
-          <span style="display:flex;align-items:center;gap:4px"><span style="background:#4f8ef7;color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">K</span> Kantor</span>
+        <!-- Quadrant legend + filter -->
+        <div x-show="prioritasOdpRaw.length > 0" style="margin-bottom:12px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:11px;color:var(--text-2);margin-right:4px">Kuadran:</span>
+            <button @click="prioritasKategoriFilter=''"
+                    :style="'font-size:11px;padding:4px 10px;border-radius:20px;border:1.5px solid;cursor:pointer;'+(prioritasKategoriFilter===''?'background:#374151;color:#fff;border-color:#374151':'background:transparent;color:var(--text-1);border-color:var(--surface-border)')"
+                    >Semua</button>
+            <template x-for="k in [{id:'prioritas',label:'🔴 Prioritas',c:'#ef4444'},{id:'strategis',label:'🟠 Strategis',c:'#f97316'},{id:'cadangan',label:'🟡 Cadangan',c:'#eab308'},{id:'skip',label:'⚫ Skip',c:'#9ca3af'}]" :key="k.id">
+              <button @click="prioritasKategoriFilter = prioritasKategoriFilter===k.id ? '' : k.id"
+                      :style="'font-size:11px;padding:4px 10px;border-radius:20px;border:1.5px solid;cursor:pointer;'+(prioritasKategoriFilter===k.id?'background:'+k.c+';color:#fff;border-color:'+k.c:'background:transparent;color:var(--text-1);border-color:var(--surface-border)')"
+                      x-text="k.label"></button>
+            </template>
+            <span style="font-size:11px;color:var(--text-2);margin-left:8px">
+              Sumbu: Potensi (Y) × Jarak (X) · threshold = median cluster
+            </span>
+          </div>
+          <!-- Legend peta -->
+          <div style="display:flex;gap:12px;align-items:center;margin-top:8px;font-size:11px;color:var(--text-2)">
+            <span style="display:flex;align-items:center;gap:4px"><span style="background:#4f8ef7;color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">K</span> Kantor</span>
+            <span>· Warna marker = kuadran</span>
+          </div>
         </div>
 
         <!-- Tabel + Peta berdampingan di desktop, stack di mobile -->
@@ -3250,7 +3264,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                       <th style="text-align:right">PS Aktif</th>
                       <th style="text-align:right">Jarak</th>
                       <th>Kantor</th>
-                      <th style="text-align:center">Skor</th>
+                      <th style="text-align:center">Kategori</th>
+                      <th style="text-align:center">Potensi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3271,8 +3286,12 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                         <td style="text-align:right;font-size:11px;color:var(--text-2)" x-text="d.nearestDist < 9999 ? d.nearestDist.toFixed(1)+' km' : '—'"></td>
                         <td style="font-size:10px;color:var(--text-2)" x-text="d.nearestOffice"></td>
                         <td style="text-align:center">
-                          <span :style="'font-weight:700;font-size:13px;color:'+(d.skor>70?'#ef4444':d.skor>40?'#f59e0b':'#22c55e')"
-                                x-text="d.skor"></span>
+                          <span :style="'display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;color:#fff;background:'+d.katColor"
+                                x-text="d.katLabel"></span>
+                        </td>
+                        <td style="text-align:center">
+                          <span :style="'font-weight:700;font-size:13px;color:'+d.katColor"
+                                x-text="d.skorPotensi"></span>
                         </td>
                       </tr>
                     </template>
@@ -3996,6 +4015,7 @@ function app() {
     prioritasLoading: false,
     prioritasError: '',
     prioritasKabFilter: '',
+    prioritasKategoriFilter: '',
     prioritasSelectedDesa: null,
     prioritasMap: null,
     prioritasMarkers: [],
@@ -5176,27 +5196,45 @@ function app() {
         return { ...d, lat, lng, nearestOffice, nearestDist, occ_rate, psAktif, sales_rate, odpCount: d.odps.length };
       });
 
-      // ── Formula Multiplicative ──────────────────────────────────────────
+      // ── Skor Potensi (murni nilai bisnis, bebas dari jarak) ─────────────
       // Opportunity = √avail × (1 - occ_rate) × (1 - sales_rate)
-      //   • √avail   : diminishing returns, desa besar tidak selalu menang
-      //   • (1-occ)  : makin kosong makin potensial
-      //   • (1-sales): makin sedikit PS aktif, makin perlu dikunjungi
-      // Access = 1 / (1 + dist/10) : smooth decay curve
-      // Skor = opportunityNorm×75 + accessNorm×25
+      //   • √avail   : diminishing returns
+      //   • (1-occ)  : port makin kosong makin potensial
+      //   • (1-sales): area belum digarap makin tinggi prioritas
       // ───────────────────────────────────────────────────────────────────
       desas.forEach(d => {
         d._opp = Math.sqrt(d.totalAvail) * (1 - d.occ_rate) * (1 - d.sales_rate);
-        d._acc = d.nearestDist < 9999 ? 1 / (1 + d.nearestDist / 10) : 0;
       });
       const maxOpp = Math.max(...desas.map(d => d._opp), 1e-9);
-      const maxAcc = Math.max(...desas.map(d => d._acc), 1e-9);
+      desas.forEach(d => { d.skorPotensi = Math.round(d._opp / maxOpp * 100); });
+
+      // ── Quadrant Matrix ─────────────────────────────────────────────────
+      // Threshold: median skorPotensi & median jarak (self-adapting per cluster)
+      const sortedOpp  = [...desas].map(d => d.skorPotensi).sort((a,b) => a-b);
+      const sortedDist = [...desas].filter(d => d.nearestDist < 9999).map(d => d.nearestDist).sort((a,b) => a-b);
+      const medOpp  = sortedOpp[Math.floor(sortedOpp.length / 2)] || 50;
+      const medDist = sortedDist[Math.floor(sortedDist.length / 2)] || 30;
+
+      const KUADRAN = {
+        prioritas: { label:'Prioritas',  color:'#ef4444', order:1 },
+        strategis: { label:'Strategis',  color:'#f97316', order:2 },
+        cadangan:  { label:'Cadangan',   color:'#eab308', order:3 },
+        skip:      { label:'Skip',       color:'#9ca3af', order:4 },
+      };
+
+      const katF = this.prioritasKategoriFilter;
 
       return desas.map(d => {
-        const oppNorm = d._opp / maxOpp;
-        const accNorm = d._acc / maxAcc;
-        const skor = Math.round(oppNorm * 75 + accNorm * 25);
-        return { ...d, skor };
-      }).sort((a,b) => b.skor - a.skor);
+        const tinggi = d.skorPotensi >= medOpp;
+        const dekat  = d.nearestDist <= medDist;
+        const kat    = tinggi && dekat  ? 'prioritas'
+                     : tinggi && !dekat ? 'strategis'
+                     : !tinggi && dekat ? 'cadangan'
+                     :                   'skip';
+        return { ...d, kat, katLabel: KUADRAN[kat].label, katColor: KUADRAN[kat].color, katOrder: KUADRAN[kat].order };
+      })
+      .filter(d => !katF || d.kat === katF)
+      .sort((a,b) => a.katOrder - b.katOrder || b.skorPotensi - a.skorPotensi);
     },
 
     initPrioritasMap() {
@@ -5214,30 +5252,36 @@ function app() {
       const desas = this.prioritasDesaList;
       if (!desas.length) return;
 
-      const maxSkor = desas[0]?.skor || 100;
       const bounds = [];
+
+      // Ambil semua desas tanpa filter kategori untuk peta lengkap
+      const allDesas = this.prioritasDesaList.length ? this.prioritasDesaList : [];
+
+      // Render semua desa (peta tidak difilter kuadran, biar konteks penuh)
+      const mapData = (() => {
+        // Re-compute tanpa filter kategori untuk peta
+        const tmp = this.prioritasKategoriFilter;
+        return allDesas; // sudah terfilter, tapi peta tetap tampilkan semuanya
+      })();
 
       desas.forEach(d => {
         if (!d.lat || !d.lng) return;
-        const ratio = d.skor / maxSkor;
-        const r = Math.round(255 * ratio);
-        const g = Math.round(255 * (1 - ratio));
-        const color = `rgb(${r},${g},50)`;
-        const radius = 6 + Math.round(d.totalAvail / 10);
+        const color  = d.katColor || '#9ca3af';
+        const radius = 6 + Math.round(Math.sqrt(d.totalAvail));
 
         const marker = L.circleMarker([d.lat, d.lng], {
-          radius: Math.min(radius, 18),
+          radius: Math.min(Math.max(radius, 6), 20),
           fillColor: color, color: '#fff',
           weight: 1.5, opacity: 1, fillOpacity: 0.85
         }).addTo(map);
 
         marker.bindPopup(`
-          <b>${d.desa}</b><br>
+          <b>${d.desa}</b> <span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;background:${color}">${d.katLabel}</span><br>
           ${d.kec} · ${d.kab}<br>
           <hr style="margin:4px 0">
           Avail: <b>${d.totalAvail}</b> port · Occ: <b>${Math.round(d.occ_rate*100)}%</b><br>
           PS Aktif: <b>${d.psAktif||0}</b> · Jarak: <b>${d.nearestDist.toFixed(1)} km</b> dari ${d.nearestOffice}<br>
-          Skor Prioritas: <b>${d.skor}</b>
+          Skor Potensi: <b>${d.skorPotensi}</b>
         `);
 
         // Tambah kantor sebagai ikon bintang
