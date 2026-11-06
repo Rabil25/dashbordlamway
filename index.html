@@ -2341,8 +2341,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               <thead>
                 <tr>
                   <th>ID Order</th><th>STO</th><th>Kab</th>
-                  <th>SF</th><th>Produk</th><th>Channel</th>
-                  <th>Tgl IO</th><th>Status IO</th><th>Status PS</th><th>Kendala</th>
+                  <th>SF</th><th>ID SF</th><th>Jenis Produk</th><th>Speed</th><th>Channel</th>
+                  <th>Tgl IO</th><th>Tgl PS</th><th>Status IO</th><th>Status PS</th><th>Kendala</th>
                 </tr>
               </thead>
               <tbody>
@@ -2352,9 +2352,12 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                     <td class="mono" style="color:var(--text-2)" x-text="r.sto"></td>
                     <td style="font-size:11px;color:var(--text-2)" x-text="r.kab"></td>
                     <td x-text="r.namaSF"></td>
-                    <td><span class="badge b-neutral" x-text="r.produk||'—'"></span></td>
+                    <td class="mono" style="font-size:11px;color:var(--text-2)" x-text="r.codeSF||'—'"></td>
+                    <td><span class="badge b-neutral" x-text="r.jenisProduk||'—'"></span></td>
+                    <td style="font-size:11px" x-text="r.speed||'—'"></td>
                     <td><span class="badge" :class="r.channel==='Digital'?'b-info':'b-warning'" x-text="r.channel||'—'"></span></td>
                     <td style="font-size:11px;color:var(--text-2)" x-text="r.tglIO"></td>
+                    <td style="font-size:11px;color:var(--text-2)" x-text="r.tglPS||'—'"></td>
                     <td>
                       <span class="badge" :class="r.statusIO==='Valid IO'?'b-success':'b-warning'" x-text="r.statusIO||'—'"></span>
                     </td>
@@ -2367,7 +2370,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   </tr>
                 </template>
                 <tr x-show="paginatedOrders.length===0">
-                  <td colspan="10" class="empty">Tidak ada order</td>
+                  <td colspan="13" class="empty">Tidak ada order</td>
                 </tr>
               </tbody>
             </table>
@@ -4822,7 +4825,7 @@ function app() {
     downloadOrderCSV() {
       const rows = this.filteredOrders;
       if (!rows.length) return;
-      const header = ['ID Order','STO','Kabupaten','Nama SF','Produk','Channel','Tgl IO','Status IO','Status PS','Kendala','Detail Kendala'];
+      const header = ['ID Order','STO','Kabupaten','Nama SF','ID SF','Jenis Produk','Speed','Channel','Tgl IO','Tgl PS','Status IO','Status PS','Kendala','Detail Kendala'];
       const lines = [header.join(',')];
       rows.forEach(r => {
         lines.push([
@@ -4830,9 +4833,12 @@ function app() {
           '"'+(r.sto||'')+'"',
           '"'+(r.kab||'')+'"',
           '"'+(r.namaSF||'')+'"',
-          '"'+(r.produk||'')+'"',
+          '"'+(r.codeSF||'')+'"',
+          '"'+(r.jenisProduk||'')+'"',
+          '"'+(r.speed||'')+'"',
           '"'+(r.channel||'')+'"',
           '"'+(r.tglIO||'')+'"',
+          '"'+(r.tglPS||'')+'"',
           '"'+(r.statusIO||'')+'"',
           '"'+(r.statusPS||'Proses')+'"',
           '"'+(r.kendala||'')+'"',
@@ -4983,6 +4989,8 @@ function app() {
         kab:       r[C.VAL_KAB]||'',
         namaSF:    r[C.NAMA_SF]||'',
         codeSF:    r[C.CODE_SF]||'',
+        jenisProduk: r[C.PRODUK_KAT]||'',
+        speed:     (r[C.SPEED]||'').toString(),
         produk:    r[C.SPEED]||r[C.PRODUK_KAT]||'',
         produkKey: ((r[C.PRODUK_KAT]||'').trim()) + '|' + ((r[C.SPEED]||'').toString().trim()),
         channel:   r[C.CHANNEL2]||'',
@@ -4990,6 +4998,7 @@ function app() {
         statusPS:  r[C.VAL_PS]||'',
         statusFnl: r[C.STATUS_FNL]||'',
         tglIO:     (function(d){ if(!d||typeof d!=='string'||d.length!==8) return d||''; return d.slice(6)+'/'+d.slice(4,6)+'/'+d.slice(0,4); })(r[C.DATE_IO]),
+        tglPS:     (function(d){ if(!d||typeof d!=='string'||d.length!==8) return d||''; return d.slice(6)+'/'+d.slice(4,6)+'/'+d.slice(0,4); })(r[C.DATE_PS]),
         kendala:   r[C.KENDALA_CAT]||'',
         kendalaDetail: r[C.KENDALA_DTL]||'',
         blnIO:     (r[C.BLN_IO]||'').toString(),
