@@ -3246,7 +3246,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                       <th>Kec</th>
                       <th>Kab</th>
                       <th style="text-align:right">Avail</th>
-                      <th style="text-align:right">Penetrasi</th>
+                      <th style="text-align:right">Occ%</th>
+                      <th style="text-align:right">PS Aktif</th>
                       <th style="text-align:right">Jarak</th>
                       <th>Kantor</th>
                       <th style="text-align:center">Skor</th>
@@ -3263,9 +3264,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                         <td style="font-size:11px;color:var(--text-2)" x-text="d.kab"></td>
                         <td style="text-align:right;font-weight:600" x-text="d.totalAvail"></td>
                         <td style="text-align:right">
-                          <span :class="Math.round(d.penetrasi*100)>=20?'badge-green':Math.round(d.penetrasi*100)>=10?'badge-yellow':'badge-red'"
-                                x-text="Math.round(d.penetrasi*100)+'%'"></span>
+                          <span :class="Math.round(d.occ_rate*100)>=60?'badge-red':Math.round(d.occ_rate*100)>=30?'badge-yellow':'badge-green'"
+                                x-text="Math.round(d.occ_rate*100)+'%'"></span>
                         </td>
+                        <td style="text-align:right;font-size:12px" x-text="d.psAktif || '—'"></td>
                         <td style="text-align:right;font-size:11px;color:var(--text-2)" x-text="d.nearestDist < 9999 ? d.nearestDist.toFixed(1)+' km' : '—'"></td>
                         <td style="font-size:10px;color:var(--text-2)" x-text="d.nearestOffice"></td>
                         <td style="text-align:center">
@@ -5089,7 +5091,14 @@ function app() {
       const data = this.prioritasOdpRaw;
       if (!data.length) return [];
 
-      // Aggregate per desa
+      // Build PS-per-desa map dari penetrasiData (kec||desa → ps)
+      const psMap = {};
+      (this.penetrasiData || []).forEach(p => {
+        const key = (p.kec||'').trim().toUpperCase() + '||' + (p.desa||'').trim().toUpperCase();
+        psMap[key] = (psMap[key] || 0) + (p.ps || 0);
+      });
+
+      // Aggregate per desa dari odp.json
       const map = {};
       data.forEach(o => {
         const kab  = (o.kab  ||'').trim().toUpperCase();
@@ -5117,19 +5126,34 @@ function app() {
           });
         }
         const total = d.totalAvail + d.totalUsed;
-        const penetrasi = total > 0 ? d.totalUsed / total : 0;
-        return { ...d, lat, lng, nearestOffice, nearestDist, penetrasi, odpCount: d.odps.length };
+        const occ_rate = total > 0 ? d.totalUsed / total : 0; // tingkat okupansi port
+        // PS aktif per desa (dari penetrasiData)
+        const psKey = d.kec.trim().toUpperCase() + '||' + d.desa.trim().toUpperCase();
+        const psAktif = psMap[psKey] || 0;
+        // sales_rate: seberapa aktif area ini sudah digarap (PS vs total port)
+        const sales_rate = total > 0 ? Math.min(psAktif / total, 1) : 0;
+        return { ...d, lat, lng, nearestOffice, nearestDist, occ_rate, psAktif, sales_rate, odpCount: d.odps.length };
       });
 
-      // Normalisasi untuk skor
-      const maxAvail = Math.max(...desas.map(d => d.totalAvail), 1);
-      const maxDist  = Math.max(...desas.map(d => d.nearestDist), 1);
+      // ── Formula Multiplicative ──────────────────────────────────────────
+      // Opportunity = √avail × (1 - occ_rate) × (1 - sales_rate)
+      //   • √avail   : diminishing returns, desa besar tidak selalu menang
+      //   • (1-occ)  : makin kosong makin potensial
+      //   • (1-sales): makin sedikit PS aktif, makin perlu dikunjungi
+      // Access = 1 / (1 + dist/10) : smooth decay curve
+      // Skor = opportunityNorm×75 + accessNorm×25
+      // ───────────────────────────────────────────────────────────────────
+      desas.forEach(d => {
+        d._opp = Math.sqrt(d.totalAvail) * (1 - d.occ_rate) * (1 - d.sales_rate);
+        d._acc = d.nearestDist < 9999 ? 1 / (1 + d.nearestDist / 10) : 0;
+      });
+      const maxOpp = Math.max(...desas.map(d => d._opp), 1e-9);
+      const maxAcc = Math.max(...desas.map(d => d._acc), 1e-9);
 
       return desas.map(d => {
-        const availNorm   = d.totalAvail / maxAvail;
-        const potensiNorm = 1 - d.penetrasi;
-        const dekatNorm   = d.nearestDist < 9999 ? 1 - (d.nearestDist / maxDist) : 0;
-        const skor = Math.round(availNorm * 40 + potensiNorm * 35 + dekatNorm * 25);
+        const oppNorm = d._opp / maxOpp;
+        const accNorm = d._acc / maxAcc;
+        const skor = Math.round(oppNorm * 75 + accNorm * 25);
         return { ...d, skor };
       }).sort((a,b) => b.skor - a.skor);
     },
@@ -5170,8 +5194,8 @@ function app() {
           <b>${d.desa}</b><br>
           ${d.kec} · ${d.kab}<br>
           <hr style="margin:4px 0">
-          Avail: <b>${d.totalAvail}</b> port · Penetrasi: <b>${Math.round(d.penetrasi*100)}%</b><br>
-          Jarak: <b>${d.nearestDist.toFixed(1)} km</b> dari ${d.nearestOffice}<br>
+          Avail: <b>${d.totalAvail}</b> port · Occ: <b>${Math.round(d.occ_rate*100)}%</b><br>
+          PS Aktif: <b>${d.psAktif||0}</b> · Jarak: <b>${d.nearestDist.toFixed(1)} km</b> dari ${d.nearestOffice}<br>
           Skor Prioritas: <b>${d.skor}</b>
         `);
 
