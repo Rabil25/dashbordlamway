@@ -305,6 +305,10 @@ button { font-family: var(--font); cursor: pointer; }
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
 /* ── TOPBAR ── */
+/* Wrapper topbar — di desktop tidak kelihatan, di mobile jadi container hamburger+topbar */
+.topbar-row {
+  display: contents; /* transparan di desktop, tidak mempengaruhi layout */
+}
 .topbar {
   height: var(--topbar-h); flex-shrink: 0;
   background: linear-gradient(90deg, #0a1020 0%, #080e1a 100%);
@@ -1200,22 +1204,41 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
   }
 
   /* ── 2. Topbar ── scrollable di mobile ── */
+  /* Wrapper: flex row, hamburger fix di kiri, topbar flex-1 scroll di kanan */
+  .topbar-row {
+    display: flex;
+    align-items: stretch;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(90deg, #0a1020 0%, #080e1a 100%);
+    border-bottom: 1px solid var(--surface-border);
+    flex-shrink: 0;
+  }
   .topbar {
     height: auto !important;
     min-height: 48px;
-    padding: 8px 12px;
+    padding: 8px 12px 8px 4px;
     gap: 6px;
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     flex-wrap: nowrap;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    flex: 1;
+    /* Hapus sticky dari .topbar sendiri — sudah dihandle .topbar-row */
+    position: static !important;
+    border-bottom: none;
+    background: transparent;
+    box-shadow: none;
     scrollbar-width: none;
   }
   .topbar::-webkit-scrollbar { display: none; }
+  /* Hamburger: tidak di dalam .topbar lagi, jadi tidak ikut scroll */
+  .hamburger {
+    flex-shrink: 0;
+    align-self: center;
+    margin: 0 4px 0 8px;
+  }
   .topbar-title { font-size: 13px; white-space: nowrap; min-width: 80px; flex: 0 0 auto; }
   .cluster-toggle { flex-shrink: 0; }
   .cluster-btn { padding: 4px 10px; font-size: 10px; white-space: nowrap; }
@@ -1276,6 +1299,18 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
   /* ── 10. SFP tabel ── */
   .sfp-row { flex-direction: column; gap: 6px; }
+  /* Bungkus tabel sfp-tbl agar bisa scroll horizontal di mobile */
+  .card table.sfp-tbl,
+  [style*="padding:0"] table.sfp-tbl {
+    min-width: 480px; /* pastikan tabel punya lebar minimal */
+  }
+  /* Parent .card yang langsung berisi sfp-tbl: jadikan scrollable */
+  .card[style*="overflow:hidden"] { overflow-x: auto !important; }
+  /* Khusus wrapper scorecard / daftar SF */
+  .sfp-tbl-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
   /* ── 11. Auth card ── */
   .auth-card { padding: 24px 20px; }
@@ -1596,12 +1631,12 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
   <div class="main" id="main-content">
 
     <!-- TOPBAR -->
-    <div class="topbar">
-      <!-- Hamburger (mobile) -->
+    <div class="topbar-row">
+      <!-- Hamburger (mobile) — di luar topbar agar tidak ikut scroll -->
       <button class="hamburger" @click="menuOpen=!menuOpen" aria-label="Buka menu navigasi" :aria-expanded="menuOpen">
         <span></span><span></span><span></span>
       </button>
-
+      <div class="topbar">
       <div class="topbar-title" x-text="pageTitle"></div>
       <div class="cluster-toggle">
         <button class="cluster-btn" :class="{active:cluster==='Lampung Barat'}" @click="setCluster('Lampung Barat')">Lampung Barat</button>
@@ -1719,7 +1754,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </button>
         </div>
       </div>
-    </div>
+      </div><!-- end .topbar -->
+    </div><!-- end .topbar-row -->
 
     <!-- GLOSSARY MODAL -->
     <div class="glossary-modal-bg" x-show="glossaryOpen" x-transition style="display:none" @keydown.escape.window="glossaryOpen=false" role="dialog" aria-modal="true" aria-label="Glosarium Istilah">
@@ -2881,7 +2917,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <!-- Scorecard per kab -->
         <div x-show="sfpTab==='scorecard'">
           <div class="card" style="padding:0;overflow:hidden">
-            <table class="sfp-tbl">
+            <div class="sfp-tbl-scroll"><table class="sfp-tbl">
               <thead>
                 <tr>
                   <th>Kabupaten</th>
@@ -2915,7 +2951,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   <td x-text="sfperfScorecard.reduce((s,d)=>s+d.baru,0)"></td>
                 </tr>
               </tbody>
-            </table>
+            </table></div><!-- end sfp-tbl-scroll -->
           </div>
         </div>
 
@@ -2926,7 +2962,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             <div id="chart-sfp-tier" style="height:240px"></div>
           </div>
           <div class="card" style="padding:0;overflow:hidden">
-            <table class="sfp-tbl">
+            <div class="sfp-tbl-scroll"><table class="sfp-tbl">
               <thead>
                 <tr>
                   <th>Tier</th>
@@ -2963,14 +2999,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   <td style="text-align:right">—</td><td>—</td><td>—</td>
                 </tr>
               </tbody>
-            </table>
+            </table></div><!-- end sfp-tbl-scroll -->
           </div>
         </div>
 
         <!-- Daftar SF (full table with tier) -->
         <div x-show="sfpTab==='daftar'">
           <div class="card" style="padding:0;overflow:hidden">
-            <table class="sfp-tbl">
+            <div class="sfp-tbl-scroll"><table class="sfp-tbl">
               <thead>
                 <tr>
                   <th>SF</th><th>Kabupaten</th><th>Tier LM</th><th>Tier Ini</th><th>PS LM</th><th>PS MTD</th><th>Target</th><th>ACV%</th>
@@ -3011,7 +3047,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   </tr>
                 </template>
               </tbody>
-            </table>
+            </table></div><!-- end sfp-tbl-scroll -->
           </div>
         </div>
 
