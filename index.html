@@ -2323,6 +2323,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 <option :value="k" x-text="k"></option>
               </template>
             </select>
+            <button class="btn-sm btn-outline" @click="downloadOrderCSV()" title="Download CSV">⬇ CSV</button>
           </div>
         </div>
         <div class="tbl-wrap">
@@ -4816,6 +4817,37 @@ function app() {
         const numKeys = ['avai','ps','penetrasi'];
         this.penetrasiSort = { key, dir: numKeys.includes(key) ? -1 : 1 };
       }
+    },
+
+    downloadOrderCSV() {
+      const rows = this.filteredOrders;
+      if (!rows.length) return;
+      const header = ['ID Order','STO','Kabupaten','Nama SF','Produk','Channel','Tgl IO','Status IO','Status PS','Kendala','Detail Kendala'];
+      const lines = [header.join(',')];
+      rows.forEach(r => {
+        lines.push([
+          '"'+(r.idOrder||'')+'"',
+          '"'+(r.sto||'')+'"',
+          '"'+(r.kab||'')+'"',
+          '"'+(r.namaSF||'')+'"',
+          '"'+(r.produk||'')+'"',
+          '"'+(r.channel||'')+'"',
+          '"'+(r.tglIO||'')+'"',
+          '"'+(r.statusIO||'')+'"',
+          '"'+(r.statusPS||'Proses')+'"',
+          '"'+(r.kendala||'')+'"',
+          '"'+(r.kendalaDetail||'')+'"',
+        ].join(','));
+      });
+      const blob = new Blob(['﻿'+lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const stat = this.orderStatus || 'Semua';
+      const kab  = this.orderKab    || 'Semua';
+      a.href     = url;
+      a.download = `DetailOrder_${this.cluster}_${stat}_${kab}.csv`.replace(/\s+/g,'_');
+      a.click();
+      URL.revokeObjectURL(url);
     },
 
     downloadPenetrasiCSV() {
