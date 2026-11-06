@@ -2686,7 +2686,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
         <!-- Penetrasi table -->
         <div x-show="penetrasiData.length > 0" class="card" style="padding:0;overflow:hidden">
-          <table class="te-tbl">
+          <div class="sfp-tbl-scroll"><table class="te-tbl">
             <thead>
               <tr>
                 <th @click="penetrasiSortBy('kab')" style="cursor:pointer;user-select:none">
@@ -2739,7 +2739,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </tr>
               </template>
             </tbody>
-          </table>
+          </table></div><!-- end sfp-tbl-scroll -->
           <div x-show="penetrasiFiltered.length===0" style="padding:16px;text-align:center;color:var(--clr-muted)">
             Tidak ada data
           </div>
