@@ -2340,9 +2340,19 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             <table>
               <thead>
                 <tr>
-                  <th>ID Order</th><th>STO</th><th>Kab</th>
-                  <th>SF</th><th>ID SF</th><th>Jenis Produk</th><th>Speed</th><th>Channel</th>
-                  <th>Tgl IO</th><th>Tgl PS</th><th>Status IO</th><th>Status PS</th><th>Kendala</th>
+                  <th @click="orderSortBy('idOrder')" style="cursor:pointer;user-select:none">ID Order <span x-text="orderSort.key==='idOrder'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('sto')" style="cursor:pointer;user-select:none">STO <span x-text="orderSort.key==='sto'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('kab')" style="cursor:pointer;user-select:none">Kab <span x-text="orderSort.key==='kab'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('namaSF')" style="cursor:pointer;user-select:none">SF <span x-text="orderSort.key==='namaSF'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th>ID SF</th>
+                  <th @click="orderSortBy('jenisProduk')" style="cursor:pointer;user-select:none">Jenis Produk <span x-text="orderSort.key==='jenisProduk'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('speed')" style="cursor:pointer;user-select:none">Speed <span x-text="orderSort.key==='speed'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('channel')" style="cursor:pointer;user-select:none">Channel <span x-text="orderSort.key==='channel'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('tglIO')" style="cursor:pointer;user-select:none">Tgl IO <span x-text="orderSort.key==='tglIO'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('tglPS')" style="cursor:pointer;user-select:none">Tgl PS <span x-text="orderSort.key==='tglPS'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('statusIO')" style="cursor:pointer;user-select:none">Status IO <span x-text="orderSort.key==='statusIO'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('statusPS')" style="cursor:pointer;user-select:none">Status PS <span x-text="orderSort.key==='statusPS'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
+                  <th @click="orderSortBy('kendala')" style="cursor:pointer;user-select:none">Kendala <span x-text="orderSort.key==='kendala'?(orderSort.dir===1?'↑':'↓'):'↕'"></span></th>
                 </tr>
               </thead>
               <tbody>
@@ -3818,6 +3828,7 @@ function app() {
     sfSearch: '', sfKabFilter: '', sfProdukFilter: '',
     orderSearch: '', orderStatus: '', orderKab: '', orderProduk: '',
     orderPage: 0,
+    orderSort: { key: 'tglIO', dir: -1 },
     kendalaSearch: '', kendalaCat: '',
 
     // Penetrasi ODP state
@@ -5016,7 +5027,22 @@ function app() {
       else if (this.orderStatus === 'Masih IO')  rows = rows.filter(r => !r.statusIO || r.statusIO==='Masih IO');
       else if (this.orderStatus === 'CANCEL')     rows = rows.filter(r => (r.statusFnl||'').includes('CANCEL'));
 
+      const { key, dir } = this.orderSort;
+      rows.sort((a, b) => {
+        const av = typeof a[key] === 'string' ? a[key].localeCompare(b[key]) : (a[key]||0)-(b[key]||0);
+        return av * dir;
+      });
+
       return rows;
+    },
+
+    orderSortBy(key) {
+      if (this.orderSort.key === key) {
+        this.orderSort.dir *= -1;
+      } else {
+        this.orderSort = { key, dir: 1 };
+      }
+      this.orderPage = 0;
     },
 
     get paginatedOrders() {
