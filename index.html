@@ -1600,6 +1600,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         Peta
       </button>
+      <button class="nav-sub-item" :class="{active:page==='prioritas'}" @click="nav('prioritas');menuOpen=false" aria-label="Prioritas Kunjungan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8l4 4-4 4M8 12h8"/></svg>
+        Prioritas
+      </button>
 
       <!-- GROUP 4: DJP -->
       <div class="nav-group-lbl" style="margin-top:8px">🧭 DJP</div>
@@ -3190,6 +3194,141 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       </div>
 
       <!-- ═══════════════════════════════════════════════════
+           HALAMAN: PRIORITAS KUNJUNGAN
+      ════════════════════════════════════════════════════ -->
+      <div class="page" :class="{active:page==='prioritas'}" x-show="page==='prioritas'">
+        <!-- Header -->
+        <div class="section-hdr">
+          <div>
+            <div class="section-title">Prioritas Kunjungan</div>
+            <div class="section-sub">Skor berdasarkan port avail, penetrasi, & jarak kantor · <span x-text="cluster"></span></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="select" x-model="prioritasKabFilter" style="font-size:11px;padding:5px 8px">
+              <option value="">Semua Kabupaten</option>
+              <template x-for="k in (CLUSTER[cluster]?.kab||[])" :key="k">
+                <option :value="k" x-text="k"></option>
+              </template>
+            </select>
+            <button class="btn-sm btn-outline" @click="loadPrioritas()" :disabled="prioritasLoading"
+                    x-text="prioritasLoading ? 'Memuat…' : (prioritasOdpRaw.length ? '↺ Refresh' : 'Muat Data')"></button>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div x-show="prioritasError" class="alert-warn" x-text="'Error: '+prioritasError" style="margin-bottom:10px"></div>
+
+        <!-- Legend skor -->
+        <div x-show="prioritasDesaList.length > 0" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;font-size:11px;color:var(--text-2)">
+          <span>Skor Prioritas:</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:rgb(255,50,50)"></span> Tinggi (&gt;70)</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:rgb(200,150,50)"></span> Sedang (40–70)</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:rgb(50,200,50)"></span> Rendah (&lt;40)</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="background:#4f8ef7;color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">K</span> Kantor</span>
+        </div>
+
+        <!-- Tabel + Peta berdampingan di desktop, stack di mobile -->
+        <div x-show="prioritasDesaList.length > 0" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+
+          <!-- Tabel desa prioritas -->
+          <div style="flex:1;min-width:300px">
+            <div class="card" style="padding:0;overflow:hidden">
+              <div style="padding:10px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--surface-border)">
+                Top Desa Prioritas
+                <span style="font-weight:400;color:var(--text-2);margin-left:6px" x-text="'('+prioritasDesaList.length+' desa)'"></span>
+              </div>
+              <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+                <table class="te-tbl">
+                  <thead>
+                    <tr>
+                      <th style="text-align:center">#</th>
+                      <th>Desa</th>
+                      <th>Kec</th>
+                      <th>Kab</th>
+                      <th style="text-align:right">Avail</th>
+                      <th style="text-align:right">Penetrasi</th>
+                      <th style="text-align:right">Jarak</th>
+                      <th>Kantor</th>
+                      <th style="text-align:center">Skor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="(d, i) in prioritasDesaList" :key="d.kab+'||'+d.kec+'||'+d.desa">
+                      <tr @click="prioritasFlyTo(d)"
+                          :style="prioritasSelectedDesa && prioritasSelectedDesa.desa===d.desa && prioritasSelectedDesa.kec===d.kec ? 'background:var(--surface-active);cursor:pointer' : 'cursor:pointer'"
+                          style="cursor:pointer">
+                        <td style="text-align:center;color:var(--text-2);font-size:11px" x-text="i+1"></td>
+                        <td style="font-weight:500" x-text="d.desa"></td>
+                        <td style="font-size:11px;color:var(--text-2)" x-text="d.kec"></td>
+                        <td style="font-size:11px;color:var(--text-2)" x-text="d.kab"></td>
+                        <td style="text-align:right;font-weight:600" x-text="d.totalAvail"></td>
+                        <td style="text-align:right">
+                          <span :class="Math.round(d.penetrasi*100)>=20?'badge-green':Math.round(d.penetrasi*100)>=10?'badge-yellow':'badge-red'"
+                                x-text="Math.round(d.penetrasi*100)+'%'"></span>
+                        </td>
+                        <td style="text-align:right;font-size:11px;color:var(--text-2)" x-text="d.nearestDist < 9999 ? d.nearestDist.toFixed(1)+' km' : '—'"></td>
+                        <td style="font-size:10px;color:var(--text-2)" x-text="d.nearestOffice"></td>
+                        <td style="text-align:center">
+                          <span :style="'font-weight:700;font-size:13px;color:'+(d.skor>70?'#ef4444':d.skor>40?'#f59e0b':'#22c55e')"
+                                x-text="d.skor"></span>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- List ODP desa terpilih -->
+            <div x-show="prioritasSelectedDesa" class="card" style="padding:0;overflow:hidden;margin-top:12px">
+              <div style="padding:10px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--surface-border)">
+                ODP di <span x-text="prioritasSelectedDesa?.desa"></span>
+                <span style="font-weight:400;color:var(--text-2);margin-left:6px" x-text="'('+( prioritasSelectedDesa?.odps?.length||0)+' ODP)'"></span>
+              </div>
+              <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+                <table class="te-tbl">
+                  <thead>
+                    <tr>
+                      <th>Nama ODP</th>
+                      <th style="text-align:right">Avail</th>
+                      <th style="text-align:right">Used</th>
+                      <th style="text-align:center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="(o, i) in (prioritasSelectedDesa?.odps||[])" :key="i">
+                      <tr>
+                        <td class="mono" style="font-size:11px" x-text="o.odp"></td>
+                        <td style="text-align:right;font-weight:600;color:var(--success)" x-text="o.avai"></td>
+                        <td style="text-align:right;color:var(--text-2)" x-text="o.used"></td>
+                        <td style="text-align:center">
+                          <span :class="o.occ==='GREEN'?'badge-green':o.occ==='YELLOW'?'badge-yellow':'badge-red'"
+                                x-text="o.occ||'—'"></span>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Peta -->
+          <div style="flex:1.2;min-width:300px">
+            <div class="card" style="padding:0;overflow:hidden">
+              <div id="prioritas-map" style="height:520px;width:100%"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Empty state -->
+        <div x-show="!prioritasLoading && prioritasOdpRaw.length === 0" style="padding:40px;text-align:center;color:var(--text-2)">
+          Klik <strong>Muat Data</strong> untuk menghitung prioritas kunjungan
+        </div>
+      </div>
+
+<!-- ═══════════════════════════════════════════════════
            HALAMAN DJP: PLAN
       ════════════════════════════════════════════════════ -->
       <div class="page" :class="{active:page==='djp_plan'}" x-show="page==='djp_plan'" x-data="djpPlanData()" @page-djp_plan.window="initPlan()">
@@ -3700,6 +3839,25 @@ const CLUSTER = {
   'Way Kanan':     { kab: ['LAMPUNG UTARA','WAY KANAN'] },
 };
 
+// ── Kantor referensi untuk hitung jarak prioritas ──
+const OFFICES = [
+  { name: 'Tanggamus 1',    lat: -5.3664321, lng: 104.7803285, kab: 'TANGGAMUS' },
+  { name: 'Tanggamus 2',    lat: -5.4933735, lng: 104.6186705, kab: 'TANGGAMUS' },
+  { name: 'Pesisir Barat',  lat: -5.1962234, lng: 103.9309363, kab: 'PESISIR BARAT' },
+  { name: 'Lampung Barat',  lat: -5.0294173, lng: 104.0743091, kab: 'LAMPUNG BARAT' },
+  { name: 'Way Kanan',      lat: -4.7268253, lng: 104.5425645, kab: 'WAY KANAN' },
+  { name: 'Lampung Utara 1',lat: -4.8308673, lng: 104.8889064, kab: 'LAMPUNG UTARA' },
+  { name: 'Lampung Utara 2',lat: -4.8610996, lng: 104.5734521, kab: 'LAMPUNG UTARA' },
+];
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
 // ── ECharts theme helpers ──────────────────────────────────────
 function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
 
@@ -3830,6 +3988,15 @@ function app() {
     orderPage: 0,
     orderSort: { key: 'tglIO', dir: -1 }, // default: tglIO terbaru dulu
     kendalaSearch: '', kendalaCat: '',
+
+    // Prioritas Kunjungan state
+    prioritasOdpRaw: [],
+    prioritasLoading: false,
+    prioritasError: '',
+    prioritasKabFilter: '',
+    prioritasSelectedDesa: null,
+    prioritasMap: null,
+    prioritasMarkers: [],
 
     // Penetrasi ODP state
     penetrasiData: [],
@@ -4083,7 +4250,7 @@ function app() {
       const map = {
         dashboard:'Sales Dashboard', d2d:'D2D Sales', deepdive:'Deepdive Sales',
         outlook:'Outlook Sales', sfperf:'SF Performance',
-        sf:'Performa SF', order:'Detail Order', kendala:'Kendala', peta:'Peta',
+        sf:'Performa SF', order:'Detail Order', kendala:'Kendala', peta:'Peta', prioritas:'Prioritas Kunjungan',
         djp_plan:'Plan DJP', djp_real:'Realisasi DJP', djp_daily:'DJP Daily', djp_odp_list:'List ODP',
       };
       return map[this.page] || '';
@@ -4897,6 +5064,137 @@ function app() {
       a.download = `PenetrasiODP_${this.cluster}_${kab}_${kec}.csv`.replace(/\s+/g,'_');
       a.click();
       URL.revokeObjectURL(url);
+    },
+
+    // ── Prioritas Kunjungan ──────────────────────────────────────
+    async loadPrioritas() {
+      if (this.prioritasLoading) return;
+      this.prioritasLoading = true;
+      this.prioritasError = '';
+      try {
+        const res = await fetch('data/odp.json');
+        const raw = await res.json();
+        this.prioritasOdpRaw = Array.isArray(raw) ? raw : (raw.data || []);
+      } catch(e) {
+        this.prioritasError = e.message;
+      } finally {
+        this.prioritasLoading = false;
+        this.$nextTick(() => this.initPrioritasMap());
+      }
+    },
+
+    get prioritasDesaList() {
+      const clusterKabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
+      const kabF = this.prioritasKabFilter.toUpperCase();
+      const data = this.prioritasOdpRaw;
+      if (!data.length) return [];
+
+      // Aggregate per desa
+      const map = {};
+      data.forEach(o => {
+        const kab  = (o.kab  ||'').trim().toUpperCase();
+        const kec  = (o.kec  ||'').trim();
+        const desa = (o.desa ||'').trim();
+        if (!clusterKabs.includes(kab)) return;
+        if (kabF && kab !== kabF) return;
+        const key = kab + '||' + kec + '||' + desa;
+        if (!map[key]) map[key] = { kab, kec, desa, totalAvail:0, totalUsed:0, lats:[], lngs:[], odps:[] };
+        map[key].totalAvail += (o.avai||0);
+        map[key].totalUsed  += (o.used||0);
+        if (o.lat && o.lng) { map[key].lats.push(o.lat); map[key].lngs.push(o.lng); }
+        map[key].odps.push(o);
+      });
+
+      const desas = Object.values(map).map(d => {
+        const lat = d.lats.length ? d.lats.reduce((a,b)=>a+b,0)/d.lats.length : null;
+        const lng = d.lngs.length ? d.lngs.reduce((a,b)=>a+b,0)/d.lngs.length : null;
+        // Jarak ke kantor terdekat
+        let nearestOffice = '—', nearestDist = 9999;
+        if (lat && lng) {
+          OFFICES.forEach(of => {
+            const dist = haversineKm(lat, lng, of.lat, of.lng);
+            if (dist < nearestDist) { nearestDist = dist; nearestOffice = of.name; }
+          });
+        }
+        const total = d.totalAvail + d.totalUsed;
+        const penetrasi = total > 0 ? d.totalUsed / total : 0;
+        return { ...d, lat, lng, nearestOffice, nearestDist, penetrasi, odpCount: d.odps.length };
+      });
+
+      // Normalisasi untuk skor
+      const maxAvail = Math.max(...desas.map(d => d.totalAvail), 1);
+      const maxDist  = Math.max(...desas.map(d => d.nearestDist), 1);
+
+      return desas.map(d => {
+        const availNorm   = d.totalAvail / maxAvail;
+        const potensiNorm = 1 - d.penetrasi;
+        const dekatNorm   = d.nearestDist < 9999 ? 1 - (d.nearestDist / maxDist) : 0;
+        const skor = Math.round(availNorm * 40 + potensiNorm * 35 + dekatNorm * 25);
+        return { ...d, skor };
+      }).sort((a,b) => b.skor - a.skor);
+    },
+
+    initPrioritasMap() {
+      if (!this.prioritasOdpRaw.length) return;
+      const el = document.getElementById('prioritas-map');
+      if (!el) return;
+      if (this.prioritasMap) { this.prioritasMap.remove(); this.prioritasMap = null; }
+
+      const map = L.map('prioritas-map', { zoomControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap', maxZoom: 18
+      }).addTo(map);
+      this.prioritasMap = map;
+
+      const desas = this.prioritasDesaList;
+      if (!desas.length) return;
+
+      const maxSkor = desas[0]?.skor || 100;
+      const bounds = [];
+
+      desas.forEach(d => {
+        if (!d.lat || !d.lng) return;
+        const ratio = d.skor / maxSkor;
+        const r = Math.round(255 * ratio);
+        const g = Math.round(255 * (1 - ratio));
+        const color = `rgb(${r},${g},50)`;
+        const radius = 6 + Math.round(d.totalAvail / 10);
+
+        const marker = L.circleMarker([d.lat, d.lng], {
+          radius: Math.min(radius, 18),
+          fillColor: color, color: '#fff',
+          weight: 1.5, opacity: 1, fillOpacity: 0.85
+        }).addTo(map);
+
+        marker.bindPopup(`
+          <b>${d.desa}</b><br>
+          ${d.kec} · ${d.kab}<br>
+          <hr style="margin:4px 0">
+          Avail: <b>${d.totalAvail}</b> port · Penetrasi: <b>${Math.round(d.penetrasi*100)}%</b><br>
+          Jarak: <b>${d.nearestDist.toFixed(1)} km</b> dari ${d.nearestOffice}<br>
+          Skor Prioritas: <b>${d.skor}</b>
+        `);
+
+        // Tambah kantor sebagai ikon bintang
+        bounds.push([d.lat, d.lng]);
+      });
+
+      // Tambah marker kantor
+      OFFICES.forEach(of => {
+        L.marker([of.lat, of.lng], {
+          icon: L.divIcon({ className:'', html:`<div style="background:#4f8ef7;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)">K</div>`, iconSize:[28,28], iconAnchor:[14,14] })
+        }).addTo(map).bindPopup(`<b>Kantor</b><br>${of.name}`);
+      });
+
+      if (bounds.length) map.fitBounds(bounds, { padding: [30, 30] });
+      this.prioritasMarkers = desas;
+    },
+
+    prioritasFlyTo(desa) {
+      this.prioritasSelectedDesa = desa;
+      if (this.prioritasMap && desa.lat && desa.lng) {
+        this.prioritasMap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
+      }
     },
 
     _titleCase(str) {
