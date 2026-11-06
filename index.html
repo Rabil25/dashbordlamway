@@ -5074,9 +5074,50 @@ function app() {
       this.prioritasLoading = true;
       this.prioritasError = '';
       try {
-        const res = await fetch('data/odp.json');
-        const raw = await res.json();
-        this.prioritasOdpRaw = Array.isArray(raw) ? raw : (raw.data || []);
+        const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+        const bulan   = this.cfg.bulan || '';
+        // Fetch odp.json + GAS deepdive_odp (PS per desa) secara paralel
+        const [odpRes, gasRes] = await Promise.all([
+          fetch('data/odp.json'),
+          fetch(`${gasBase}?token=${GAS_TOKEN}&type=deepdive_odp&bulan=${encodeURIComponent(bulan)}`)
+        ]);
+        const odpRaw  = await odpRes.json();
+        const gasText = await gasRes.text();
+
+        this.prioritasOdpRaw = Array.isArray(odpRaw) ? odpRaw : (odpRaw.data || []);
+
+        // Parse PS per desa dari GAS → simpan ke penetrasiData jika belum ada
+        try {
+          const gasJson = JSON.parse(gasText);
+          if (gasJson.ok && !this.penetrasiData.length) {
+            const allOdp = this.prioritasOdpRaw;
+            const availMap = {};
+            allOdp.forEach(o => {
+              const kab  = (o.kab||'').trim().toUpperCase();
+              const kec  = (o.kec||'').trim().toUpperCase();
+              const desa = (o.desa||'').trim().toUpperCase();
+              const key  = kec + '||' + desa;
+              if (!availMap[key]) availMap[key] = { kab, avai: 0 };
+              availMap[key].avai += parseInt(o.avai||0, 10);
+            });
+            const psMap = {};
+            (gasJson.data || []).forEach(r => {
+              const key = (r.kec||'').trim().toUpperCase() + '||' + (r.desa||'').trim().toUpperCase();
+              psMap[key] = (psMap[key]||0) + (r.ps||0);
+            });
+            const merged = {};
+            Object.entries(availMap).forEach(([key, v]) => {
+              merged[key] = { kab: v.kab, kec: key.split('||')[0], desa: key.split('||')[1], avai: v.avai, ps: psMap[key]||0 };
+            });
+            Object.entries(psMap).forEach(([key, ps]) => {
+              if (!merged[key]) merged[key] = { kab: availMap[key]?.kab||'', kec: key.split('||')[0], desa: key.split('||')[1], avai: 0, ps };
+            });
+            this.penetrasiData = Object.values(merged).filter(r => r.kec||r.desa).map(r => ({
+              ...r, penetrasi: r.avai > 0 ? Math.round(r.ps/r.avai*100) : 0
+            }));
+          }
+        } catch(_) { /* GAS parse error — skor tetap jalan tanpa PS */ }
+
       } catch(e) {
         this.prioritasError = e.message;
       } finally {
