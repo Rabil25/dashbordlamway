@@ -3828,7 +3828,7 @@ function app() {
     sfSearch: '', sfKabFilter: '', sfProdukFilter: '',
     orderSearch: '', orderStatus: '', orderKab: '', orderProduk: '',
     orderPage: 0,
-    orderSort: { key: 'tglIO', dir: -1 },
+    orderSort: { key: 'tglIO', dir: -1 }, // default: tglIO terbaru dulu
     kendalaSearch: '', kendalaCat: '',
 
     // Penetrasi ODP state
@@ -5010,6 +5010,8 @@ function app() {
         statusFnl: r[C.STATUS_FNL]||'',
         tglIO:     (function(d){ if(!d||typeof d!=='string'||d.length!==8) return d||''; return d.slice(6)+'/'+d.slice(4,6)+'/'+d.slice(0,4); })(r[C.DATE_IO]),
         tglPS:     (function(d){ if(!d||typeof d!=='string'||d.length!==8) return d||''; return d.slice(6)+'/'+d.slice(4,6)+'/'+d.slice(0,4); })(r[C.DATE_PS]),
+        _dateIO:   parseInt((r[C.DATE_IO]||'0').toString().replace(/\D/g,''))||0,
+        _datePS:   parseInt((r[C.DATE_PS]||'0').toString().replace(/\D/g,''))||0,
         kendala:   r[C.KENDALA_CAT]||'',
         kendalaDetail: r[C.KENDALA_DTL]||'',
         blnIO:     (r[C.BLN_IO]||'').toString(),
@@ -5028,8 +5030,10 @@ function app() {
       else if (this.orderStatus === 'CANCEL')     rows = rows.filter(r => (r.statusFnl||'').includes('CANCEL'));
 
       const { key, dir } = this.orderSort;
+      const dateKeys = { tglIO: '_dateIO', tglPS: '_datePS' };
       rows.sort((a, b) => {
-        const av = typeof a[key] === 'string' ? a[key].localeCompare(b[key]) : (a[key]||0)-(b[key]||0);
+        const sk = dateKeys[key] || key;
+        const av = typeof a[sk] === 'string' ? a[sk].localeCompare(b[sk]) : (a[sk]||0)-(b[sk]||0);
         return av * dir;
       });
 
