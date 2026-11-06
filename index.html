@@ -2682,6 +2682,9 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               <option :value="kec" x-text="kec"></option>
             </template>
           </select>
+          <button class="btn-sm btn-outline" @click="downloadPenetrasiCSV()" title="Download CSV">
+            ⬇ CSV
+          </button>
         </div>
 
         <!-- Penetrasi table -->
@@ -4813,6 +4816,38 @@ function app() {
         const numKeys = ['avai','ps','penetrasi'];
         this.penetrasiSort = { key, dir: numKeys.includes(key) ? -1 : 1 };
       }
+    },
+
+    downloadPenetrasiCSV() {
+      const rows = this.penetrasiFiltered;
+      if (!rows.length) return;
+      const header = ['Kabupaten','Kecamatan','Desa','Port Avail','PS','Penetrasi (%)'];
+      const lines = [header.join(',')];
+      rows.forEach(r => {
+        lines.push([
+          '"'+(r.kab||'')+'"',
+          '"'+(r.kec||'')+'"',
+          '"'+(r.desa||'')+'"',
+          r.avai||0,
+          r.ps||0,
+          r.penetrasi||0
+        ].join(','));
+      });
+      // Footer total
+      const totAvai = rows.reduce((s,r)=>s+r.avai,0);
+      const totPs   = rows.reduce((s,r)=>s+r.ps,0);
+      const totPct  = totAvai>0 ? Math.round(totPs/totAvai*100) : 0;
+      lines.push(['"TOTAL","","",'+totAvai+','+totPs+','+totPct].join(''));
+
+      const blob = new Blob(['﻿'+lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const kab  = this.penetrasiKabFilter || 'Semua';
+      const kec  = this.penetrasiKecFilter || 'Semua';
+      a.href     = url;
+      a.download = `PenetrasiODP_${this.cluster}_${kab}_${kec}.csv`.replace(/\s+/g,'_');
+      a.click();
+      URL.revokeObjectURL(url);
     },
 
     _titleCase(str) {
