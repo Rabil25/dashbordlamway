@@ -3241,17 +3241,19 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div>
         </div>
 
-        <!-- Tabel + Peta berdampingan di desktop, stack di mobile -->
-        <div x-show="prioritasDesaList.length > 0" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <!-- Tabel + Peta berdampingan -->
+        <div x-show="prioritasDesaList.length > 0" style="display:grid;grid-template-columns:1fr 1.4fr;gap:14px;align-items:start">
 
-          <!-- Tabel desa prioritas -->
-          <div style="flex:1;min-width:300px">
+          <!-- KOLOM KIRI: Tabel + ODP list -->
+          <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
             <div class="card" style="padding:0;overflow:hidden">
-              <div style="padding:10px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--surface-border)">
-                Top Desa Prioritas
-                <span style="font-weight:400;color:var(--text-2);margin-left:6px" x-text="'('+prioritasDesaList.length+' desa)'"></span>
+              <div style="padding:10px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--surface-border);display:flex;align-items:center;justify-content:space-between">
+                <span>Top Desa Prioritas
+                  <span style="font-weight:400;color:var(--text-2);margin-left:6px" x-text="'('+prioritasDesaList.length+' desa)'"></span>
+                </span>
+                <span style="font-size:10px;color:var(--text-2);font-weight:400">Klik baris → lihat di peta</span>
               </div>
-              <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+              <div style="overflow-x:auto;max-height:460px;overflow-y:auto">
                 <table class="te-tbl">
                   <thead>
                     <tr>
@@ -3301,12 +3303,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             </div>
 
             <!-- List ODP desa terpilih -->
-            <div x-show="prioritasSelectedDesa" class="card" style="padding:0;overflow:hidden;margin-top:12px">
-              <div style="padding:10px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--surface-border)">
-                ODP di <span x-text="prioritasSelectedDesa?.desa"></span>
-                <span style="font-weight:400;color:var(--text-2);margin-left:6px" x-text="'('+( prioritasSelectedDesa?.odps?.length||0)+' ODP)'"></span>
+            <div x-show="prioritasSelectedDesa" class="card" style="padding:0;overflow:hidden">
+              <div style="padding:10px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--surface-border);display:flex;align-items:center;justify-content:space-between">
+                <span>ODP di <span x-text="prioritasSelectedDesa?.desa"></span>
+                  <span style="font-weight:400;color:var(--text-2);margin-left:6px" x-text="'('+( prioritasSelectedDesa?.odps?.length||0)+' ODP)'"></span>
+                </span>
+                <span @click="prioritasSelectedDesa=null" style="cursor:pointer;font-size:14px;color:var(--text-2);line-height:1" title="Tutup">✕</span>
               </div>
-              <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+              <div style="overflow-x:auto;max-height:220px;overflow-y:auto">
                 <table class="te-tbl">
                   <thead>
                     <tr>
@@ -3332,12 +3336,18 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </table>
               </div>
             </div>
-          </div>
+          </div><!-- /kolom kiri -->
 
-          <!-- Peta -->
-          <div style="flex:1.2;min-width:300px">
+          <!-- KOLOM KANAN: Peta sticky -->
+          <div style="position:sticky;top:72px">
             <div class="card" style="padding:0;overflow:hidden">
-              <div id="prioritas-map" style="height:520px;width:100%"></div>
+              <div style="padding:8px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--surface-border);display:flex;align-items:center;gap:8px">
+                <span>Peta Prioritas</span>
+                <span style="font-weight:400;color:var(--text-2);font-size:11px" x-show="prioritasSelectedDesa">
+                  · Desa: <span x-text="prioritasSelectedDesa?.desa" style="color:var(--text-1)"></span>
+                </span>
+              </div>
+              <div id="prioritas-map" style="height:620px;width:100%"></div>
             </div>
           </div>
 
