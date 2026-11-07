@@ -5374,9 +5374,9 @@ function app() {
         ctx.selectedMarker = entry;
       }
 
-      const lmap = ctx.map;
+      // Alpine.raw() unwrap proxy agar method Leaflet bisa dipanggil langsung
+      const lmap = ctx.map || (this.prioritasMap ? Alpine.raw(this.prioritasMap) : null);
       if (lmap && desa.lat && desa.lng) {
-        // Di mobile (layar sempit), scroll ke peta dulu baru flyTo
         if (window.innerWidth < 768) {
           const mapEl = document.getElementById('prioritas-map');
           if (mapEl) {
