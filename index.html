@@ -5352,7 +5352,6 @@ function app() {
           weight: 1.5,
           fillOpacity: 0.85
         });
-        prev.marker.setZIndexOffset(0);
         prev.marker.closePopup();
       }
 
@@ -5369,7 +5368,7 @@ function app() {
           weight: 3,
           fillOpacity: 1
         });
-        entry.marker.setZIndexOffset(1000);
+        entry.marker.bringToFront();
         entry.marker.openPopup();
         ctx.selectedMarker = entry;
       }
