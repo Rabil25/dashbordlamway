@@ -5271,6 +5271,8 @@ function app() {
       if (this.prioritasMap) { this.prioritasMap.remove(); this.prioritasMap = null; }
       this.prioritasMarkerMap = {};
       this.prioritasSelectedMarker = null;
+      // Simpan di luar Alpine reactive proxy agar Leaflet method tidak ter-wrap
+      window._prioritasCtx = { markerMap: {}, selectedMarker: null };
 
       const map = L.map('prioritas-map', { zoomControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -5313,9 +5315,11 @@ function app() {
           Skor Potensi: <b>${d.skorPotensi}</b>
         `);
 
-        // Simpan referensi marker untuk highlight saat baris diklik
+        // Simpan referensi marker di luar Alpine proxy
         const r = Math.min(Math.max(radius, 6), 20);
-        this.prioritasMarkerMap[d.kec+'||'+d.desa] = { marker, color, radius: r };
+        const entry = { marker, color, radius: r };
+        this.prioritasMarkerMap[d.kec+'||'+d.desa] = entry;
+        if (window._prioritasCtx) window._prioritasCtx.markerMap[d.kec+'||'+d.desa] = entry;
 
         // Tambah kantor sebagai ikon bintang
         bounds.push([d.lat, d.lng]);
@@ -5333,9 +5337,11 @@ function app() {
     },
 
     prioritasFlyTo(desa) {
+      const ctx = window._prioritasCtx || { markerMap: {}, selectedMarker: null };
+
       // Reset marker sebelumnya ke style normal
-      if (this.prioritasSelectedMarker) {
-        const prev = this.prioritasSelectedMarker;
+      const prev = ctx.selectedMarker;
+      if (prev) {
         prev.marker.setStyle({
           radius: prev.radius,
           fillColor: prev.color,
@@ -5344,13 +5350,14 @@ function app() {
           fillOpacity: 0.85
         });
         prev.marker.setZIndexOffset(0);
+        prev.marker.closePopup();
       }
 
       this.prioritasSelectedDesa = desa;
 
       // Highlight marker yang dipilih
       const key = desa.kec + '||' + desa.desa;
-      const entry = this.prioritasMarkerMap[key];
+      const entry = ctx.markerMap[key];
       if (entry) {
         entry.marker.setStyle({
           radius: entry.radius + 6,
@@ -5361,7 +5368,7 @@ function app() {
         });
         entry.marker.setZIndexOffset(1000);
         entry.marker.openPopup();
-        this.prioritasSelectedMarker = entry;
+        ctx.selectedMarker = entry;
       }
 
       if (this.prioritasMap && desa.lat && desa.lng) {
