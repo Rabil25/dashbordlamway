@@ -4031,6 +4031,8 @@ function app() {
     prioritasSelectedDesa: null,
     prioritasMap: null,
     prioritasMarkers: [],
+    prioritasMarkerMap: {},   // key: "kec||desa" → {marker, color, radius}
+    prioritasSelectedMarker: null,
 
     // Penetrasi ODP state
     penetrasiData: [],
@@ -5254,6 +5256,8 @@ function app() {
       const el = document.getElementById('prioritas-map');
       if (!el) return;
       if (this.prioritasMap) { this.prioritasMap.remove(); this.prioritasMap = null; }
+      this.prioritasMarkerMap = {};
+      this.prioritasSelectedMarker = null;
 
       const map = L.map('prioritas-map', { zoomControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -5296,6 +5300,10 @@ function app() {
           Skor Potensi: <b>${d.skorPotensi}</b>
         `);
 
+        // Simpan referensi marker untuk highlight saat baris diklik
+        const r = Math.min(Math.max(radius, 6), 20);
+        this.prioritasMarkerMap[d.kec+'||'+d.desa] = { marker, color, radius: r };
+
         // Tambah kantor sebagai ikon bintang
         bounds.push([d.lat, d.lng]);
       });
@@ -5312,7 +5320,37 @@ function app() {
     },
 
     prioritasFlyTo(desa) {
+      // Reset marker sebelumnya ke style normal
+      if (this.prioritasSelectedMarker) {
+        const prev = this.prioritasSelectedMarker;
+        prev.marker.setStyle({
+          radius: prev.radius,
+          fillColor: prev.color,
+          color: '#fff',
+          weight: 1.5,
+          fillOpacity: 0.85
+        });
+        prev.marker.setZIndexOffset(0);
+      }
+
       this.prioritasSelectedDesa = desa;
+
+      // Highlight marker yang dipilih
+      const key = desa.kec + '||' + desa.desa;
+      const entry = this.prioritasMarkerMap[key];
+      if (entry) {
+        entry.marker.setStyle({
+          radius: entry.radius + 6,
+          fillColor: entry.color,
+          color: '#fff',
+          weight: 3,
+          fillOpacity: 1
+        });
+        entry.marker.setZIndexOffset(1000);
+        entry.marker.openPopup();
+        this.prioritasSelectedMarker = entry;
+      }
+
       if (this.prioritasMap && desa.lat && desa.lng) {
         this.prioritasMap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
       }
