@@ -5268,17 +5268,20 @@ function app() {
       if (!this.prioritasOdpRaw.length) return;
       const el = document.getElementById('prioritas-map');
       if (!el) return;
-      if (this.prioritasMap) { this.prioritasMap.remove(); this.prioritasMap = null; }
+      const _oldMap = window._prioritasCtx?.map || this.prioritasMap;
+      if (_oldMap) { try { _oldMap.remove(); } catch(e) {} }
+      this.prioritasMap = null;
       this.prioritasMarkerMap = {};
       this.prioritasSelectedMarker = null;
       // Simpan di luar Alpine reactive proxy agar Leaflet method tidak ter-wrap
-      window._prioritasCtx = { markerMap: {}, selectedMarker: null };
+      window._prioritasCtx = { markerMap: {}, selectedMarker: null, map: null };
 
       const map = L.map('prioritas-map', { zoomControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap', maxZoom: 18
       }).addTo(map);
       this.prioritasMap = map;
+      window._prioritasCtx.map = map; // bypass Alpine proxy
 
       const desas = this.prioritasDesaList;
       if (!desas.length) return;
@@ -5371,20 +5374,20 @@ function app() {
         ctx.selectedMarker = entry;
       }
 
-      if (this.prioritasMap && desa.lat && desa.lng) {
+      const lmap = ctx.map;
+      if (lmap && desa.lat && desa.lng) {
         // Di mobile (layar sempit), scroll ke peta dulu baru flyTo
         if (window.innerWidth < 768) {
           const mapEl = document.getElementById('prioritas-map');
           if (mapEl) {
             mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            // Tunggu scroll selesai baru flyTo supaya Leaflet tahu ukuran peta
             setTimeout(() => {
-              this.prioritasMap.invalidateSize();
-              this.prioritasMap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
+              lmap.invalidateSize();
+              lmap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
             }, 400);
           }
         } else {
-          this.prioritasMap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
+          lmap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
         }
       }
     },
