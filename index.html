@@ -1342,6 +1342,19 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
   .stat-card__val { font-size: 22px; }
   .content { padding: 10px 10px 80px; }
   .tab { padding: 4px 8px; font-size: 10px; }
+
+  /* Prioritas: stack vertikal di mobile */
+  .prioritas-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .prioritas-map-col {
+    position: static !important;
+  }
+  #prioritas-map {
+    height: 320px !important;
+  }
 }
 </style>
 </head>
@@ -3243,7 +3256,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
         <!-- Tabel + Peta berdampingan -->
         <div x-show="prioritasDesaList.length > 0">
-        <div style="display:grid !important;grid-template-columns:1fr 1.4fr;gap:14px;align-items:start">
+        <div class="prioritas-grid" style="display:grid !important;grid-template-columns:1fr 1.4fr;gap:14px;align-items:start">
 
           <!-- KOLOM KIRI: Tabel + ODP list -->
           <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
@@ -3340,7 +3353,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div><!-- /kolom kiri -->
 
           <!-- KOLOM KANAN: Peta sticky -->
-          <div style="position:sticky;top:72px">
+          <div class="prioritas-map-col" style="position:sticky;top:72px">
             <div class="card" style="padding:0;overflow:hidden">
               <div style="padding:8px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--surface-border);display:flex;align-items:center;gap:8px">
                 <span>Peta Prioritas</span>
