@@ -5365,7 +5365,20 @@ function app() {
       }
 
       if (this.prioritasMap && desa.lat && desa.lng) {
-        this.prioritasMap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
+        // Di mobile (layar sempit), scroll ke peta dulu baru flyTo
+        if (window.innerWidth < 768) {
+          const mapEl = document.getElementById('prioritas-map');
+          if (mapEl) {
+            mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Tunggu scroll selesai baru flyTo supaya Leaflet tahu ukuran peta
+            setTimeout(() => {
+              this.prioritasMap.invalidateSize();
+              this.prioritasMap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
+            }, 400);
+          }
+        } else {
+          this.prioritasMap.flyTo([desa.lat, desa.lng], 14, { duration: 1 });
+        }
       }
     },
 
