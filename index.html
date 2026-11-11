@@ -4777,17 +4777,21 @@ function app() {
         if (blnIOsf===bulan && (fx.includes('CANCEL') || fx.includes('BATAL'))) m.cancel++;
       });
 
-      // Hitung prevPS dari filteredPrevRows (data bulan lalu yang benar)
+      // Hitung prevPS (ikut rentang tanggal — untuk perbandingan progress)
+      // dan prevPSFull (full bulan lalu — untuk Tier LM & Target, tidak terpengaruh filter)
       this.filteredPrevRows.forEach(r => {
         const code = (r[C.CODE_SF]||'').trim();
         if (!code) return;
         if (validCodes.size > 0 && !validCodes.has(code)) return;
         if (!map[code]) map[code] = {
           code, nama: r[C.NAMA_SF]||'', channel: r[C.CHANNEL2]||'',
-          kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
+          kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0, prevPSFull:0,
           produk: r[C.PRODUK_KAT]||'',
         };
-        if ((r[C.BLN_PS]||'').toString()===prevBulan && this.inRange(r[C.TGL_PS])) map[code].prevPS++;
+        if ((r[C.BLN_PS]||'').toString()===prevBulan) {
+          if (this.inRange(r[C.TGL_PS])) map[code].prevPS++;   // ikut filter rentang
+          map[code].prevPSFull++;                               // selalu full bulan
+        }
       });
 
       const arr = Object.values(map);
@@ -4799,8 +4803,9 @@ function app() {
       arr.forEach(sf => {
         // PS/RE conversion (menggantikan LOS yang salah)
         sf.psRE = sf.re > 0 ? Math.round((sf.ps / sf.re) * 100) : 0;
-        // Tier berdasarkan PS bulan lalu (dari filteredPrevRows)
-        const tierPrev = getSFTier(sf.prevPS);
+        // Tier LM & Target dari prevPSFull (full bulan lalu, tidak ikut filter rentang)
+        // agar plan operasional tidak kacau saat filter diganti
+        const tierPrev = getSFTier(sf.prevPSFull);
         sf.tier     = tierPrev.name;
         sf.tierIcon = tierPrev.icon;
         sf.target   = tierPrev.target;
