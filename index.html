@@ -4742,7 +4742,7 @@ function app() {
         if (!map[code]) map[code] = {
           code, nama: (row[USF_NAMA]||'').toString().trim(), channel: '',
           kab,
-          io:0, re:0, ps:0, cancel:0, prevPS:0, produk: '',
+          io:0, re:0, ps:0, cancel:0, prevPS:0, prevPSFull:0, produk: '',
         };
       });
 
@@ -4758,7 +4758,7 @@ function app() {
         // Inisialisasi entry SF (pakai semua row untuk nama/kab/channel)
         if (!map[code]) map[code] = {
           code, nama: r[C.NAMA_SF]||'', channel: r[C.CHANNEL2]||'',
-          kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
+          kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0, prevPSFull:0,
           produk,
         };
         // Update channel & produk dari data order (lebih detail dari Update SF)
