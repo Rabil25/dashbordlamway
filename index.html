@@ -6366,6 +6366,18 @@ function djpPlanData() {
       this._initCluster();
       try {
         await Promise.all([this._loadODP(), this._loadSF()]);
+        // Restore draft dari localStorage kalau masih ada (misal: tab di-reload)
+        try {
+          const savedDraft = localStorage.getItem('djp_draft_' + this.form.tgl);
+          if (savedDraft) {
+            const { draft, ts } = JSON.parse(savedDraft);
+            const ageMin = (Date.now() - ts) / 60000;
+            if (Array.isArray(draft) && ageMin < 120) { // draft valid max 2 jam
+              this.draftPlan = draft;
+              this._toast('📋 Draft sebelumnya dipulihkan', 'info');
+            }
+          }
+        } catch(e) {}
         await this.loadPlan();
       } catch(e) {}
     },
@@ -6587,6 +6599,12 @@ function djpPlanData() {
         }));
 
         this.draftPlan = draft;
+        // Simpan draft ke localStorage — persist kalau reload
+        try {
+          localStorage.setItem('djp_draft_' + this.form.tgl, JSON.stringify({
+            tgl: this.form.tgl, kab: this.form.kab, draft, ts: Date.now()
+          }));
+        } catch(e) {}
         const total = draft.reduce((s, sf) => s + sf.odps.length, 0);
         this._toast(`✅ Draft dibuat: ${total} ODP untuk ${sfObjs.length} SF`, 'success');
       } catch(e) {
@@ -6634,10 +6652,24 @@ function djpPlanData() {
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal menyimpan');
         this.saving = false;
-        this.draftPlan = [];
+
+        // Reconstruct planData langsung dari allRows — tidak perlu fetch GAS lagi
+        // Format planData sama dengan yang dikembalikan djp_plan_get
+        this.planData = allRows.map(r => ({...r}));
         this.viewTgl = this.form.tgl;
-        await this.loadPlan();
+
+        // Simpan planData ke localStorage sebagai cache
+        try {
+          const cacheKey = 'djp_plandata_' + this.form.tgl;
+          localStorage.setItem(cacheKey, JSON.stringify({ data: this.planData, ts: Date.now() }));
+          // Hapus draft cache karena sudah tersimpan
+          localStorage.removeItem('djp_draft_' + this.form.tgl);
+        } catch(e) {}
+
+        this.draftPlan = [];
         this._toast(`✅ ${allRows.length} ODP disimpan untuk ${activeSFs.length} SF`, 'success');
+        // Sync ke GAS di background untuk memastikan konsistensi (silent, tidak block UI)
+        setTimeout(() => this.loadPlan().catch(()=>{}), 3000);
       } catch(e) {
         this.saving = false;
         this._toast('❌ ' + e.message, 'error');
@@ -6646,15 +6678,36 @@ function djpPlanData() {
 
     // ── Load plan tersimpan ──
     async loadPlan() {
-      this.planLoading = true;
+      const cacheKey = 'djp_plandata_' + this.viewTgl;
+
+      // 1. Cek cache localStorage — tampil instan kalau ada
       try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, ts } = JSON.parse(cached);
+          if (Array.isArray(data)) {
+            this.planData = data;
+            this.planLoading = false; // tampil dulu, loading spinner hilang
+          }
+        }
+      } catch(e) {}
+
+      // 2. Fetch GAS di background — update cache & UI kalau ada perubahan
+      try {
+        this.planLoading = this.planData.length === 0; // spinner hanya kalau belum ada data
         const gasUrl = this._gasUrl();
         const st = localStorage.getItem('wok_token')||'';
         const r = await fetch(`${gasUrl}?type=djp_plan_get&session_token=${encodeURIComponent(st)}&tgl=${this.viewTgl}&tahun=${this.viewTahun}`);
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal load plan');
         this.planData = d.data||[];
-      } catch(e) { this.planData = []; }
+        // Update cache dengan data terbaru dari GAS
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({ data: this.planData, ts: Date.now() }));
+        } catch(e) {}
+      } catch(e) {
+        if (this.planData.length === 0) this.planData = [];
+      }
       this.planLoading = false;
     },
 
