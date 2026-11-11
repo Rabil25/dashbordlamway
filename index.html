@@ -2252,13 +2252,14 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   <th>#</th>
                   <th>SF</th>
                   <th>Kab</th>
-                  <th>Tier</th>
-                  <th style="text-align:right">PS Prev</th>
+                  <th>Tier LM</th>
+                  <th>Tier Ini</th>
+                  <th style="text-align:right">PS LM</th>
                   <th style="text-align:right">Target</th>
+                  <th style="text-align:right">RE</th>
                   <th style="text-align:right">PS</th>
-                  <th style="min-width:110px">Achievement</th>
-                  <th style="text-align:right">IO</th>
-                  <th style="text-align:right">LOS%</th>
+                  <th style="min-width:110px">ACV%</th>
+                  <th style="text-align:right">PS/RE</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -2277,8 +2278,12 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                     <td>
                       <span class="tier-badge" :class="'tier-'+sf.tier.toLowerCase()" x-text="sf.tierIcon+' '+sf.tier"></span>
                     </td>
+                    <td>
+                      <span class="tier-badge" :class="'tier-'+sf.tierNow.toLowerCase()" x-text="sf.tierNowIcon+' '+sf.tierNow"></span>
+                    </td>
                     <td style="text-align:right;color:var(--text-2)" x-text="sf.prevPS"></td>
                     <td style="text-align:right;color:var(--text-2);font-weight:600" x-text="sf.target"></td>
+                    <td style="text-align:right;color:var(--warning)" x-text="sf.re"></td>
                     <td style="text-align:right;font-weight:700;font-size:14px" :style="sf.alertPS0?'color:var(--danger)':'color:var(--success)'" x-text="sf.ps"></td>
                     <td>
                       <div class="ach-wrap">
@@ -2292,10 +2297,9 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                           x-text="sf.ach+'%'"></span>
                       </div>
                     </td>
-                    <td style="text-align:right;color:var(--warning)" x-text="sf.io"></td>
                     <td style="text-align:right;font-size:11px"
-                      :style="'color:'+(sf.los>=60?'var(--success)':sf.los>=30?'var(--warning)':'var(--danger)')"
-                      x-text="sf.los+'%'"></td>
+                      :style="'color:'+(sf.psRE>=60?'var(--success)':sf.psRE>=30?'var(--warning)':'var(--danger)')"
+                      x-text="sf.psRE+'%'"></td>
                     <td>
                       <span class="badge"
                         :class="sf.action==='Counseling'?'b-danger':(sf.action==='Couching'?'b-warning':'b-success')"
@@ -2304,17 +2308,15 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   </tr>
                 </template>
                 <tr x-show="filteredSF.length===0">
-                  <td colspan="11" class="empty">Tidak ada SF ditemukan</td>
+                  <td colspan="12" class="empty">Tidak ada SF ditemukan</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div class="tbl-foot">
             <span x-text="filteredSF.length + ' SF'"></span>
+            <span>Total RE: <strong style="color:var(--warning)" x-text="filteredSF.reduce((a,b)=>a+b.re,0)"></strong></span>
             <span>Total PS: <strong style="color:var(--success)" x-text="filteredSF.reduce((a,b)=>a+b.ps,0)"></strong></span>
-            <span>Avg Achievement: <strong
-              :style="'color:'+(avgAch>=100?'var(--success)':avgAch>=60?'var(--warning)':'var(--danger)')"
-              x-text="avgAch+'%'"></strong></span>
           </div>
         </div>
       </div>
