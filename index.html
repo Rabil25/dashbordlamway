@@ -4726,20 +4726,22 @@ function app() {
       const currentCluster = this.cluster;
 
       // ── Seed map dari Update SF: semua SF ACTIVE di cluster ini ──
-      // Col 0-based: 1=Nama, 2=Kode, 16=Status, 20=Kab, 34=Cluster (AI)
-      const USF_NAMA = 1, USF_KODE = 2, USF_STATUS = 16, USF_KAB = 20, USF_CLUSTER = 34;
-      const validCodes = new Set(); // SF ACTIVE yang termasuk cluster ini (dari Update SF)
+      // Col 0-based: 1=Nama, 2=Kode, 16=Status, 20=Kab
+      // Filter cluster berdasarkan kab (kolom AI di sheet kosong)
+      const USF_NAMA = 1, USF_KODE = 2, USF_STATUS = 16, USF_KAB = 20;
+      const clusterKabs = (CLUSTER[currentCluster]?.kab || []).map(k => k.toUpperCase());
+      const validCodes = new Set(); // SF ACTIVE yang kab-nya masuk cluster ini
       (this.sfMaster || []).forEach(row => {
-        const status  = (row[USF_STATUS]  || '').toString().trim().toUpperCase();
-        const cluster = (row[USF_CLUSTER] || '').toString().trim();
+        const status = (row[USF_STATUS] || '').toString().trim().toUpperCase();
         if (status !== 'ACTIVE' && status !== 'AKTIF') return;
-        if (cluster !== currentCluster) return;
+        const kab = (row[USF_KAB] || '').toString().trim().toUpperCase();
+        if (clusterKabs.length > 0 && !clusterKabs.includes(kab)) return;
         const code = (row[USF_KODE] || '').toString().trim();
         if (!code) return;
         validCodes.add(code);
         if (!map[code]) map[code] = {
           code, nama: (row[USF_NAMA]||'').toString().trim(), channel: '',
-          kab: (row[USF_KAB]||'').toString().trim().toUpperCase(),
+          kab,
           io:0, re:0, ps:0, cancel:0, prevPS:0, produk: '',
         };
       });
