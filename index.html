@@ -3473,14 +3473,16 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </template>
                 <template x-for="desa in desaListFiltered" :key="desa">
                   <div @click="toggleDesa(desa)"
-                    style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s"
-                    :style="desaSelected.includes(desa)?'background:var(--brand-dim);border-left:3px solid var(--brand)':'border-left:3px solid transparent'">
-                    <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"
-                      :style="desaSelected.includes(desa)?'background:var(--brand);border-color:var(--brand)':''">
-                      <span x-show="desaSelected.includes(desa)" style="color:#fff;font-size:9px;line-height:1">✓</span>
+                    style="display:flex;align-items:center;gap:9px;padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s"
+                    :style="desaSelected.includes(desa)?'background:var(--surface-2)':''"
+                    @mouseenter="$el.style.background=desaSelected.includes(desa)?'var(--surface-2)':'var(--surface-elevated)'"
+                    @mouseleave="$el.style.background=desaSelected.includes(desa)?'var(--surface-2)':''">
+                    <div style="width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
+                      :style="desaSelected.includes(desa)?'background:var(--brand);border:1.5px solid var(--brand)':'background:transparent;border:1.5px solid var(--text-3)'">
+                      <svg x-show="desaSelected.includes(desa)" width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.8 7L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </div>
-                    <span style="font-size:12px;color:var(--text-1);flex:1" x-text="desa"></span>
-                    <span style="font-size:10px;color:var(--text-3)" x-text="(desaStats[desa]?.avail||0)+' avail'"></span>
+                    <span style="font-size:12px;flex:1;transition:color .15s" :style="desaSelected.includes(desa)?'color:var(--text-1);font-weight:600':'color:var(--text-2)'" x-text="desa"></span>
+                    <span style="font-size:10px;color:var(--text-3);background:var(--surface-elevated);border-radius:10px;padding:1px 6px;border:1px solid var(--border)" x-text="(desaStats[desa]?.avail||0)+' avail'"></span>
                   </div>
                 </template>
               </div>
@@ -3503,14 +3505,16 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </template>
                 <template x-for="sf in sfListFiltered" :key="sf.username">
                   <div @click="toggleSF(sf.username)"
-                    style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s"
-                    :style="sfSelected.includes(sf.username)?'background:var(--brand-dim);border-left:3px solid var(--brand)':'border-left:3px solid transparent'">
-                    <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"
-                      :style="sfSelected.includes(sf.username)?'background:var(--brand);border-color:var(--brand)':''">
-                      <span x-show="sfSelected.includes(sf.username)" style="color:#fff;font-size:9px;line-height:1">✓</span>
+                    style="display:flex;align-items:center;gap:9px;padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s"
+                    :style="sfSelected.includes(sf.username)?'background:var(--surface-2)':''"
+                    @mouseenter="$el.style.background=sfSelected.includes(sf.username)?'var(--surface-2)':'var(--surface-elevated)'"
+                    @mouseleave="$el.style.background=sfSelected.includes(sf.username)?'var(--surface-2)':''">
+                    <div style="width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
+                      :style="sfSelected.includes(sf.username)?'background:var(--brand);border:1.5px solid var(--brand)':'background:transparent;border:1.5px solid var(--text-3)'">
+                      <svg x-show="sfSelected.includes(sf.username)" width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.8 7L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </div>
-                    <span style="font-size:12px;color:var(--text-1);flex:1" x-text="sf.nama"></span>
-                    <span style="font-size:10px;color:var(--text-3)" x-text="sf.username"></span>
+                    <span style="font-size:12px;flex:1;transition:color .15s" :style="sfSelected.includes(sf.username)?'color:var(--text-1);font-weight:600':'color:var(--text-2)'" x-text="sf.nama"></span>
+                    <span style="font-size:10px;color:var(--text-3);font-family:monospace;letter-spacing:.3px" x-text="sf.username"></span>
                   </div>
                 </template>
               </div>
@@ -3660,39 +3664,43 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           <div x-show="!planLoading">
             <template x-for="sf in planBySF" :key="sf.username_sf">
               <div style="margin-bottom:14px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
-                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface-2);border-bottom:1px solid var(--border)">
-                  <span style="font-size:14px">👤</span>
-                  <div style="flex:1;min-width:0">
-                    <span style="font-weight:700;font-size:13px;color:var(--text-1)" x-text="sf.nama_sf"></span>
-                    <span style="font-size:11px;color:var(--text-3);margin-left:6px" x-text="'@' + sf.username_sf"></span>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface-elevated);border-bottom:1.5px solid var(--border)">
+                  <div style="width:30px;height:30px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <span style="font-size:13px;line-height:1">👤</span>
                   </div>
-                  <span style="font-size:11px;color:var(--text-2);white-space:nowrap" x-text="sf.odps.length + ' ODP'"></span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-weight:700;font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" x-text="sf.nama_sf"></div>
+                    <div style="font-size:10px;color:var(--text-3);font-family:monospace;letter-spacing:.3px" x-text="'@' + sf.username_sf"></div>
+                  </div>
+                  <span style="font-size:11px;font-weight:700;color:var(--brand);background:rgba(201,60,32,.1);border-radius:12px;padding:2px 10px;white-space:nowrap" x-text="sf.odps.length + ' ODP'"></span>
                   <button @click="deletePlanSF(sf.username_sf)"
-                    style="font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid var(--danger);color:var(--danger);background:transparent;cursor:pointer;white-space:nowrap">
+                    style="font-size:10px;padding:4px 10px;border-radius:6px;border:1.5px solid var(--danger);color:var(--danger);background:transparent;cursor:pointer;white-space:nowrap;transition:all .15s"
+                    @mouseenter="$el.style.background='rgba(220,38,38,.08)'" @mouseleave="$el.style.background='transparent'">
                     🗑 Hapus
                   </button>
                 </div>
                 <div style="overflow-x:auto">
                   <table style="width:100%;font-size:12px;border-collapse:collapse">
                     <thead>
-                      <tr style="background:var(--card-bg)">
-                        <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2);white-space:nowrap">#</th>
-                        <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2)">Nama ODP</th>
-                        <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2)">Kab</th>
-                        <th style="padding:5px 8px;text-align:left;font-weight:600;color:var(--text-2)">Kec · Desa</th>
-                        <th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--text-2)">Avai</th>
-                        <th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--text-2)">Visit</th>
+                      <tr style="background:var(--surface-elevated);border-bottom:1.5px solid var(--border)">
+                        <th style="padding:6px 10px;text-align:center;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase;width:32px">#</th>
+                        <th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Nama ODP</th>
+                        <th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Kab</th>
+                        <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Kec · Desa</th>
+                        <th style="padding:6px 8px;text-align:right;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase;width:48px">Avai</th>
+                        <th style="padding:6px 10px;text-align:center;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase;width:52px">Visit</th>
                       </tr>
                     </thead>
                     <tbody>
                       <template x-for="(odp, i) in sf.odps" :key="odp.odp">
-                        <tr style="border-top:1px solid var(--border)" :style="i%2===1?'background:var(--surface-2)':''">
-                          <td style="padding:5px 10px;color:var(--text-3);font-size:11px" x-text="i+1"></td>
-                          <td style="padding:5px 10px;color:var(--text-1);font-weight:600;font-size:11px;white-space:nowrap" x-text="odp.odp"></td>
-                          <td style="padding:5px 10px;color:var(--text-2);font-size:11px;white-space:nowrap" x-text="odp.kab||'—'"></td>
-                          <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
-                          <td style="padding:5px 8px;text-align:center;color:var(--text-1);font-size:11px" x-text="odp.avai||'—'"></td>
-                          <td style="padding:5px 8px;text-align:center;font-size:12px">
+                        <tr style="border-top:1px solid var(--border);transition:background .1s" :style="i%2===1?'background:var(--surface-2)':''"
+                          @mouseenter="$el.style.background='var(--surface-elevated)'" @mouseleave="$el.style.background=i%2===1?'var(--surface-2)':''">
+                          <td style="padding:6px 10px;color:var(--text-3);font-size:11px;text-align:center;font-variant-numeric:tabular-nums" x-text="i+1"></td>
+                          <td style="padding:6px 10px;color:var(--text-1);font-weight:600;font-size:11px;white-space:nowrap;letter-spacing:.2px" x-text="odp.odp"></td>
+                          <td style="padding:6px 10px;color:var(--text-2);font-size:11px;white-space:nowrap" x-text="odp.kab||'—'"></td>
+                          <td style="padding:6px 8px;color:var(--text-2);font-size:11px" x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
+                          <td style="padding:6px 8px;text-align:right;color:var(--text-1);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums" x-text="odp.avai||'—'"></td>
+                          <td style="padding:6px 10px;text-align:center;font-size:12px">
                             <span x-show="odp.visit" style="color:var(--success)" title="Sudah visit bulan ini">✅</span>
                             <span x-show="!odp.visit" style="color:var(--text-3)">—</span>
                           </td>
