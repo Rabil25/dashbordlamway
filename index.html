@@ -3961,6 +3961,18 @@ function getSFTier(prevPS) {
   return TIER_CONFIG[0];
 }
 
+// Hitung action (On Track / Couching / Counseling) berdasarkan pace harian
+// A = target/30 * hariIni (ekspektasi PS sampai hari ini)
+// B = ps bulan ini (realisasi)
+// B >= A → On Track; gap <= 20% → Couching; gap > 20% → Counseling
+function getSFAction(ps, target, hariIni) {
+  const A = (target / 30) * hariIni;
+  if (A <= 0) return 'On Track';
+  if (ps >= A) return 'On Track';
+  const gap = (A - ps) / A * 100;
+  return gap <= 20 ? 'Couching' : 'Counseling';
+}
+
 
 // ============================================================
 //  FILTER CACHE — non-reactive closure variables
@@ -4809,7 +4821,7 @@ function app() {
         sf.tier     = tierPrev.name;
         sf.tierIcon = tierPrev.icon;
         sf.target   = tierPrev.target;
-        sf.action   = tierPrev.action;
+        sf.action   = getSFAction(sf.ps, sf.target, hariIni);
         sf.ach      = sf.target > 0 ? Math.round((sf.ps / sf.target) * 100) : 0;
         // Tier bulan ini (berdasarkan PS bulan ini) — untuk tabel gabungan
         const tierNow = getSFTier(sf.ps);
