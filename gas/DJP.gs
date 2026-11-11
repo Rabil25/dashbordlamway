@@ -54,6 +54,7 @@ function handleDJP(type, params) {
     case 'djp_realisasi_upload':  return djpRealisasiUpload(params);
     case 'djp_daily':             return djpDaily(params);
     case 'djp_odp_list':          return djpOdpList(params);
+    case 'djp_plan_history':      return djpPlanHistory(params);
     default:
       return { ok:false, error:'DJP type tidak dikenal: ' + type };
   }
@@ -553,5 +554,62 @@ function djpOdpList(params) {
     };
   } catch(e) {
     return { ok:false, error:'djpOdpList: ' + e.message };
+  }
+}
+
+// ================================================================
+//  djpPlanHistory – ambil last plan date per ODP untuk rotasi
+//  Params: session_token, kab (string, opsional), desas (JSON array string, opsional)
+//  Return: { ok, history: { 'ODP_NAME': 'yyyy-MM-dd' } }
+// ================================================================
+function djpPlanHistory(params) {
+  const auth = verifyToken(params.session_token || '');
+  if (!auth.ok) return auth;
+
+  let desaFilter = [];
+  try {
+    if (params.desas) {
+      const raw = typeof params.desas === 'string' ? JSON.parse(params.desas) : (params.desas || []);
+      desaFilter = raw.map(d => d.toString().trim().toLowerCase());
+    }
+  } catch(e) {}
+
+  const kabFilter = (params.kab || '').toString().trim().toUpperCase();
+
+  try {
+    const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
+    const ws = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
+    if (!ws) return { ok: true, history: {} };
+
+    const rows = ws.getDataRange().getValues().slice(1);
+
+    function normTgl(val) {
+      if (!val) return '';
+      if (val instanceof Date) return Utilities.formatDate(val, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+      return val.toString().trim().slice(0, 10);
+    }
+
+    // history[odp] = tanggal paling akhir ODP ini di-plan
+    const history = {};
+
+    rows.forEach(function(r) {
+      const odp  = (r[P.ODP]  || '').toString().trim();
+      const kab  = (r[P.KAB]  || '').toString().trim().toUpperCase();
+      const desa = (r[P.DESA] || '').toString().trim().toLowerCase();
+      const tgl  = normTgl(r[P.TGL]);
+
+      if (!odp || !tgl) return;
+      if (kabFilter && kab !== kabFilter) return;
+      if (desaFilter.length > 0 && !desaFilter.includes(desa)) return;
+
+      // simpan tanggal terbaru per ODP (untuk rotasi: oldest = highest priority)
+      if (!history[odp] || tgl > history[odp]) {
+        history[odp] = tgl;
+      }
+    });
+
+    return { ok: true, history: history };
+  } catch(e) {
+    return { ok: false, error: 'djpPlanHistory: ' + e.message };
   }
 }

@@ -96,7 +96,8 @@ function doGet(e) {
 
   // ── DJP endpoints – pakai session_token (bukan CONFIG.TOKEN) ──
   const DJP_TYPES = ['djp_users','djp_plan_save','djp_plan_get',
-                     'djp_plan_delete','djp_realisasi_upload','djp_daily'];
+                     'djp_plan_delete','djp_realisasi_upload','djp_daily',
+                     'djp_odp_list','djp_plan_history'];
   if (DJP_TYPES.indexOf(type) !== -1) {
     try {
       // Unpack payload JSON (frontend kirim data besar via ?payload=JSON)

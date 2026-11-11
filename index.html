@@ -3382,148 +3382,215 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
       <div class="page" :class="{active:page==='djp_plan'}" x-show="page==='djp_plan'" x-data="djpPlanData()" @page-djp_plan.window="initPlan()">
         <div class="section-hdr">
           <div class="section-title">Plan DJP</div>
-          <div class="section-sub">Buat rencana kunjungan ODP harian untuk SF</div>
+          <div class="section-sub">Generate rencana kunjungan ODP harian untuk SF secara otomatis</div>
         </div>
 
-        <!-- Form input plan -->
+        <!-- ══ SETUP PLAN ══════════════════════════════════════ -->
         <div class="card" style="margin-bottom:14px;padding:16px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <!-- Tanggal -->
+
+          <!-- Baris 1: Tanggal · Kab · Kantor -->
+          <div style="display:grid;grid-template-columns:148px 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
             <div>
               <label class="input-lbl">Tanggal</label>
               <input type="date" class="select" style="width:100%" x-model="form.tgl">
             </div>
-            <!-- Pilih SF -->
-            <div>
-              <label class="input-lbl">SF</label>
-              <select class="select" style="width:100%" x-model="form.username_sf" @change="onSFChange()">
-                <option value="">-- Pilih SF --</option>
-                <template x-for="u in sfFiltered" :key="u.username">
-                  <option :value="u.username" x-text="u.nama + ' (' + u.username + ')'"></option>
-                </template>
-              </select>
-            </div>
-          </div>
-
-          <!-- Filter ODP: Kab · Kec · Desa · Occ · Tahun ODP -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
             <div>
               <label class="input-lbl">Kabupaten</label>
-              <select class="select" style="width:100%" x-model="odpFilter.kab" @change="odpFilter.kec='';odpFilter.desa=''">
-                <option value="">Semua</option>
-                <template x-for="k in odpKabList" :key="k">
+              <select class="select" style="width:100%" x-model="form.kab" @change="desaSelected=[];sfSelected=[];form.kantor=''">
+                <option value="">-- Semua Kab --</option>
+                <template x-for="k in kabList" :key="k">
                   <option :value="k" x-text="k"></option>
                 </template>
               </select>
             </div>
             <div>
-              <label class="input-lbl">Kecamatan</label>
-              <select class="select" style="width:100%" x-model="odpFilter.kec" @change="odpFilter.desa=''">
-                <option value="">Semua</option>
-                <template x-for="k in odpKecList" :key="k">
-                  <option :value="k" x-text="k"></option>
-                </template>
-              </select>
-            </div>
-            <div>
-              <label class="input-lbl">Desa</label>
-              <select class="select" style="width:100%" x-model="odpFilter.desa">
-                <option value="">Semua</option>
-                <template x-for="d in odpDesaList" :key="d">
-                  <option :value="d" x-text="d"></option>
-                </template>
-              </select>
-            </div>
-            <div>
-              <label class="input-lbl">Occ</label>
-              <select class="select" style="width:100%" x-model="odpFilter.occ">
-                <option value="">Semua</option>
-                <template x-for="c in odpOccList" :key="c">
-                  <option :value="c" x-text="c"></option>
-                </template>
-              </select>
-            </div>
-            <div>
-              <label class="input-lbl">Tahun ODP</label>
-              <select class="select" style="width:100%" x-model="odpFilter.tahun">
-                <option value="">Semua</option>
-                <template x-for="y in odpTahunList" :key="y">
-                  <option :value="y" x-text="y"></option>
+              <label class="input-lbl">Kantor Referensi</label>
+              <select class="select" style="width:100%" x-model="form.kantor" :disabled="kantorList.length===0">
+                <option value="">-- Pilih Kantor --</option>
+                <template x-for="o in kantorList" :key="o.name">
+                  <option :value="o.name" x-text="o.name"></option>
                 </template>
               </select>
             </div>
           </div>
 
-          <!-- Tabel pilih ODP -->
-          <div class="djp-odp-table-wrap" style="max-height:260px;overflow-y:auto;overflow-x:auto;border:1.5px solid var(--border);border-radius:8px;margin-bottom:10px">
-            <table style="width:100%;font-size:12px;border-collapse:collapse">
-              <thead style="position:sticky;top:0;background:var(--surface-2);z-index:1">
-                <tr>
-                  <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">ODP</th>
-                  <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-2)">Kec · Desa</th>
-                  <th style="padding:6px 4px;text-align:center;font-weight:600;color:var(--text-2)">Avai</th>
-                  <th style="padding:6px 4px;text-align:center;font-weight:600;color:var(--text-2)">Pilih</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="(o, _i) in odpFiltered.slice(0,200)" :key="_i + '|' + o.odp">
-                  <tr style="border-top:1px solid var(--border)" :style="selectedOdp.includes(o.odp)?'background:var(--brand-dim)':''">
-                    <td style="padding:5px 8px;font-weight:600;color:var(--text-1)" x-text="o.odp"></td>
-                    <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="o.kec + ' · ' + o.desa"></td>
-                    <td style="padding:5px 4px;text-align:center">
-                      <span :style="o.avai>0?'color:var(--success);font-weight:700':'color:var(--danger)'" x-text="o.avai"></span>
-                    </td>
-                    <td style="padding:5px 4px;text-align:center">
-                      <input type="checkbox" :value="o.odp" x-model="selectedOdp" style="cursor:pointer;width:15px;height:15px">
-                    </td>
-                  </tr>
+          <!-- Baris 2: Pilih Desa + Pilih SF -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+            <!-- Panel Desa -->
+            <div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+                <span style="font-size:12px;font-weight:700;color:var(--text-1)">Pilih Desa</span>
+                <span x-show="desaSelected.length>0" style="font-size:11px;color:var(--brand);font-weight:600" x-text="'('+desaSelected.length+' dipilih)'"></span>
+                <div style="flex:1"></div>
+                <button @click="selectAllDesa()" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--brand);color:var(--brand);background:transparent;cursor:pointer">Semua</button>
+                <button @click="clearDesa()" x-show="desaSelected.length>0" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--text-3);color:var(--text-3);background:transparent;cursor:pointer">Clear</button>
+              </div>
+              <input type="text" class="select" style="width:100%;font-size:11px;padding:4px 8px;margin-bottom:4px;box-sizing:border-box" placeholder="Cari desa…" x-model="desaSearch">
+              <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;background:var(--surface-2)">
+                <template x-if="desaListFiltered.length===0">
+                  <div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px">
+                    <span x-text="form.kab?'Tidak ada desa':'Pilih Kabupaten dulu'"></span>
+                  </div>
                 </template>
-                <tr x-show="odpFiltered.length===0">
-                  <td colspan="4" style="padding:16px;text-align:center;color:var(--text-3)">Tidak ada ODP ditemukan</td>
-                </tr>
-                <tr x-show="odpFiltered.length>200">
-                  <td colspan="4" style="padding:8px;text-align:center;color:var(--text-3);font-size:11px" x-text="'Menampilkan 200 dari ' + odpFiltered.length + ' ODP. Gunakan filter untuk mempersempit.'"></td>
-                </tr>
-              </tbody>
-            </table>
+                <template x-for="desa in desaListFiltered" :key="desa">
+                  <div @click="toggleDesa(desa)"
+                    style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--border)"
+                    :style="desaSelected.includes(desa)?'background:rgba(99,102,241,.12)':''">
+                    <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"
+                      :style="desaSelected.includes(desa)?'background:var(--brand);border-color:var(--brand)':''">
+                      <span x-show="desaSelected.includes(desa)" style="color:#fff;font-size:9px;line-height:1">✓</span>
+                    </div>
+                    <span style="font-size:12px;color:var(--text-1);flex:1" x-text="desa"></span>
+                    <span style="font-size:10px;color:var(--text-3)" x-text="(desaStats[desa]?.avail||0)+' avail'"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Panel SF -->
+            <div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+                <span style="font-size:12px;font-weight:700;color:var(--text-1)">Pilih SF</span>
+                <span x-show="sfSelected.length>0" style="font-size:11px;color:var(--brand);font-weight:600" x-text="'('+sfSelected.length+' dipilih)'"></span>
+                <div style="flex:1"></div>
+                <button @click="selectAllSF()" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--brand);color:var(--brand);background:transparent;cursor:pointer">Semua</button>
+                <button @click="clearSF()" x-show="sfSelected.length>0" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--text-3);color:var(--text-3);background:transparent;cursor:pointer">Clear</button>
+              </div>
+              <input type="text" class="select" style="width:100%;font-size:11px;padding:4px 8px;margin-bottom:4px;box-sizing:border-box" placeholder="Cari nama SF…" x-model="sfSearch">
+              <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;background:var(--surface-2)">
+                <template x-if="sfListFiltered.length===0">
+                  <div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px">Tidak ada SF ditemukan</div>
+                </template>
+                <template x-for="sf in sfListFiltered" :key="sf.username">
+                  <div @click="toggleSF(sf.username)"
+                    style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--border)"
+                    :style="sfSelected.includes(sf.username)?'background:rgba(99,102,241,.12)':''">
+                    <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"
+                      :style="sfSelected.includes(sf.username)?'background:var(--brand);border-color:var(--brand)':''">
+                      <span x-show="sfSelected.includes(sf.username)" style="color:#fff;font-size:9px;line-height:1">✓</span>
+                    </div>
+                    <span style="font-size:12px;color:var(--text-1);flex:1" x-text="sf.nama"></span>
+                    <span style="font-size:10px;color:var(--text-3)" x-text="sf.username"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
 
+          <!-- Generate button row -->
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <span style="font-size:12px;"
-              :style="selectedOdp.length>0 ? 'color:var(--brand);font-weight:600' : 'color:var(--text-3)'"
-              x-text="selectedOdp.length>0 ? selectedOdp.length + ' ODP dipilih' : 'Centang ODP di tabel'"></span>
-            <button class="btn" @click="selectedOdp=[]" x-show="selectedOdp.length>0"
-              style="font-size:11px;padding:4px 10px;background:transparent;border-color:var(--text-3);color:var(--text-2)">
-              ✕ Clear
-            </button>
-            <div style="flex:1"></div>
-            <button class="btn" @click="savePlan()"
-              :disabled="!form.tgl || !form.username_sf || selectedOdp.length===0 || saving"
-              :style="(form.tgl && form.username_sf && selectedOdp.length>0 && !saving)
-                ? 'background:var(--brand);color:#fff;opacity:1'
-                : 'background:var(--surface-2);color:var(--text-3);cursor:not-allowed;border-color:var(--border)'">
-              <span x-show="!saving">💾 Simpan Plan
-                <span x-show="selectedOdp.length>0">(<span x-text="selectedOdp.length"></span> ODP)</span>
+            <div style="font-size:12px">
+              <span x-show="!canGenerate && (desaSelected.length===0 || sfSelected.length===0)" style="color:var(--text-3)">Pilih desa dan SF untuk generate</span>
+              <span x-show="canGenerate" style="color:var(--text-2)">
+                <span x-text="desaSelected.length"></span> desa ·
+                <span x-text="sfSelected.length"></span> SF →
+                maks <span x-text="sfSelected.length*4" style="font-weight:700;color:var(--brand)"></span> ODP
               </span>
-              <span x-show="saving">⏳ Menyimpan…</span>
+            </div>
+            <div style="flex:1"></div>
+            <button class="btn" @click="generateDraft()"
+              :disabled="!canGenerate"
+              :style="canGenerate
+                ? 'background:var(--brand);color:#fff;font-weight:700;padding:8px 20px'
+                : 'background:var(--surface-2);color:var(--text-3);cursor:not-allowed;border-color:var(--border);padding:8px 20px'">
+              <span x-show="!generating">⚡ Generate Draft</span>
+              <span x-show="generating">⏳ Memproses…</span>
             </button>
-          </div>
-          <!-- Feedback info -->
-          <div x-show="!form.username_sf && selectedOdp.length===0"
-            style="margin-top:8px;font-size:11px;color:var(--text-3);text-align:right">
-            Pilih SF dan ODP terlebih dahulu
-          </div>
-          <div x-show="form.username_sf && selectedOdp.length===0"
-            style="margin-top:8px;font-size:11px;color:var(--text-3);text-align:right">
-            Centang ODP yang ingin dikunjungi
           </div>
         </div>
 
-        <!-- Plan yang sudah tersimpan -->
+        <!-- ══ DRAFT PLAN ════════════════════════════════════= -->
+        <div class="card" x-show="draftPlan.length>0" style="margin-bottom:14px;padding:16px">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+            <div>
+              <span style="font-weight:700;font-size:14px;color:var(--text-1)">Draft Plan</span>
+              <span style="font-size:12px;color:var(--text-3);margin-left:6px" x-text="'· '+form.tgl"></span>
+            </div>
+            <span style="font-size:12px;color:var(--text-2)"
+              x-text="draftPlan.filter(s=>s.odps.length>0).length+' SF · '+draftPlan.reduce((s,sf)=>s+sf.odps.length,0)+' ODP'"></span>
+            <div style="flex:1"></div>
+            <button @click="draftPlan=[]"
+              style="font-size:11px;padding:5px 12px;border-radius:7px;border:1.5px solid var(--text-3);color:var(--text-2);background:transparent;cursor:pointer">
+              ✕ Discard
+            </button>
+            <button class="btn" @click="saveAllDraft()"
+              :disabled="saving || draftPlan.every(s=>s.odps.length===0)"
+              :style="(!saving && draftPlan.some(s=>s.odps.length>0))
+                ? 'background:#16a34a;color:#fff;border-color:#16a34a;font-weight:700'
+                : 'background:var(--surface-2);color:var(--text-3);cursor:not-allowed;border-color:var(--border)'">
+              <span x-show="!saving">💾 Simpan Semua</span>
+              <span x-show="saving">⏳ Menyimpan…</span>
+            </button>
+          </div>
+
+          <!-- Per-SF draft cards -->
+          <template x-for="(sf, sfIdx) in draftPlan" :key="sf.username_sf">
+            <div style="margin-bottom:12px;border:1.5px solid var(--border);border-radius:9px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--border)">
+                <span style="font-size:14px">👤</span>
+                <span style="font-weight:700;font-size:13px;color:var(--text-1)" x-text="sf.nama_sf"></span>
+                <span style="font-size:11px;color:var(--text-3)" x-text="'@'+sf.username_sf"></span>
+                <div style="flex:1"></div>
+                <span :style="sf.odps.length>0?'color:var(--brand);font-weight:600':'color:var(--text-3)'"
+                  style="font-size:11px" x-text="sf.odps.length+' ODP'"></span>
+              </div>
+              <div x-show="sf.odps.length===0" style="padding:12px;text-align:center;color:var(--text-3);font-size:12px">— Tidak ada ODP —</div>
+              <div x-show="sf.odps.length>0" style="overflow-x:auto">
+                <table style="width:100%;font-size:12px;border-collapse:collapse">
+                  <thead>
+                    <tr style="background:var(--card-bg,var(--surface-2))">
+                      <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2)">#</th>
+                      <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2)">Nama ODP</th>
+                      <th style="padding:5px 8px;text-align:left;font-weight:600;color:var(--text-2)">Kec · Desa</th>
+                      <th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--text-2)">Avai</th>
+                      <th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--text-2)">Last Plan</th>
+                      <th style="padding:5px 6px;text-align:center;font-weight:600;color:var(--text-2)"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="(odp, odpIdx) in sf.odps" :key="odpIdx+'|'+odp.odp">
+                      <tr style="border-top:1px solid var(--border)" :style="odpIdx%2===1?'background:var(--surface-2)':''">
+                        <td style="padding:5px 10px;color:var(--text-3);font-size:11px" x-text="odpIdx+1"></td>
+                        <td style="padding:5px 10px;color:var(--text-1);font-weight:600;font-size:11px;white-space:nowrap" x-text="odp.odp"></td>
+                        <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="(odp.kec?odp.kec+' · ':'')+odp.desa"></td>
+                        <td style="padding:5px 8px;text-align:center">
+                          <span :style="(odp.avai||0)>0?'color:#22c55e;font-weight:700':'color:#ef4444'" x-text="odp.avai||0"></span>
+                        </td>
+                        <td style="padding:5px 8px;text-align:center;font-size:10px">
+                          <span x-show="planHistory[odp.odp]" x-text="(planHistory[odp.odp]||'').slice(5)" style="color:var(--text-2)"></span>
+                          <span x-show="!planHistory[odp.odp]" style="color:#22c55e;font-weight:700;font-size:9px">BARU</span>
+                        </td>
+                        <td style="padding:5px 6px;text-align:center">
+                          <button @click="removeDraftOdp(sfIdx, odpIdx)"
+                            style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #ef4444;color:#ef4444;background:transparent;cursor:pointer">✕</button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+
+          <!-- Footer save -->
+          <div style="display:flex;justify-content:flex-end;margin-top:4px">
+            <button class="btn" @click="saveAllDraft()"
+              :disabled="saving || draftPlan.every(s=>s.odps.length===0)"
+              :style="(!saving && draftPlan.some(s=>s.odps.length>0))
+                ? 'background:#16a34a;color:#fff;border-color:#16a34a;font-weight:700'
+                : 'background:var(--surface-2);color:var(--text-3);cursor:not-allowed;border-color:var(--border)'">
+              <span x-show="!saving">💾 Simpan Semua Plan</span>
+              <span x-show="saving">⏳ Menyimpan…</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ══ PLAN TERSIMPAN ════════════════════════════════= -->
         <div class="card" style="padding:16px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
             <div style="font-weight:700;font-size:13px;color:var(--text-1);white-space:nowrap">Plan Tersimpan</div>
-            <!-- Filter Tanggal -->
             <input type="date" class="select" x-model="viewTgl" @change="loadPlan()" style="font-size:12px;padding:4px 8px;max-width:148px">
             <button class="btn" @click="loadPlan()" :disabled="planLoading" style="font-size:11px;padding:4px 10px;white-space:nowrap">
               <span x-show="!planLoading">🔄</span>
@@ -3533,14 +3600,11 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               x-text="planData.length + ' ODP · ' + planBySF.length + ' SF'"></span>
           </div>
 
-          <!-- Loading -->
           <div x-show="planLoading" style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">⏳ Memuat plan…</div>
 
-          <!-- Tabel per SF (Fix #2) -->
           <div x-show="!planLoading">
             <template x-for="sf in planBySF" :key="sf.username_sf">
               <div style="margin-bottom:14px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
-                <!-- SF header bar -->
                 <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface-2);border-bottom:1px solid var(--border)">
                   <span style="font-size:14px">👤</span>
                   <div style="flex:1;min-width:0">
@@ -3553,7 +3617,6 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                     🗑 Hapus
                   </button>
                 </div>
-                <!-- Mini tabel ODP -->
                 <div style="overflow-x:auto">
                   <table style="width:100%;font-size:12px;border-collapse:collapse">
                     <thead>
@@ -3574,7 +3637,6 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                           <td style="padding:5px 10px;color:var(--text-2);font-size:11px;white-space:nowrap" x-text="odp.kab||'—'"></td>
                           <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
                           <td style="padding:5px 8px;text-align:center;color:var(--text-1);font-size:11px" x-text="odp.avai||'—'"></td>
-                          <!-- Kolom Visit: cek dari planVisited (didapat dari djp_odp_list jika sudah load, fallback tanda tanya) -->
                           <td style="padding:5px 8px;text-align:center;font-size:12px">
                             <span x-show="odp.visit" style="color:var(--success)" title="Sudah visit bulan ini">✅</span>
                             <span x-show="!odp.visit" style="color:var(--text-3)">—</span>
@@ -3587,11 +3649,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               </div>
             </template>
 
-            <!-- Empty state -->
             <div x-show="planData.length===0" style="text-align:center;padding:32px 20px;color:var(--text-3)">
               <div style="font-size:28px;margin-bottom:8px">📋</div>
               <div style="font-size:13px;font-weight:600;margin-bottom:4px">Belum ada plan</div>
-              <div style="font-size:12px">Pilih SF dan ODP di atas, lalu klik Simpan Plan</div>
+              <div style="font-size:12px">Generate draft di atas, review, lalu simpan</div>
             </div>
           </div>
         </div>
@@ -6212,128 +6273,97 @@ function app() {
 }
 
 // ════════════════════════════════════════════════════════
-// DJP – Plan DJP
+// DJP – Plan DJP (v2 — multi-desa + multi-SF generate)
 // ════════════════════════════════════════════════════════
 function djpPlanData() {
+  const _today = new Date().toISOString().slice(0,10);
+  const _year  = new Date().getFullYear().toString();
   return {
-    // Form state
-    form: { tgl: new Date().toISOString().slice(0,10), username_sf: '' },
-    sfList: [],
-    // ODP
+    // ── Setup state ──
     _odpAll: [],
-    odpFilter: { kabs:[], kab:'', kec:'', desa:'', occ:'', tahun:'' },
-    selectedOdp: [],   // array of odp names (for x-model array checkbox)
-    // Plan tersimpan
-    viewTgl: new Date().toISOString().slice(0,10),
-    viewTahun: new Date().getFullYear().toString(),
-    planData: [],
+    _clusterKabs: [],
+    sfList: [],
+    form: { tgl: _today, kab: '', kantor: '' },
+    desaSelected: [],
+    sfSelected:   [],
+    desaSearch:   '',
+    sfSearch:     '',
+    // ── Generate ──
+    draftPlan:   [],
+    planHistory: {},
+    generating:  false,
+    // ── Plan tersimpan ──
+    viewTgl:     _today,
+    viewTahun:   _year,
+    planData:    [],
     planLoading: false,
-    saving: false,
-    initError: '',
+    saving:      false,
 
     async init() {
-      this._applyClusterFilter();
+      this._initCluster();
       try {
         await Promise.all([this._loadODP(), this._loadSF()]);
         await this.loadPlan();
-      } catch(e) { this.initError = e.message; }
-    },
-
-    // Called via @page-djp_plan.window (saat user klik nav Plan DJP)
-    async initPlan() {
-      this._applyClusterFilter();
-      try {
-        await Promise.all([this._loadODP(), this._loadSF()]);
-        await this.loadPlan();
-      } catch(e) { this.initError = e.message; }
-    },
-
-    // Baca cluster aktif dari root app() dan set odpFilter.kabs
-    _applyClusterFilter() {
-      try {
-        const rootEl = document.querySelector('[x-data="app()"]');
-        const rootCluster = rootEl?._x_dataStack?.[0]?.cluster;
-        if (rootCluster && CLUSTER[rootCluster]) {
-          this.odpFilter.kabs = [...CLUSTER[rootCluster].kab];
-          this.odpFilter.kab  = '';
-          this.odpFilter.kec  = '';
-          this.odpFilter.desa = '';
-          this.odpFilter.occ  = '';
-        }
       } catch(e) {}
     },
 
+    async initPlan() {
+      this._initCluster();
+      try {
+        await Promise.all([this._loadODP(), this._loadSF()]);
+        await this.loadPlan();
+      } catch(e) {}
+    },
+
+    _initCluster() {
+      try {
+        const rootEl = document.querySelector('[x-data="app()"]');
+        const cl = rootEl?._x_dataStack?.[0]?.cluster;
+        this._clusterKabs = (cl && CLUSTER[cl]) ? [...CLUSTER[cl].kab] : [];
+      } catch(e) { this._clusterKabs = []; }
+    },
+
+    // ── Load ODP (all, no avai filter — filter at generate time) ──
     async _loadODP() {
-      if (this._odpAll.length) return;   // already loaded
+      if (this._odpAll.length) return;
       const r = await fetch('data/odp.json');
       const raw = await r.json();
       const data = Array.isArray(raw) ? raw : (raw.data || []);
-      // filter: avai > 0, punya odp name & kab; normalisasi kab ke UPPERCASE agar match CLUSTER config
       this._odpAll = data
-        .filter(o => (o.avai||0) > 0 && o.odp && o.kab)
+        .filter(o => o.odp && o.kab)
         .map(o => ({ ...o, kab: (o.kab||'').toUpperCase() }));
     },
 
+    // ── Load SF (semua aktif di cluster) ──
     async _loadSF() {
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_token')||'';
-      // Kirim filter kabupaten sesuai cluster aktif
-      const rootEl = document.querySelector('[x-data="app()"]');
-      const rootCluster = rootEl?._x_dataStack?.[0]?.cluster;
-      const kabs = (rootCluster && CLUSTER[rootCluster]) ? CLUSTER[rootCluster].kab : [];
+      const kabs = this._clusterKabs;
       const kabsParam = encodeURIComponent(JSON.stringify(kabs));
+      const parseSFArr = (arr, clusterKabs) => {
+        const seen = new Set();
+        return arr
+          .filter(u => {
+            if (!Array.isArray(u)) return true;
+            if ((u[16]||'').toString().toUpperCase() !== 'ACTIVE') return false;
+            if (clusterKabs.length > 0) return clusterKabs.includes((u[20]||'').toString().toUpperCase().trim());
+            return true;
+          })
+          .map(u => Array.isArray(u)
+            ? { username: u[2].toString().trim(), nama: u[1].toString().trim(), kab:(u[20]||'').toString().trim() }
+            : { username:(u.username||'').toString().trim(), nama:(u.nama||'').toString().trim(), kab:(u.kab||'').toString().trim() })
+          .filter(u => { if(!u.username||seen.has(u.username)) return false; seen.add(u.username); return true; });
+      };
       try {
         const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}&kabs=${kabsParam}`);
         const d = await r.json();
-        if (d.ok && d.users && d.users.length) {
-          this.sfList = d.users;
-        } else {
-          // GAS belum support djp_users — fallback ke update_sf.json
-          const r2 = await fetch('data/update_sf.json');
-          const sf2 = await r2.json();
-          const arr = sf2.data||[];
-          // update_sf data: array-of-arrays [1]=nama [2]=NIK(unique) [16]=status
-          const parseSF = rows => {
-            const seen = new Set();
-            const clusterKabs = kabs.map(k => k.toUpperCase());
-            return rows
-              .filter(u => {
-                if (Array.isArray(u)) {
-                  if ((u[16]||'').toString().toUpperCase() !== 'ACTIVE') return false;
-                  if (clusterKabs.length > 0) {
-                    const ukab = (u[20]||'').toString().toUpperCase().trim();
-                    return clusterKabs.includes(ukab);
-                  }
-                  return true;
-                }
-                return true;
-              })
-              .map(u => Array.isArray(u)
-                ? { username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user', kab:(u[20]||'').toString().trim(), sto:(u[19]||'').toString().trim() }
-                : { username:(u.username||'').toString().trim(), nama:(u.nama||'').toString().trim(), role:'user', kab:(u.kab||'').toString().trim(), sto:(u.sto||'').toString().trim() })
-              .filter(u => { if(!u.username||seen.has(u.username)) return false; seen.add(u.username); return true; });
-          };
-          this.sfList = parseSF(arr);
-        }
+        if (d.ok && d.users && d.users.length) { this.sfList = d.users; return; }
+        throw new Error('no users');
       } catch(e) {
-        // fallback ke update_sf.json
         try {
           const r2 = await fetch('data/update_sf.json');
           const sf2 = await r2.json();
-          const arr = sf2.data||[];
-          const seen = new Set();
-          const clusterKabs = kabs.map(k => k.toUpperCase());
-          this.sfList = arr
-            .filter(u => {
-              if ((u[16]||'').toString().toUpperCase() !== 'ACTIVE') return false;
-              if (clusterKabs.length > 0) {
-                const ukab = (u[20]||'').toString().toUpperCase().trim();
-                return clusterKabs.includes(ukab);
-              }
-              return true;
-            })
-            .map(u => ({ username: u[2].toString().trim(), nama: u[1].toString().trim(), role:'user', kab:(u[20]||'').toString().trim(), sto:(u[19]||'').toString().trim() }))
-            .filter(u => { if(!u.username||seen.has(u.username)) return false; seen.add(u.username); return true; });
+          this.sfList = parseSFArr(sf2.data||[], kabs.map(k=>k.toUpperCase()));
         } catch(e2) { this.sfList = []; }
       }
     },
@@ -6343,66 +6373,7 @@ function djpPlanData() {
       return (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
     },
 
-    // ── Computed getters untuk dropdown filter (selalu reactive) ──
-    get odpKabList() {
-      const kabs = this.odpFilter.kabs || [];
-      const all = [...new Set(this._odpAll.map(o=>o.kab).filter(Boolean))].sort();
-      return kabs.length ? all.filter(k => kabs.includes(k)) : all;
-    },
-    get odpKecList() {
-      const kabs = this.odpFilter.kabs || [];
-      let f = this._odpAll;
-      if (kabs.length)           f = f.filter(o => kabs.includes(o.kab));
-      if (this.odpFilter.kab)    f = f.filter(o => o.kab === this.odpFilter.kab);
-      return [...new Set(f.map(o=>o.kec).filter(Boolean))].sort();
-    },
-    get odpDesaList() {
-      const kabs = this.odpFilter.kabs || [];
-      let f = this._odpAll;
-      if (kabs.length)           f = f.filter(o => kabs.includes(o.kab));
-      if (this.odpFilter.kab)    f = f.filter(o => o.kab === this.odpFilter.kab);
-      if (this.odpFilter.kec)    f = f.filter(o => o.kec === this.odpFilter.kec);
-      return [...new Set(f.map(o=>o.desa).filter(Boolean))].sort();
-    },
-    get odpOccList() {
-      const kabs = this.odpFilter.kabs || [];
-      let f = kabs.length ? this._odpAll.filter(o => kabs.includes(o.kab)) : this._odpAll;
-      return [...new Set(f.map(o=>o.occ).filter(Boolean))].sort();
-    },
-
-    get odpTahunList() {
-      const kabs = this.odpFilter.kabs || [];
-      let f = kabs.length ? this._odpAll.filter(o => kabs.includes(o.kab)) : this._odpAll;
-      return [...new Set(f.map(o=>o.tahun_odp||'').filter(Boolean))].sort();
-    },
-
-    get sfFiltered() {
-      const kabs = this.odpFilter.kabs || [];
-      if (!kabs.length) return this.sfList;
-      // Jika tidak ada SF yang punya data kab (mis. dari GAS tanpa kab), tampilkan semua
-      const hasKabData = this.sfList.some(u => u.kab);
-      if (!hasKabData) return this.sfList;
-      return this.sfList.filter(u => kabs.includes((u.kab||'').toUpperCase()));
-    },
-
-    get odpFiltered() {
-      try {
-        const kabs = this.odpFilter.kabs || [];
-        let f = this._odpAll || [];
-        if (kabs.length)             f = f.filter(o => kabs.includes(o.kab));
-        if (this.odpFilter.kab)      f = f.filter(o => o.kab  === this.odpFilter.kab);
-        if (this.odpFilter.kec)      f = f.filter(o => o.kec  === this.odpFilter.kec);
-        if (this.odpFilter.desa)     f = f.filter(o => o.desa === this.odpFilter.desa);
-        if (this.odpFilter.occ)      f = f.filter(o => o.occ  === this.odpFilter.occ);
-        if (this.odpFilter.tahun)    f = f.filter(o => (o.tahun_odp||'').toString() === this.odpFilter.tahun);
-        return f;
-      } catch(e) { return []; }
-    },
-
-    onSFChange() {},  // placeholder for future use
-
     _toast(msg, type='info') {
-      // Simple toast: pakai existing notif system jika ada, otherwise console
       const colors = { success:'#22c55e', error:'#ef4444', info:'#3b82f6' };
       const t = document.createElement('div');
       t.textContent = msg;
@@ -6413,40 +6384,212 @@ function djpPlanData() {
         fontSize:'13px', fontWeight:'600', zIndex:'9999',
         boxShadow:'0 4px 16px rgba(0,0,0,0.3)',
         borderLeft: '4px solid ' + (colors[type]||colors.info),
-        maxWidth:'90vw', textAlign:'center',
-        transition:'opacity 0.3s',
+        maxWidth:'90vw', textAlign:'center', transition:'opacity 0.3s',
       });
       document.body.appendChild(t);
       setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(), 300); }, 2800);
     },
 
-    async savePlan() {
-      if (!this.form.username_sf) { this._toast('Pilih SF terlebih dahulu', 'error'); return; }
-      if (!this.selectedOdp.length) { this._toast('Centang minimal 1 ODP', 'error'); return; }
-      const sf = this.sfList.find(u=>u.username===this.form.username_sf)||{};
-      const gasUrl = this._gasUrl();
-      const st = localStorage.getItem('wok_token')||'';
-      const items = this._odpAll.filter(o=>this.selectedOdp.includes(o.odp));
-      const tahun = (this.form.tgl||'').slice(0,4) || this.viewTahun;
-      const rows = items.map(o=>({
-        tgl: this.form.tgl, username_sf: this.form.username_sf, nama_sf: sf.nama||this.form.username_sf,
-        odp: o.odp, cluster: o.cluster||'', kab: o.kab||'', kec: o.kec||'', desa: o.desa||'',
-        lat: o.lat||'', lng: o.lng||'', avai: o.avai||0, tahun
-      }));
-      this.saving = true;
-      try {
-        const r = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:this.form.tgl, username_sf:this.form.username_sf, rows }) });
-        const d = await r.json();
-        if (!d.ok) throw new Error(d.error||'Gagal simpan');
-        const n = this.selectedOdp.length;
-        this.selectedOdp = [];
-        this.viewTgl = this.form.tgl;
-        await this.loadPlan();
-        this._toast(`✅ ${n} ODP berhasil disimpan untuk ${sf.nama||this.form.username_sf}`, 'success');
-      } catch(e) { this._toast('❌ ' + e.message, 'error'); }
-      this.saving = false;
+    // ── Getters: kabupaten list (filtered by cluster) ──
+    get kabList() {
+      const cl = this._clusterKabs;
+      const all = [...new Set(this._odpAll.map(o=>o.kab).filter(Boolean))].sort();
+      return cl.length ? all.filter(k => cl.includes(k)) : all;
     },
 
+    // ── Getters: kantor referensi (filtered by kab if set) ──
+    get kantorList() {
+      if (!this.form.kab) return [];
+      return (typeof OFFICES !== 'undefined' ? OFFICES : []).filter(o => o.kab === this.form.kab);
+    },
+
+    // ── Getters: statistik avail per desa ──
+    get desaStats() {
+      const kab = this.form.kab;
+      const stats = {};
+      this._odpAll
+        .filter(o => (!kab || o.kab === kab) && (o.avai||0) > 0)
+        .forEach(o => {
+          const d = o.desa||'';
+          if (!stats[d]) stats[d] = { avail: 0 };
+          stats[d].avail += 1;
+        });
+      return stats;
+    },
+
+    // ── Getters: desa list dengan search ──
+    get desaListFiltered() {
+      const kab = this.form.kab;
+      if (!kab) return [];
+      const desaSet = new Set(
+        this._odpAll
+          .filter(o => o.kab === kab && (o.avai||0) > 0 && o.desa)
+          .map(o => o.desa)
+      );
+      const all = [...desaSet].sort();
+      const q = this.desaSearch.trim().toLowerCase();
+      return q ? all.filter(d => d.toLowerCase().includes(q)) : all;
+    },
+
+    // ── Getters: SF list dengan search ──
+    get sfListFiltered() {
+      const q = this.sfSearch.trim().toLowerCase();
+      return q ? this.sfList.filter(u => u.nama.toLowerCase().includes(q) || u.username.toLowerCase().includes(q))
+               : this.sfList;
+    },
+
+    // ── Getters: canGenerate ──
+    get canGenerate() {
+      return !this.generating && this.form.tgl && this.form.kab && this.desaSelected.length > 0 && this.sfSelected.length > 0;
+    },
+
+    // ── Toggle / select helpers ──
+    toggleDesa(d) {
+      const i = this.desaSelected.indexOf(d);
+      if (i >= 0) this.desaSelected.splice(i, 1);
+      else this.desaSelected.push(d);
+    },
+    toggleSF(u) {
+      const i = this.sfSelected.indexOf(u);
+      if (i >= 0) this.sfSelected.splice(i, 1);
+      else this.sfSelected.push(u);
+    },
+    selectAllDesa() { this.desaSelected = [...this.desaListFiltered]; },
+    clearDesa()     { this.desaSelected = []; },
+    selectAllSF()   { this.sfSelected = this.sfListFiltered.map(u => u.username); },
+    clearSF()       { this.sfSelected = []; },
+
+    // ── Remove ODP from draft ──
+    removeDraftOdp(sfIdx, odpIdx) {
+      this.draftPlan[sfIdx].odps.splice(odpIdx, 1);
+    },
+
+    // ── Fetch history (last plan date per ODP) ──
+    async _fetchHistory() {
+      try {
+        const gasUrl = this._gasUrl();
+        const st = localStorage.getItem('wok_token')||'';
+        const desas = JSON.stringify(this.desaSelected);
+        const url = `${gasUrl}?type=djp_plan_history&session_token=${encodeURIComponent(st)}&kab=${encodeURIComponent(this.form.kab)}&desas=${encodeURIComponent(desas)}`;
+        const r = await fetch(url);
+        const d = await r.json();
+        return (d.ok && d.history) ? d.history : {};
+      } catch(e) { return {}; }
+    },
+
+    // ── Main generate logic ──
+    async generateDraft() {
+      if (!this.canGenerate) return;
+      this.generating = true;
+      this.draftPlan = [];
+      try {
+        // 1. Build ODP pool: hanya desa yang dipilih, avail > 0
+        const pool = this._odpAll.filter(o =>
+          o.kab === this.form.kab &&
+          this.desaSelected.includes(o.desa||'') &&
+          (o.avai||0) > 0
+        );
+
+        if (pool.length === 0) {
+          this._toast('Tidak ada ODP tersedia di desa yang dipilih', 'error');
+          this.generating = false;
+          return;
+        }
+
+        // 2. Fetch rotation history
+        const history = await this._fetchHistory();
+        this.planHistory = history;
+
+        // 3. Sort pool: (a) never planned first, (b) oldest last-plan asc, (c) avai desc, (d) kapasitas desc
+        pool.sort((a, b) => {
+          const ha = history[a.odp] || '';
+          const hb = history[b.odp] || '';
+          // never planned = '' → goes first
+          if (!ha && hb) return -1;
+          if (ha && !hb) return 1;
+          if (ha !== hb) return ha < hb ? -1 : 1;  // oldest first
+          if ((b.avai||0) !== (a.avai||0)) return (b.avai||0) - (a.avai||0);
+          return (b.kapasitas||0) - (a.kapasitas||0);
+        });
+
+        // 4. Take top N = sfSelected.length * 4
+        const maxOdp = this.sfSelected.length * 4;
+        const chosen = pool.slice(0, maxOdp);
+
+        // 5. Geographic sort of chosen: by lat then lng
+        chosen.sort((a, b) => {
+          const latA = parseFloat(a.lat)||0, latB = parseFloat(b.lat)||0;
+          if (Math.abs(latA - latB) > 0.0001) return latA - latB;
+          return (parseFloat(a.lng)||0) - (parseFloat(b.lng)||0);
+        });
+
+        // 6. Block-assign to SFs
+        const sfObjs = this.sfSelected.map(u => this.sfList.find(s => s.username === u)).filter(Boolean);
+        const draft = sfObjs.map((sf, i) => ({
+          username_sf: sf.username,
+          nama_sf: sf.nama,
+          odps: chosen.slice(i * 4, (i + 1) * 4).map(o => ({ ...o })),
+        }));
+
+        this.draftPlan = draft;
+        const total = draft.reduce((s, sf) => s + sf.odps.length, 0);
+        this._toast(`✅ Draft dibuat: ${total} ODP untuk ${sfObjs.length} SF`, 'success');
+      } catch(e) {
+        this._toast('❌ ' + e.message, 'error');
+      }
+      this.generating = false;
+    },
+
+    // ── Save all draft (per SF) ──
+    async saveAllDraft() {
+      if (this.saving) return;
+      const activeSFs = this.draftPlan.filter(sf => sf.odps.length > 0);
+      if (!activeSFs.length) { this._toast('Tidak ada ODP untuk disimpan', 'error'); return; }
+      this.saving = true;
+      const gasUrl = this._gasUrl();
+      const st = localStorage.getItem('wok_token')||'';
+      const tahun = (this.form.tgl||'').slice(0,4) || this.viewTahun;
+      let totalSaved = 0;
+      let errors = [];
+      for (const sf of activeSFs) {
+        const rows = sf.odps.map(o => ({
+          tgl: this.form.tgl,
+          username_sf: sf.username_sf,
+          nama_sf: sf.nama_sf,
+          odp: o.odp,
+          cluster: o.cluster||'',
+          kab: o.kab||'',
+          kec: o.kec||'',
+          desa: o.desa||'',
+          lat: o.lat||'',
+          lng: o.lng||'',
+          avai: o.avai||0,
+          tahun,
+        }));
+        try {
+          const r = await fetch(gasUrl, {
+            method: 'POST',
+            body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:this.form.tgl, username_sf:sf.username_sf, rows }),
+          });
+          const d = await r.json();
+          if (!d.ok) throw new Error(d.error||'Gagal');
+          totalSaved += rows.length;
+        } catch(e) {
+          errors.push(`${sf.nama_sf}: ${e.message}`);
+        }
+      }
+      this.saving = false;
+      if (errors.length) {
+        this._toast('❌ ' + errors[0], 'error');
+      } else {
+        this.draftPlan = [];
+        this.viewTgl = this.form.tgl;
+        await this.loadPlan();
+        this._toast(`✅ ${totalSaved} ODP berhasil disimpan untuk ${activeSFs.length} SF`, 'success');
+      }
+    },
+
+    // ── Load plan tersimpan ──
     async loadPlan() {
       this.planLoading = true;
       try {
@@ -6473,18 +6616,12 @@ function djpPlanData() {
       } catch(e) { this._toast('❌ ' + e.message, 'error'); }
     },
 
-    // Group planData rows by SF for display
-    // GAS returns objects (row.username_sf, row.odp, ...) bukan arrays
     get planBySF() {
       const map = {};
       (this.planData||[]).forEach(row => {
         const sf = row.username_sf || row[1] || '';
         if (!sf) return;
-        if (!map[sf]) map[sf] = {
-          username_sf: sf,
-          nama_sf: row.nama_sf || row[2] || sf,
-          odps: []
-        };
+        if (!map[sf]) map[sf] = { username_sf: sf, nama_sf: row.nama_sf || row[2] || sf, odps: [] };
         map[sf].odps.push({
           odp:     row.odp     || row[3] || '',
           cluster: row.cluster || row[4] || '',
@@ -6492,7 +6629,7 @@ function djpPlanData() {
           kec:     row.kec     || row[6] || '',
           desa:    row.desa    || row[7] || '',
           avai:    row.avai    || 0,
-          visit:   row.visit   || false,   // populated from GAS if available
+          visit:   row.visit   || false,
         });
       });
       return Object.values(map);
