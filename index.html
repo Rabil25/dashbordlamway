@@ -3680,27 +3680,35 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                   </button>
                 </div>
                 <div style="overflow-x:auto">
-                  <table style="width:100%;font-size:12px;border-collapse:collapse">
+                  <table style="width:100%;font-size:12px;border-collapse:collapse;table-layout:fixed">
+                    <colgroup>
+                      <col style="width:36px">
+                      <col style="width:30%">
+                      <col style="width:22%">
+                      <col>
+                      <col style="width:52px">
+                      <col style="width:56px">
+                    </colgroup>
                     <thead>
                       <tr style="background:var(--surface-elevated);border-bottom:1.5px solid var(--border)">
-                        <th style="padding:6px 10px;text-align:center;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase;width:32px">#</th>
+                        <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">#</th>
                         <th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Nama ODP</th>
                         <th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Kab</th>
                         <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Kec · Desa</th>
-                        <th style="padding:6px 8px;text-align:right;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase;width:48px">Avai</th>
-                        <th style="padding:6px 10px;text-align:center;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase;width:52px">Visit</th>
+                        <th style="padding:6px 8px;text-align:right;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Avai</th>
+                        <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Visit</th>
                       </tr>
                     </thead>
                     <tbody>
                       <template x-for="(odp, i) in sf.odps" :key="odp.odp">
                         <tr style="border-top:1px solid var(--border);transition:background .1s" :style="i%2===1?'background:var(--surface-2)':''"
                           @mouseenter="$el.style.background='var(--surface-elevated)'" @mouseleave="$el.style.background=i%2===1?'var(--surface-2)':''">
-                          <td style="padding:6px 10px;color:var(--text-3);font-size:11px;text-align:center;font-variant-numeric:tabular-nums" x-text="i+1"></td>
-                          <td style="padding:6px 10px;color:var(--text-1);font-weight:600;font-size:11px;white-space:nowrap;letter-spacing:.2px" x-text="odp.odp"></td>
-                          <td style="padding:6px 10px;color:var(--text-2);font-size:11px;white-space:nowrap" x-text="odp.kab||'—'"></td>
-                          <td style="padding:6px 8px;color:var(--text-2);font-size:11px" x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
-                          <td style="padding:6px 8px;text-align:right;color:var(--text-1);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums" x-text="odp.avai||'—'"></td>
-                          <td style="padding:6px 10px;text-align:center;font-size:12px">
+                          <td style="padding:6px 8px;color:var(--text-3);font-size:11px;text-align:center;font-variant-numeric:tabular-nums" x-text="i+1"></td>
+                          <td style="padding:6px 10px;color:var(--text-1);font-weight:600;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.2px" x-text="odp.odp"></td>
+                          <td style="padding:6px 10px;color:var(--text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" x-text="odp.kab||'—'"></td>
+                          <td style="padding:6px 8px;color:var(--text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
+                          <td style="padding:6px 8px;text-align:right;color:var(--text-1);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums" x-text="odp.avai||'—'"></td>
+                          <td style="padding:6px 8px;text-align:center;font-size:12px">
                             <span x-show="odp.visit" style="color:var(--success)" title="Sudah visit bulan ini">✅</span>
                             <span x-show="!odp.visit" style="color:var(--text-3)">—</span>
                           </td>
