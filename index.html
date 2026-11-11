@@ -3380,14 +3380,51 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
            HALAMAN DJP: PLAN
       ════════════════════════════════════════════════════ -->
       <div class="page" :class="{active:page==='djp_plan'}" x-show="page==='djp_plan'" x-data="djpPlanData()" @page-djp_plan.window="initPlan()">
-        <div class="section-hdr">
-          <div class="section-title">Plan DJP</div>
-          <div class="section-sub">Generate rencana kunjungan ODP harian untuk SF secara otomatis</div>
+        <!-- ══ HERO HEADER ════════════════════════════════════ -->
+        <div style="background:linear-gradient(135deg,var(--brand) 0%,#a83018 100%);border-radius:14px;padding:20px 22px 18px;margin-bottom:16px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)"></div>
+          <div style="position:absolute;bottom:-30px;right:60px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.05)"></div>
+          <div style="position:relative;z-index:1">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+              <span style="font-size:22px">📋</span>
+              <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px">Generate Plan DJP</span>
+            </div>
+            <div style="font-size:12px;color:rgba(255,255,255,.75);max-width:420px">Rencana kunjungan ODP harian untuk SF — otomatis, bergilir, berbasis lokasi</div>
+          </div>
+        </div>
+
+        <!-- ══ STEP INDICATOR ═════════════════════════════════ -->
+        <div style="display:flex;align-items:center;gap:0;margin-bottom:16px;background:var(--surface-elevated);border-radius:10px;padding:10px 14px;border:1.5px solid var(--surface-border)">
+          <div style="display:flex;align-items:center;gap:7px;flex:1">
+            <div :style="'width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;' + (true?'background:var(--brand);color:#fff':'background:var(--surface-border);color:var(--text-3)')">1</div>
+            <span style="font-size:12px;font-weight:600" :style="true?'color:var(--brand)':'color:var(--text-3)'">Setup</span>
+          </div>
+          <div style="flex:0 0 28px;height:2px;background:var(--surface-border);margin:0 4px;border-radius:1px"
+            :style="canGenerate||draftPlan.length>0?'background:var(--brand)':''"></div>
+          <div style="display:flex;align-items:center;gap:7px;flex:1">
+            <div :style="'width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;' + (draftPlan.length>0?'background:var(--brand);color:#fff':'background:var(--surface-border);color:var(--text-3)')">2</div>
+            <span style="font-size:12px;font-weight:600" :style="draftPlan.length>0?'color:var(--brand)':'color:var(--text-3)'">Review Draft</span>
+          </div>
+          <div style="flex:0 0 28px;height:2px;background:var(--surface-border);margin:0 4px;border-radius:1px"></div>
+          <div style="display:flex;align-items:center;gap:7px;flex:1">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--surface-border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--text-3);flex-shrink:0">3</div>
+            <span style="font-size:12px;font-weight:600;color:var(--text-3)">Tersimpan</span>
+          </div>
         </div>
 
         <!-- ══ SETUP PLAN ══════════════════════════════════════ -->
-        <div class="card" style="margin-bottom:14px;padding:16px">
+        <div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
 
+          <!-- Card header -->
+          <div style="padding:12px 16px;background:var(--surface-elevated);border-bottom:1.5px solid var(--surface-border);display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📅</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-1)">Setup Plan</div>
+              <div style="font-size:11px;color:var(--text-3)">Pilih tanggal, wilayah, desa, dan SF</div>
+            </div>
+          </div>
+
+          <div style="padding:16px">
           <!-- Baris 1: Tanggal · Kab · Kantor -->
           <div style="display:grid;grid-template-columns:148px 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
             <div>
@@ -3419,9 +3456,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
             <!-- Panel Desa -->
             <div>
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-                <span style="font-size:12px;font-weight:700;color:var(--text-1)">Pilih Desa</span>
-                <span x-show="desaSelected.length>0" style="font-size:11px;color:var(--brand);font-weight:600" x-text="'('+desaSelected.length+' dipilih)'"></span>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:var(--surface-elevated);border-radius:8px;padding:7px 10px;border:1px solid var(--surface-border)">
+                <span style="font-size:13px">🏘️</span>
+                <span style="font-size:12px;font-weight:700;color:var(--text-1)">Desa</span>
+                <span x-show="desaSelected.length>0" style="font-size:10px;color:#fff;font-weight:700;background:var(--brand);border-radius:10px;padding:1px 7px" x-text="desaSelected.length"></span>
                 <div style="flex:1"></div>
                 <button @click="selectAllDesa()" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--brand);color:var(--brand);background:transparent;cursor:pointer">Semua</button>
                 <button @click="clearDesa()" x-show="desaSelected.length>0" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--text-3);color:var(--text-3);background:transparent;cursor:pointer">Clear</button>
@@ -3435,8 +3473,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </template>
                 <template x-for="desa in desaListFiltered" :key="desa">
                   <div @click="toggleDesa(desa)"
-                    style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--border)"
-                    :style="desaSelected.includes(desa)?'background:rgba(99,102,241,.12)':''">
+                    style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s"
+                    :style="desaSelected.includes(desa)?'background:var(--brand-dim);border-left:3px solid var(--brand)':'border-left:3px solid transparent'">
                     <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"
                       :style="desaSelected.includes(desa)?'background:var(--brand);border-color:var(--brand)':''">
                       <span x-show="desaSelected.includes(desa)" style="color:#fff;font-size:9px;line-height:1">✓</span>
@@ -3450,9 +3488,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
             <!-- Panel SF -->
             <div>
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-                <span style="font-size:12px;font-weight:700;color:var(--text-1)">Pilih SF</span>
-                <span x-show="sfSelected.length>0" style="font-size:11px;color:var(--brand);font-weight:600" x-text="'('+sfSelected.length+' dipilih)'"></span>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:var(--surface-elevated);border-radius:8px;padding:7px 10px;border:1px solid var(--surface-border)">
+                <span style="font-size:13px">👥</span>
+                <span style="font-size:12px;font-weight:700;color:var(--text-1)">Sales Force</span>
+                <span x-show="sfSelected.length>0" style="font-size:10px;color:#fff;font-weight:700;background:var(--brand);border-radius:10px;padding:1px 7px" x-text="sfSelected.length"></span>
                 <div style="flex:1"></div>
                 <button @click="selectAllSF()" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--brand);color:var(--brand);background:transparent;cursor:pointer">Semua</button>
                 <button @click="clearSF()" x-show="sfSelected.length>0" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--text-3);color:var(--text-3);background:transparent;cursor:pointer">Clear</button>
@@ -3464,8 +3503,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 </template>
                 <template x-for="sf in sfListFiltered" :key="sf.username">
                   <div @click="toggleSF(sf.username)"
-                    style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--border)"
-                    :style="sfSelected.includes(sf.username)?'background:rgba(99,102,241,.12)':''">
+                    style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s"
+                    :style="sfSelected.includes(sf.username)?'background:var(--brand-dim);border-left:3px solid var(--brand)':'border-left:3px solid transparent'">
                     <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0"
                       :style="sfSelected.includes(sf.username)?'background:var(--brand);border-color:var(--brand)':''">
                       <span x-show="sfSelected.includes(sf.username)" style="color:#fff;font-size:9px;line-height:1">✓</span>
@@ -3479,62 +3518,82 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div>
 
           <!-- Generate button row -->
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <div style="font-size:12px">
-              <span x-show="!canGenerate && (desaSelected.length===0 || sfSelected.length===0)" style="color:var(--text-3)">Pilih desa dan SF untuk generate</span>
-              <span x-show="canGenerate" style="color:var(--text-2)">
-                <span x-text="desaSelected.length"></span> desa ·
-                <span x-text="sfSelected.length"></span> SF →
-                maks <span x-text="sfSelected.length*4" style="font-weight:700;color:var(--brand)"></span> ODP
-              </span>
+          <div x-show="!canGenerate && (desaSelected.length===0 || sfSelected.length===0)"
+            style="background:var(--surface-input);border-radius:8px;padding:10px 14px;text-align:center;color:var(--text-3);font-size:12px;border:1.5px dashed var(--surface-border)">
+            💡 Pilih minimal 1 desa dan 1 SF untuk generate plan
+          </div>
+          <div x-show="canGenerate"
+            style="background:linear-gradient(135deg,rgba(201,60,32,.08),rgba(217,112,32,.06));border-radius:10px;padding:12px 16px;border:1.5px solid rgba(201,60,32,.2);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div style="display:flex;gap:16px;flex-wrap:wrap">
+              <div style="text-align:center">
+                <div style="font-size:20px;font-weight:800;color:var(--brand)" x-text="desaSelected.length"></div>
+                <div style="font-size:10px;color:var(--text-3);font-weight:600">DESA</div>
+              </div>
+              <div style="width:1px;background:var(--surface-border)"></div>
+              <div style="text-align:center">
+                <div style="font-size:20px;font-weight:800;color:var(--brand)" x-text="sfSelected.length"></div>
+                <div style="font-size:10px;color:var(--text-3);font-weight:600">SF</div>
+              </div>
+              <div style="width:1px;background:var(--surface-border)"></div>
+              <div style="text-align:center">
+                <div style="font-size:20px;font-weight:800;color:var(--accent)" x-text="sfSelected.length*4"></div>
+                <div style="font-size:10px;color:var(--text-3);font-weight:600">MAX ODP</div>
+              </div>
             </div>
             <div style="flex:1"></div>
-            <button class="btn" @click="generateDraft()"
-              :disabled="!canGenerate"
-              :style="canGenerate
-                ? 'background:var(--brand);color:#fff;font-weight:700;padding:8px 20px'
-                : 'background:var(--surface-2);color:var(--text-3);cursor:not-allowed;border-color:var(--border);padding:8px 20px'">
-              <span x-show="!generating">⚡ Generate Draft</span>
-              <span x-show="generating">⏳ Memproses…</span>
+            <button @click="generateDraft()" :disabled="generating"
+              style="padding:11px 28px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:800;letter-spacing:.3px;display:flex;align-items:center;gap:8px;transition:opacity .15s;box-shadow:0 3px 12px rgba(201,60,32,.35)"
+              :style="generating?'background:#999;cursor:not-allowed':'background:linear-gradient(135deg,var(--brand),#a83018);color:#fff'">
+              <span x-show="!generating" style="font-size:16px">⚡</span>
+              <span x-show="generating" style="font-size:14px">⏳</span>
+              <span x-show="!generating">Generate Draft</span>
+              <span x-show="generating">Memproses…</span>
             </button>
           </div>
+          </div><!-- end padding wrapper -->
         </div>
 
         <!-- ══ DRAFT PLAN ════════════════════════════════════= -->
-        <div class="card" x-show="draftPlan.length>0" style="margin-bottom:14px;padding:16px">
+        <div class="card" x-show="draftPlan.length>0" style="margin-bottom:14px;padding:0;overflow:hidden">
           <!-- Header -->
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-            <div>
-              <span style="font-weight:700;font-size:14px;color:var(--text-1)">Draft Plan</span>
-              <span style="font-size:12px;color:var(--text-3);margin-left:6px" x-text="'· '+form.tgl"></span>
+          <div style="padding:12px 16px;background:linear-gradient(135deg,rgba(22,163,74,.1),rgba(21,128,61,.06));border-bottom:1.5px solid rgba(22,163,74,.2);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:28px;height:28px;border-radius:8px;background:#16a34a;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📝</div>
+              <div>
+                <div style="font-weight:800;font-size:13px;color:var(--text-1)">Review Draft</div>
+                <div style="font-size:11px;color:var(--text-3)" x-text="form.tgl + ' · ' + draftPlan.filter(s=>s.odps.length>0).length+' SF · '+draftPlan.reduce((s,sf)=>s+sf.odps.length,0)+' ODP'"></div>
+              </div>
             </div>
-            <span style="font-size:12px;color:var(--text-2)"
-              x-text="draftPlan.filter(s=>s.odps.length>0).length+' SF · '+draftPlan.reduce((s,sf)=>s+sf.odps.length,0)+' ODP'"></span>
             <div style="flex:1"></div>
             <button @click="draftPlan=[]"
               style="font-size:11px;padding:5px 12px;border-radius:7px;border:1.5px solid var(--text-3);color:var(--text-2);background:transparent;cursor:pointer">
-              ✕ Discard
+              ✕ Buang
             </button>
-            <button class="btn" @click="saveAllDraft()"
+            <button @click="saveAllDraft()"
               :disabled="saving || draftPlan.every(s=>s.odps.length===0)"
-              :style="(!saving && draftPlan.some(s=>s.odps.length>0))
-                ? 'background:#16a34a;color:#fff;border-color:#16a34a;font-weight:700'
-                : 'background:var(--surface-2);color:var(--text-3);cursor:not-allowed;border-color:var(--border)'">
-              <span x-show="!saving">💾 Simpan Semua</span>
-              <span x-show="saving">⏳ Menyimpan…</span>
+              style="padding:7px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;transition:opacity .15s"
+              :style="(!saving && draftPlan.some(s=>s.odps.length>0))?'background:#16a34a;color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.35)':'background:var(--surface-border);color:var(--text-3);cursor:not-allowed'">
+              <span x-show="!saving">💾</span>
+              <span x-show="saving">⏳</span>
+              <span x-show="!saving">Simpan Semua</span>
+              <span x-show="saving">Menyimpan…</span>
             </button>
           </div>
+          <div style="padding:16px">
 
           <!-- Per-SF draft cards -->
           <template x-for="(sf, sfIdx) in draftPlan" :key="sf.username_sf">
-            <div style="margin-bottom:12px;border:1.5px solid var(--border);border-radius:9px;overflow:hidden">
-              <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--border)">
-                <span style="font-size:14px">👤</span>
-                <span style="font-weight:700;font-size:13px;color:var(--text-1)" x-text="sf.nama_sf"></span>
-                <span style="font-size:11px;color:var(--text-3)" x-text="'@'+sf.username_sf"></span>
+            <div style="margin-bottom:10px;border:1.5px solid var(--surface-border);border-radius:10px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-elevated);border-bottom:1px solid var(--surface-border)">
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--brand-dim);border:2px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">👤</div>
+                <div>
+                  <div style="font-weight:700;font-size:13px;color:var(--text-1)" x-text="sf.nama_sf"></div>
+                  <div style="font-size:10px;color:var(--text-3)" x-text="'@'+sf.username_sf"></div>
+                </div>
                 <div style="flex:1"></div>
-                <span :style="sf.odps.length>0?'color:var(--brand);font-weight:600':'color:var(--text-3)'"
-                  style="font-size:11px" x-text="sf.odps.length+' ODP'"></span>
+                <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px"
+                  :style="sf.odps.length>0?'background:rgba(201,60,32,.1);color:var(--brand)':'background:var(--surface-border);color:var(--text-3)'"
+                  x-text="sf.odps.length+' ODP'"></span>
               </div>
               <div x-show="sf.odps.length===0" style="padding:12px;text-align:center;color:var(--text-3);font-size:12px">— Tidak ada ODP —</div>
               <div x-show="sf.odps.length>0" style="overflow-x:auto">
@@ -3574,31 +3633,27 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             </div>
           </template>
 
-          <!-- Footer save -->
-          <div style="display:flex;justify-content:flex-end;margin-top:4px">
-            <button class="btn" @click="saveAllDraft()"
-              :disabled="saving || draftPlan.every(s=>s.odps.length===0)"
-              :style="(!saving && draftPlan.some(s=>s.odps.length>0))
-                ? 'background:#16a34a;color:#fff;border-color:#16a34a;font-weight:700'
-                : 'background:var(--surface-2);color:var(--text-3);cursor:not-allowed;border-color:var(--border)'">
-              <span x-show="!saving">💾 Simpan Semua Plan</span>
-              <span x-show="saving">⏳ Menyimpan…</span>
-            </button>
-          </div>
+          </div><!-- end padding:16px -->
         </div>
 
         <!-- ══ PLAN TERSIMPAN ════════════════════════════════= -->
-        <div class="card" style="padding:16px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-            <div style="font-weight:700;font-size:13px;color:var(--text-1);white-space:nowrap">Plan Tersimpan</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:12px 16px;background:var(--surface-elevated);border-bottom:1.5px solid var(--surface-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:28px;height:28px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📋</div>
+              <div>
+                <div style="font-weight:700;font-size:13px;color:var(--text-1)">Plan Tersimpan</div>
+                <div style="font-size:11px;color:var(--text-3)" x-show="planData.length>0" x-text="planData.length + ' ODP · ' + planBySF.length + ' SF'"></div>
+              </div>
+            </div>
+            <div style="flex:1"></div>
             <input type="date" class="select" x-model="viewTgl" @change="loadPlan()" style="font-size:12px;padding:4px 8px;max-width:148px">
             <button class="btn" @click="loadPlan()" :disabled="planLoading" style="font-size:11px;padding:4px 10px;white-space:nowrap">
-              <span x-show="!planLoading">🔄</span>
+              <span x-show="!planLoading">🔄 Muat</span>
               <span x-show="planLoading">…</span>
             </button>
-            <span x-show="planData.length>0" style="font-size:12px;color:var(--text-2);white-space:nowrap"
-              x-text="planData.length + ' ODP · ' + planBySF.length + ' SF'"></span>
           </div>
+          <div style="padding:16px">
 
           <div x-show="planLoading" style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">⏳ Memuat plan…</div>
 
@@ -3649,12 +3704,12 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               </div>
             </template>
 
-            <div x-show="planData.length===0" style="text-align:center;padding:32px 20px;color:var(--text-3)">
-              <div style="font-size:28px;margin-bottom:8px">📋</div>
-              <div style="font-size:13px;font-weight:600;margin-bottom:4px">Belum ada plan</div>
-              <div style="font-size:12px">Generate draft di atas, review, lalu simpan</div>
+            <div x-show="planData.length===0" style="text-align:center;padding:40px 20px;color:var(--text-3)">
+              <div style="font-size:36px;margin-bottom:10px">📋</div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text-2)">Belum ada plan tersimpan</div>
+              <div style="font-size:12px">Generate draft di atas → review → klik Simpan Semua</div>
             </div>
-          </div>
+          </div><!-- end padding:16px -->
         </div>
       </div>
 
@@ -6549,43 +6604,43 @@ function djpPlanData() {
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_token')||'';
       const tahun = (this.form.tgl||'').slice(0,4) || this.viewTahun;
-      let totalSaved = 0;
-      let errors = [];
+
+      // Batch semua SF + ODP dalam SATU request (tidak sequential)
+      const allRows = [];
       for (const sf of activeSFs) {
-        const rows = sf.odps.map(o => ({
-          tgl: this.form.tgl,
-          username_sf: sf.username_sf,
-          nama_sf: sf.nama_sf,
-          odp: o.odp,
-          cluster: o.cluster||'',
-          kab: o.kab||'',
-          kec: o.kec||'',
-          desa: o.desa||'',
-          lat: o.lat||'',
-          lng: o.lng||'',
-          avai: o.avai||0,
-          tahun,
-        }));
-        try {
-          const r = await fetch(gasUrl, {
-            method: 'POST',
-            body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:this.form.tgl, username_sf:sf.username_sf, rows }),
+        for (const o of sf.odps) {
+          allRows.push({
+            tgl: this.form.tgl,
+            username_sf: sf.username_sf,
+            nama_sf: sf.nama_sf,
+            odp: o.odp,
+            cluster: o.cluster||'',
+            kab: o.kab||'',
+            kec: o.kec||'',
+            desa: o.desa||'',
+            lat: o.lat||'',
+            lng: o.lng||'',
+            avai: o.avai||0,
+            tahun,
           });
-          const d = await r.json();
-          if (!d.ok) throw new Error(d.error||'Gagal');
-          totalSaved += rows.length;
-        } catch(e) {
-          errors.push(`${sf.nama_sf}: ${e.message}`);
         }
       }
-      this.saving = false;
-      if (errors.length) {
-        this._toast('❌ ' + errors[0], 'error');
-      } else {
+
+      try {
+        const r = await fetch(gasUrl, {
+          method: 'POST',
+          body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:this.form.tgl, rows: allRows }),
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error||'Gagal menyimpan');
+        this.saving = false;
         this.draftPlan = [];
         this.viewTgl = this.form.tgl;
         await this.loadPlan();
-        this._toast(`✅ ${totalSaved} ODP berhasil disimpan untuk ${activeSFs.length} SF`, 'success');
+        this._toast(`✅ ${allRows.length} ODP disimpan untuk ${activeSFs.length} SF`, 'success');
+      } catch(e) {
+        this.saving = false;
+        this._toast('❌ ' + e.message, 'error');
       }
     },
 
