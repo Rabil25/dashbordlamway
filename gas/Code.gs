@@ -93,6 +93,7 @@ function doGet(e) {
                       'auth_change_password','auth_pending_users',
                       'auth_approve','auth_logout'];
 
+
   // ── DJP endpoints – pakai session_token (bukan CONFIG.TOKEN) ──
   const DJP_TYPES = ['djp_users','djp_plan_save','djp_plan_get',
                      'djp_plan_delete','djp_realisasi_upload','djp_daily'];
@@ -140,7 +141,7 @@ function doGet(e) {
         data = getListBulanCached();
         break;
       case 'update_sf':
-        data = getRawSheetCached('Update SF', 'A2:AG', '');
+        data = getRawSheetCached('Update SF', 'A2:AI', '');
         break;
       case 'wilayah':
         data = { ok:true, wilayah: WILAYAH };
@@ -180,7 +181,7 @@ function getAllData(bulan) {
   // Ambil semua data (masing-masing sudah pakai cache)
   const bulanIni  = getRawSheetCached('Bulan_Ini', 'CE2:DT', bulan);
   const bulanPrev = bulanLalu ? getRawSheetCached('Bulan_Ini', 'CE2:DT', bulanLalu) : { ok:true, data:[], rows:0 };
-  const updateSf  = getRawSheetCached('Update SF', 'A2:AG', '');
+  const updateSf  = getRawSheetCached('Update SF', 'A2:AI', '');
   const listBulan = getListBulanCached();
 
   const target = getTargetData();
@@ -320,7 +321,7 @@ function warmupSelf() {
     // Pre-cache Update SF jika belum ada
     const keySf = 'sheet_Update_SF_all';
     if (!cacheGetChunked(cache, keySf)) {
-      const d = getRawSheet('Update SF', 'A2:AG', '');
+      const d = getRawSheet('Update SF', 'A2:AI', '');
       if (d.ok) cachePutChunked(cache, keySf, d, CACHE_TTL_DATA);
       Logger.log('Pre-cache Update SF: ' + (d.rows||0) + ' baris');
     }
@@ -730,7 +731,6 @@ function doPost(e) {
     return jsonOut({ ok:false, error:'doPost error: ' + err.message });
   }
 }
-
 // ── Helper: output JSON ───────────────────────────────────────
 function jsonOut(data) {
   const out = ContentService.createTextOutput(JSON.stringify(data));

@@ -4723,6 +4723,24 @@ function app() {
       const bulan = this.cfg.bulan;
       const prevBulan = this.prevBulan.toString();
       const produkFilter = this.sfProdukFilter || '';
+      const currentCluster = this.cluster;
+
+      // ── Seed map dari Update SF: semua SF ACTIVE di cluster ini ──
+      // Col 0-based: 1=Nama, 2=Kode, 16=Status, 20=Kab, 34=Cluster (AI)
+      const USF_NAMA = 1, USF_KODE = 2, USF_STATUS = 16, USF_KAB = 20, USF_CLUSTER = 34;
+      (this.sfMaster || []).forEach(row => {
+        const status  = (row[USF_STATUS]  || '').toString().trim().toUpperCase();
+        const cluster = (row[USF_CLUSTER] || '').toString().trim();
+        if (status !== 'ACTIVE' && status !== 'AKTIF') return;
+        if (cluster !== currentCluster) return;
+        const code = (row[USF_KODE] || '').toString().trim();
+        if (!code) return;
+        if (!map[code]) map[code] = {
+          code, nama: (row[USF_NAMA]||'').toString().trim(), channel: '',
+          kab: (row[USF_KAB]||'').toString().trim().toUpperCase(),
+          io:0, re:0, ps:0, cancel:0, prevPS:0, produk: '',
+        };
+      });
 
       // Hitung PS bulan ini dari filteredRows — filter produk masuk ke sini
       this.filteredRows.forEach(r => {
@@ -4735,9 +4753,12 @@ function app() {
           kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
           produk,
         };
+        // Update channel & produk dari data order (lebih detail dari Update SF)
+        const m = map[code];
+        if (!m.channel && r[C.CHANNEL2]) m.channel = r[C.CHANNEL2];
+        if (!m.produk  && produk)        m.produk  = produk;
         // Hitung angka HANYA untuk produk yang dipilih (atau semua jika tidak ada filter)
         if (produkFilter && produk !== produkFilter) return;
-        const m = map[code];
         const blnIOsf = (r[C.BLN_IO]||'').toString();
         const blnPS   = (r[C.BLN_PS]||'').toString();
         const blnRE   = (r[C.BLN_RE]||'').toString();
@@ -4780,8 +4801,9 @@ function app() {
         const tierNow = getSFTier(sf.ps);
         sf.tierNow     = tierNow.name;
         sf.tierNowIcon = tierNow.icon;
-        // Flag SF dengan PS=0 setelah tanggal 15 bulan berjalan
-        sf.alertPS0 = isCurrentMonth && hariIni > 15 && sf.ps === 0 && sf.io > 0;
+        // Flag SF ACTIVE dengan PS=0 setelah tanggal 15 bulan berjalan
+        // (io > 0 tidak disyaratkan lagi karena semua SF ACTIVE sudah masuk dari Update SF)
+        sf.alertPS0 = isCurrentMonth && hariIni > 15 && sf.ps === 0;
       });
 
       return arr.sort((a,b) => b.ps - a.ps);
