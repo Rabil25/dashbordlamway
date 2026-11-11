@@ -4728,6 +4728,7 @@ function app() {
       // ── Seed map dari Update SF: semua SF ACTIVE di cluster ini ──
       // Col 0-based: 1=Nama, 2=Kode, 16=Status, 20=Kab, 34=Cluster (AI)
       const USF_NAMA = 1, USF_KODE = 2, USF_STATUS = 16, USF_KAB = 20, USF_CLUSTER = 34;
+      const validCodes = new Set(); // SF ACTIVE yang termasuk cluster ini (dari Update SF)
       (this.sfMaster || []).forEach(row => {
         const status  = (row[USF_STATUS]  || '').toString().trim().toUpperCase();
         const cluster = (row[USF_CLUSTER] || '').toString().trim();
@@ -4735,6 +4736,7 @@ function app() {
         if (cluster !== currentCluster) return;
         const code = (row[USF_KODE] || '').toString().trim();
         if (!code) return;
+        validCodes.add(code);
         if (!map[code]) map[code] = {
           code, nama: (row[USF_NAMA]||'').toString().trim(), channel: '',
           kab: (row[USF_KAB]||'').toString().trim().toUpperCase(),
@@ -4746,6 +4748,10 @@ function app() {
       this.filteredRows.forEach(r => {
         const code = (r[C.CODE_SF]||'').trim();
         if (!code) return;
+        // Jika sfMaster sudah ter-load dengan cluster data, hanya proses SF yang
+        // terdaftar di cluster ini. Ini mencegah SF lintas-cluster masuk tabel.
+        // Guard validCodes.size > 0 → fallback ke perilaku lama jika sfMaster belum ada cluster.
+        if (validCodes.size > 0 && !validCodes.has(code)) return;
         const produk = (r[C.PRODUK_KAT]||'');
         // Inisialisasi entry SF (pakai semua row untuk nama/kab/channel)
         if (!map[code]) map[code] = {
@@ -4773,6 +4779,7 @@ function app() {
       this.filteredPrevRows.forEach(r => {
         const code = (r[C.CODE_SF]||'').trim();
         if (!code) return;
+        if (validCodes.size > 0 && !validCodes.has(code)) return;
         if (!map[code]) map[code] = {
           code, nama: r[C.NAMA_SF]||'', channel: r[C.CHANNEL2]||'',
           kab: r[C.VAL_KAB]||'', io:0, re:0, ps:0, cancel:0, prevPS:0,
