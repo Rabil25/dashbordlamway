@@ -5255,10 +5255,13 @@ function app() {
       const desas = Object.values(map).map(d => {
         const lat = d.lats.length ? d.lats.reduce((a,b)=>a+b,0)/d.lats.length : null;
         const lng = d.lngs.length ? d.lngs.reduce((a,b)=>a+b,0)/d.lngs.length : null;
-        // Jarak ke kantor terdekat
+        // Jarak ke kantor terdekat — filter by kab desa (Cluster → Kab → Kantor)
         let nearestOffice = '—', nearestDist = 9999;
         if (lat && lng) {
-          OFFICES.forEach(of => {
+          const kabUpper = d.kab.toUpperCase();
+          const kabOffices = OFFICES.filter(of => of.kab.toUpperCase() === kabUpper);
+          const officePool = kabOffices.length ? kabOffices : OFFICES; // fallback ke semua jika kab tidak ada kantornya
+          officePool.forEach(of => {
             const dist = haversineKm(lat, lng, of.lat, of.lng);
             if (dist < nearestDist) { nearestDist = dist; nearestOffice = of.name; }
           });
