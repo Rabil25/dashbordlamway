@@ -6654,7 +6654,6 @@ function djpPlanData() {
       const st = localStorage.getItem('wok_token')||'';
       const tahun = (this.form.tgl||'').slice(0,4) || this.viewTahun;
 
-      // Batch semua SF + ODP dalam SATU request (tidak sequential)
       const allRows = [];
       for (const sf of activeSFs) {
         for (const o of sf.odps) {
@@ -6675,36 +6674,31 @@ function djpPlanData() {
         }
       }
 
+      // ── OPTIMISTIC SAVE: langsung update UI tanpa nunggu GAS ──
+      // 1. Update planData + cache lokal → UI responsif instan
+      this.planData = allRows.map(r => ({...r}));
+      this.viewTgl = this.form.tgl;
       try {
-        const r = await fetch(gasUrl, {
-          method: 'POST',
-          body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:this.form.tgl, rows: allRows }),
-        });
-        const d = await r.json();
-        if (!d.ok) throw new Error(d.error||'Gagal menyimpan');
-        this.saving = false;
+        const cacheKey = 'djp_plandata_' + this.form.tgl;
+        localStorage.setItem(cacheKey, JSON.stringify({ data: this.planData, ts: Date.now() }));
+        localStorage.removeItem('djp_draft_' + this.form.tgl);
+      } catch(e) {}
+      this.draftPlan = [];
+      this.saving = false;
+      this._toast(`✅ ${allRows.length} ODP disimpan untuk ${activeSFs.length} SF`, 'success');
 
-        // Reconstruct planData langsung dari allRows — tidak perlu fetch GAS lagi
-        // Format planData sama dengan yang dikembalikan djp_plan_get
-        this.planData = allRows.map(r => ({...r}));
-        this.viewTgl = this.form.tgl;
-
-        // Simpan planData ke localStorage sebagai cache
-        try {
-          const cacheKey = 'djp_plandata_' + this.form.tgl;
-          localStorage.setItem(cacheKey, JSON.stringify({ data: this.planData, ts: Date.now() }));
-          // Hapus draft cache karena sudah tersimpan
-          localStorage.removeItem('djp_draft_' + this.form.tgl);
-        } catch(e) {}
-
-        this.draftPlan = [];
-        this._toast(`✅ ${allRows.length} ODP disimpan untuk ${activeSFs.length} SF`, 'success');
-        // Sync ke GAS di background untuk memastikan konsistensi (silent, tidak block UI)
-        setTimeout(() => this.loadPlan(true).catch(()=>{}), 3000);
-      } catch(e) {
-        this.saving = false;
-        this._toast('❌ ' + e.message, 'error');
-      }
+      // 2. Kirim ke GAS di background — user tidak perlu nunggu
+      fetch(gasUrl, {
+        method: 'POST',
+        body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:this.form.tgl, rows: allRows }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (!d.ok) this._toast('⚠️ Sinkronisasi GAS gagal: ' + (d.error||''), 'error');
+          // Refresh data dari GAS setelah berhasil sync (silent)
+          else this.loadPlan(true).catch(()=>{});
+        })
+        .catch(() => this._toast('⚠️ Gagal sinkron ke server, coba 🔄 Muat', 'error'));
     },
 
     // ── Load plan tersimpan ──
