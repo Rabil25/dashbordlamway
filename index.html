@@ -3647,8 +3647,8 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
               </div>
             </div>
             <div style="flex:1"></div>
-            <input type="date" class="select" x-model="viewTgl" @change="loadPlan()" style="font-size:12px;padding:4px 8px;max-width:148px">
-            <button class="btn" @click="loadPlan()" :disabled="planLoading" style="font-size:11px;padding:4px 10px;white-space:nowrap">
+            <input type="date" class="select" x-model="viewTgl" @change="loadPlan(true)" style="font-size:12px;padding:4px 8px;max-width:148px">
+            <button class="btn" @click="loadPlan(true)" :disabled="planLoading" style="font-size:11px;padding:4px 10px;white-space:nowrap">
               <span x-show="!planLoading">🔄 Muat</span>
               <span x-show="planLoading">…</span>
             </button>
@@ -6415,9 +6415,24 @@ function djpPlanData() {
 
     // ── Load SF (semua aktif di cluster) ──
     async _loadSF() {
+      const kabs = this._clusterKabs;
+      const SF_CACHE_KEY = 'djp_sf_' + kabs.join('_');
+      const SF_TTL_MS = 30 * 60 * 1000; // 30 menit
+
+      // 1. Cek cache dulu — kalau masih fresh, pakai langsung
+      try {
+        const cached = localStorage.getItem(SF_CACHE_KEY);
+        if (cached) {
+          const { data, ts } = JSON.parse(cached);
+          if (Array.isArray(data) && data.length && Date.now() - ts < SF_TTL_MS) {
+            this.sfList = data;
+            return; // ← skip GAS, cache masih valid
+          }
+        }
+      } catch(e) {}
+
       const gasUrl = this._gasUrl();
       const st = localStorage.getItem('wok_token')||'';
-      const kabs = this._clusterKabs;
       const kabsParam = encodeURIComponent(JSON.stringify(kabs));
       const parseSFArr = (arr, clusterKabs) => {
         const seen = new Set();
@@ -6436,7 +6451,11 @@ function djpPlanData() {
       try {
         const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}&kabs=${kabsParam}`);
         const d = await r.json();
-        if (d.ok && d.users && d.users.length) { this.sfList = d.users; return; }
+        if (d.ok && d.users && d.users.length) {
+          this.sfList = d.users;
+          try { localStorage.setItem(SF_CACHE_KEY, JSON.stringify({ data: d.users, ts: Date.now() })); } catch(e) {}
+          return;
+        }
         throw new Error('no users');
       } catch(e) {
         try {
@@ -6681,7 +6700,7 @@ function djpPlanData() {
         this.draftPlan = [];
         this._toast(`✅ ${allRows.length} ODP disimpan untuk ${activeSFs.length} SF`, 'success');
         // Sync ke GAS di background untuk memastikan konsistensi (silent, tidak block UI)
-        setTimeout(() => this.loadPlan().catch(()=>{}), 3000);
+        setTimeout(() => this.loadPlan(true).catch(()=>{}), 3000);
       } catch(e) {
         this.saving = false;
         this._toast('❌ ' + e.message, 'error');
@@ -6689,8 +6708,10 @@ function djpPlanData() {
     },
 
     // ── Load plan tersimpan ──
-    async loadPlan() {
+    async loadPlan(forceRefresh = false) {
       const cacheKey = 'djp_plandata_' + this.viewTgl;
+      const PLAN_TTL_MS = 5 * 60 * 1000; // 5 menit — cukup untuk navigasi bolak-balik
+      let cacheAge = Infinity;
 
       // 1. Cek cache localStorage — tampil instan kalau ada
       try {
@@ -6699,12 +6720,16 @@ function djpPlanData() {
           const { data, ts } = JSON.parse(cached);
           if (Array.isArray(data)) {
             this.planData = data;
-            this.planLoading = false; // tampil dulu, loading spinner hilang
+            this.planLoading = false;
+            cacheAge = Date.now() - ts;
           }
         }
       } catch(e) {}
 
-      // 2. Fetch GAS di background — update cache & UI kalau ada perubahan
+      // 2. Skip GAS kalau cache masih fresh (< 5 menit) dan tidak force-refresh
+      if (!forceRefresh && cacheAge < PLAN_TTL_MS) return;
+
+      // 3. Fetch GAS di background — update cache & UI kalau ada perubahan
       try {
         this.planLoading = this.planData.length === 0; // spinner hanya kalau belum ada data
         const gasUrl = this._gasUrl();
@@ -6731,7 +6756,7 @@ function djpPlanData() {
         const r = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_plan_delete', session_token:st, tgl:this.viewTgl, username_sf }) });
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal hapus');
-        await this.loadPlan();
+        await this.loadPlan(true);
         this._toast(`🗑 Plan ${username_sf} dihapus`, 'info');
       } catch(e) { this._toast('❌ ' + e.message, 'error'); }
     },
