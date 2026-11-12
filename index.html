@@ -3398,18 +3398,19 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
         <div style="display:flex;align-items:center;gap:0;margin-bottom:16px;background:var(--surface-elevated);border-radius:10px;padding:10px 14px;border:1.5px solid var(--surface-border)">
           <div style="display:flex;align-items:center;gap:7px;flex:1">
             <div :style="'width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;' + (true?'background:var(--brand);color:#fff':'background:var(--surface-border);color:var(--text-3)')">1</div>
-            <span style="font-size:12px;font-weight:600" :style="true?'color:var(--brand)':'color:var(--text-3)'">Setup</span>
+            <span style="font-size:13px;font-weight:600" :style="true?'color:var(--brand)':'color:var(--text-3)'">Setup</span>
           </div>
           <div style="flex:0 0 28px;height:2px;background:var(--surface-border);margin:0 4px;border-radius:1px"
             :style="canGenerate||draftPlan.length>0?'background:var(--brand)':''"></div>
           <div style="display:flex;align-items:center;gap:7px;flex:1">
             <div :style="'width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;' + (draftPlan.length>0?'background:var(--brand);color:#fff':'background:var(--surface-border);color:var(--text-3)')">2</div>
-            <span style="font-size:12px;font-weight:600" :style="draftPlan.length>0?'color:var(--brand)':'color:var(--text-3)'">Review Draft</span>
+            <span style="font-size:13px;font-weight:600" :style="draftPlan.length>0?'color:var(--brand)':'color:var(--text-3)'">Review Draft</span>
           </div>
-          <div style="flex:0 0 28px;height:2px;background:var(--surface-border);margin:0 4px;border-radius:1px"></div>
+          <div style="flex:0 0 28px;height:2px;background:var(--surface-border);margin:0 4px;border-radius:1px"
+            :style="planData&&planData.length>0?'background:var(--brand)':''"></div>
           <div style="display:flex;align-items:center;gap:7px;flex:1">
-            <div style="width:24px;height:24px;border-radius:50%;background:var(--surface-border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--text-3);flex-shrink:0">3</div>
-            <span style="font-size:12px;font-weight:600;color:var(--text-3)">Tersimpan</span>
+            <div :style="'width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;' + (planData&&planData.length>0?'background:var(--brand);color:#fff':'background:var(--surface-border);color:var(--text-3)')">3</div>
+            <span style="font-size:13px;font-weight:600" :style="planData&&planData.length>0?'color:var(--brand)':'color:var(--text-3)'">Tersimpan</span>
           </div>
         </div>
 
@@ -3475,15 +3476,11 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 <template x-for="desa in desaListFiltered" :key="desa">
                   <div @click="toggleDesa(desa)"
                     style="display:flex;align-items:center;gap:9px;padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s"
-                    :style="desaSelected.includes(desa)?'background:var(--surface-2)':''"
-                    @mouseenter="$el.style.background=desaSelected.includes(desa)?'var(--surface-2)':'var(--surface-elevated)'"
-                    @mouseleave="$el.style.background=desaSelected.includes(desa)?'var(--surface-2)':''">
-                    <div style="width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
-                      :style="desaSelected.includes(desa)?'background:var(--brand);border:1.5px solid var(--brand)':'background:transparent;border:1.5px solid var(--text-3)'">
-                      <svg x-show="desaSelected.includes(desa)" width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.8 7L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </div>
-                    <span style="font-size:12px;flex:1;transition:color .15s" :style="desaSelected.includes(desa)?'color:var(--text-1);font-weight:600':'color:var(--text-2)'" x-text="desa"></span>
-                    <span style="font-size:10px;color:var(--text-3);background:var(--surface-elevated);border-radius:10px;padding:1px 6px;border:1px solid var(--border)" x-text="(desaStats[desa]?.avail||0)+' avail'"></span>
+                    :style="desaSelected.includes(desa)?'background:rgba(201,60,32,.07);box-shadow:inset 3px 0 0 var(--brand)':''"
+                    @mouseenter="if(!desaSelected.includes(desa))$el.style.background='var(--surface-elevated)'"
+                    @mouseleave="if(!desaSelected.includes(desa))$el.style.background=''">
+                    <span style="font-size:12px;flex:1" :style="desaSelected.includes(desa)?'color:var(--brand);font-weight:700':'color:var(--text-2)'" x-text="desa"></span>
+                    <span style="font-size:10px;color:var(--text-3);background:var(--surface-elevated);border-radius:10px;padding:1px 6px;border:1px solid var(--border)" x-text="(desaStats[desa]?.avail||0)+' ODP'"></span>
                   </div>
                 </template>
               </div>
@@ -3507,14 +3504,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                 <template x-for="sf in sfListFiltered" :key="sf.username">
                   <div @click="toggleSF(sf.username)"
                     style="display:flex;align-items:center;gap:9px;padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s"
-                    :style="sfSelected.includes(sf.username)?'background:var(--surface-2)':''"
-                    @mouseenter="$el.style.background=sfSelected.includes(sf.username)?'var(--surface-2)':'var(--surface-elevated)'"
-                    @mouseleave="$el.style.background=sfSelected.includes(sf.username)?'var(--surface-2)':''">
-                    <div style="width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"
-                      :style="sfSelected.includes(sf.username)?'background:var(--brand);border:1.5px solid var(--brand)':'background:transparent;border:1.5px solid var(--text-3)'">
-                      <svg x-show="sfSelected.includes(sf.username)" width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.8 7L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </div>
-                    <span style="font-size:12px;flex:1;transition:color .15s" :style="sfSelected.includes(sf.username)?'color:var(--text-1);font-weight:600':'color:var(--text-2)'" x-text="sf.nama"></span>
+                    :style="sfSelected.includes(sf.username)?'background:rgba(201,60,32,.07);box-shadow:inset 3px 0 0 var(--brand)':''"
+                    @mouseenter="if(!sfSelected.includes(sf.username))$el.style.background='var(--surface-elevated)'"
+                    @mouseleave="if(!sfSelected.includes(sf.username))$el.style.background=''">
+                    <span style="font-size:12px;flex:1" :style="sfSelected.includes(sf.username)?'color:var(--brand);font-weight:700':'color:var(--text-2)'" x-text="sf.nama"></span>
                     <span style="font-size:10px;color:var(--text-3);font-family:monospace;letter-spacing:.3px" x-text="sf.username"></span>
                   </div>
                 </template>
@@ -3547,8 +3540,10 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
             </div>
             <div style="flex:1"></div>
             <button @click="generateDraft()" :disabled="generating"
-              style="padding:11px 28px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:800;letter-spacing:.3px;display:flex;align-items:center;gap:8px;transition:opacity .15s;box-shadow:0 3px 12px rgba(201,60,32,.35)"
-              :style="generating?'background:#999;cursor:not-allowed':'background:linear-gradient(135deg,var(--brand),#a83018);color:#fff'">
+              style="padding:10px 26px;border-radius:12px;border:none;cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;transition:all .2s;box-shadow:0 2px 8px rgba(201,60,32,.28)"
+              :style="generating?'background:var(--surface-border);color:var(--text-3);cursor:not-allowed;box-shadow:none':'background:linear-gradient(135deg,var(--brand) 0%,#a83018 100%);color:#fff'"
+              @mouseenter="if(!generating)$el.style.boxShadow='0 4px 16px rgba(201,60,32,.4)'"
+              @mouseleave="if(!generating)$el.style.boxShadow='0 2px 8px rgba(201,60,32,.28)'">
               <span x-show="!generating" style="font-size:16px">⚡</span>
               <span x-show="generating" style="font-size:14px">⏳</span>
               <span x-show="!generating">Generate Draft</span>
