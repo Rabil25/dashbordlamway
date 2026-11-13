@@ -2254,13 +2254,19 @@
                   <div class="wz-pick-tools">
                     <button type="button" class="btn btn-xs btn-ghost" @click="selectAllDesa()" :disabled="!desaListFiltered.length">Pilih semua</button>
                     <button type="button" class="btn btn-xs btn-ghost" @click="clearDesa()" x-show="desaSelected.length">Kosongkan</button>
+                    <span class="wz-seg" role="group" aria-label="Urutan desa">
+                      <button type="button" :class="{on: desaSort==='dekat'}" :aria-pressed="desaSort==='dekat'" @click="desaSort='dekat'" title="Urut dari yang terdekat dengan desa terpilih">Terdekat</button>
+                      <button type="button" :class="{on: desaSort==='az'}" :aria-pressed="desaSort==='az'" @click="desaSort='az'">A–Z</button>
+                    </span>
                   </div>
+                  <div class="wz-sort-hint" x-show="desaSort==='dekat'" x-text="desaSelected.length ? 'Diurutkan dari yang terdekat dengan desa terpilih' : 'Pilih 1 desa, daftar akan diurutkan dari yang terdekat'"></div>
                   <div class="wz-list">
                     <div class="wz-list-empty" x-show="!desaListFiltered.length" x-text="form.kab ? 'Tidak ada desa dengan ODP tersedia' : 'Pilih kabupaten terlebih dahulu'"></div>
                     <template x-for="desa in desaListFiltered" :key="desa">
                       <button type="button" class="wz-check" :class="{on: desaSelected.includes(desa)}" :aria-pressed="desaSelected.includes(desa)" @click="toggleDesa(desa)">
                         <span class="wz-box"></span>
                         <span class="wz-check-name" x-text="desa"></span>
+                        <span class="wz-km" x-show="desaJarakLabel(desa)" x-text="desaJarakLabel(desa)"></span>
                         <span class="wz-check-meta" x-text="(desaStats[desa]?.avail||0)+' ODP'"></span>
                       </button>
                     </template>

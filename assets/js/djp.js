@@ -28,6 +28,7 @@ function djpPlanData() {
     desaSelected: [],
     sfSelected:   [],
     desaSearch:   '',
+    desaSort:     'dekat',   // 'dekat' = urut jarak dari desa terpilih · 'az' = abjad
     sfSearch:     '',
     // ── Generate ──
     draftPlan:   [],
@@ -190,9 +191,52 @@ function djpPlanData() {
           .filter(o => o.kab === kab && (o.avai||0) > 0 && o.desa)
           .map(o => o.desa)
       );
-      const all = [...desaSet].sort();
+      let all = [...desaSet].sort();
       const q = this.desaSearch.trim().toLowerCase();
-      return q ? all.filter(d => d.toLowerCase().includes(q)) : all;
+      if (q) all = all.filter(d => d.toLowerCase().includes(q));
+      // Mode "Terdekat": desa terpilih di atas, sisanya urut jarak dari titik tengah desa terpilih
+      const dist = this.desaDistMap;
+      if (this.desaSort === 'dekat' && dist) {
+        const sel = this.desaSelected.filter(d => all.includes(d));
+        const rest = all.filter(d => !this.desaSelected.includes(d))
+          .sort((a, b) => (dist[a] ?? 1e9) - (dist[b] ?? 1e9));
+        return [...sel, ...rest];
+      }
+      return all;
+    },
+
+    // Titik tengah ODP per desa (kab terpilih)
+    get desaCentroid() {
+      const kab = this.form.kab, acc = {};
+      if (!kab) return acc;
+      this._odpAll.forEach(o => {
+        if (o.kab !== kab || !o.desa) return;
+        const la = parseFloat(o.lat), ln = parseFloat(o.lng);
+        if (!la || !ln) return;
+        const a = acc[o.desa] || (acc[o.desa] = { la: 0, ln: 0, n: 0 });
+        a.la += la; a.ln += ln; a.n++;
+      });
+      const out = {};
+      Object.entries(acc).forEach(([d, a]) => { out[d] = { lat: a.la / a.n, lng: a.ln / a.n }; });
+      return out;
+    },
+
+    // Jarak (km) tiap desa ke titik tengah desa-desa terpilih; null bila belum ada yang dipilih
+    get desaDistMap() {
+      const c = this.desaCentroid;
+      const pts = this.desaSelected.map(d => c[d]).filter(Boolean);
+      if (!pts.length) return null;
+      const lat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+      const lng = pts.reduce((s, p) => s + p.lng, 0) / pts.length;
+      const out = {};
+      Object.entries(c).forEach(([d, p]) => { out[d] = haversineKm(lat, lng, p.lat, p.lng); });
+      return out;
+    },
+    desaJarakLabel(d) {
+      const m = this.desaDistMap;
+      if (!m || this.desaSelected.includes(d) || m[d] == null) return '';
+      const km = m[d];
+      return (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km)) + ' km';
     },
 
     // ── Getters: SF list dengan search ──

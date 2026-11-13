@@ -386,3 +386,9 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
   .wz-foot > span:empty{display:none}
 }
 @media (max-width:420px){ .wz-lbl .num{display:none} }
+.wz-seg{margin-left:auto;display:inline-flex;background:var(--surface-2);border-radius:8px;padding:2px}
+.wz-seg button{all:unset;cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;color:var(--text-2)}
+.wz-seg button.on{background:var(--surface-card);color:var(--brand);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.wz-seg button:focus-visible{outline:2px solid var(--brand)}
+.wz-sort-hint{font-size:10.5px;color:var(--text-2);margin-top:-4px}
+.wz-km{font-size:10.5px;font-weight:600;color:var(--info,#2563eb);background:color-mix(in srgb,var(--info,#2563eb) 10%,transparent);border-radius:10px;padding:1px 7px;white-space:nowrap}
