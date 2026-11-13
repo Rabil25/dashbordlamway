@@ -522,7 +522,9 @@ function handleAuth(type, params) {
 }
 
 // ── Verifikasi token: cek cache dulu, baru baca sheet ────────
-const CACHE_TTL_SESSION = 300; // 5 menit cache session verify
+// 30 menit: aman karena logout/reject/ganti password kini menghapus cache (dropSessionCache).
+// Cache miss = membuka workbook Monitoring HH yang besar (beberapa detik) → jarang terjadi.
+const CACHE_TTL_SESSION = 1800;
 
 function verifyToken(token) {
   const cache    = CacheService.getScriptCache();

@@ -184,10 +184,12 @@ function djpPlanSave(params) {
     return { ok:false, error:'Server sedang memproses simpan lain. Coba lagi sebentar.' };
   }
 
+  const _t0 = Date.now(), _ms = {};
   try {
     const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
     const ws = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
     if (!ws) return { ok:false, error:'Sheet DJP_Plan tidak ditemukan.' };
+    _ms.open = Date.now() - _t0;
 
     const now = new Date().toISOString();
     const dibuat_oleh = auth.user.username;
@@ -209,6 +211,7 @@ function djpPlanSave(params) {
       tglSet[t] = true;
     });
     const replaced = djpDeletePlanRows_(ws, keySet);
+    _ms.hapusLama = Date.now() - _t0;
 
     const toAppend = rows.map(r => [
       r.tgl          || '',
@@ -234,14 +237,14 @@ function djpPlanSave(params) {
         .setValues(batch);
     }
 
-    SpreadsheetApp.flush();
 
     // Invalidate cache untuk semua tanggal yang tersentuh
     try {
       CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_plan_' + t));
     } catch(e) {}
 
-    return { ok:true, saved: toAppend.length, replaced: replaced };
+    _ms.total = Date.now() - _t0;
+    return { ok:true, saved: toAppend.length, replaced: replaced, _ms: _ms };
   } catch(e) {
     return { ok:false, error:'djpPlanSave: ' + e.message };
   } finally {
@@ -343,7 +346,6 @@ function djpPlanDelete(params) {
     const keySet = {};
     keySet[tgl + '|' + username_sf] = true;
     const deleted = djpDeletePlanRows_(ws, keySet);
-    SpreadsheetApp.flush();
 
     // Invalidate cache
     try { CacheService.getScriptCache().remove('djp_plan_' + tgl); } catch(e) {}

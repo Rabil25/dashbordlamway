@@ -4656,9 +4656,18 @@ function app() {
 
         // Belum di cache atau forceRefresh → 1 request ke endpoint type=all
         const base = getDataUrl(this.cfg);
-        // forceRefresh (tombol Refresh) → lewati cache CDN 5 menit
-        const url  = `${base}?token=${GAS_TOKEN}&type=all&bulan=${bulanStr}` + (forceRefresh ? `&_=${Date.now()}` : '');
-        const res  = await fetch(url);
+        // SEC-04: API Vercel hanya melayani user login → kirim session token di header
+        // (bukan di URL). Fallback ke Apps Script tetap memakai token lama.
+        const viaGas = base.includes('script.google.com');
+        const url  = viaGas ? `${base}?token=${GAS_TOKEN}&type=all&bulan=${bulanStr}`
+                            : `${base}?type=all&bulan=${bulanStr}` + (forceRefresh ? `&_=${Date.now()}` : '');
+        const res  = await fetch(url, viaGas ? {} : { headers: { Authorization: 'Bearer ' + this.sessionToken } });
+        if (res.status === 401) {
+          this.loading = false;
+          this.doLogout();
+          this.toast('Sesi berakhir. Silakan login ulang.', 'err');
+          return;
+        }
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const json = await res.json();
         if (!json.ok) throw new Error(json.error || 'GAS error (all)');
@@ -6742,9 +6751,14 @@ function djpPlanData() {
         try { localStorage.removeItem('djp_draft_' + tglSimpan); } catch(e) {}
         try { localStorage.removeItem('djp_plandata_' + tglSimpan); } catch(e) {}
         this.draftPlan = [];
+        // Server sudah mengganti plan SF-SF ini pada tanggal ini → susun ulang tampilan secara lokal
+        const sfSaved = new Set(allRows.map(r => r.username_sf));
+        const sebelumnya = (this.viewTgl === tglSimpan ? (this.planData || []) : [])
+          .filter(r => !sfSaved.has(r.username_sf || r[1]));
         this.viewTgl = tglSimpan;
+        this.planData = [...sebelumnya, ...allRows.map(r => ({ ...r }))];
+        try { localStorage.setItem('djp_plandata_' + tglSimpan, JSON.stringify({ data: this.planData, ts: Date.now() })); } catch(e) {}
         this._toast(`✅ ${d.saved || allRows.length} ODP tersimpan untuk ${activeSFs.length} SF`, 'success');
-        await this.loadPlan(true);
       } catch(e) {
         // Gagal → draft tetap ada di layar dan di localStorage, user bisa klik Simpan lagi
         this._toast('❌ Gagal menyimpan: ' + (e.message || 'koneksi terputus') + '. Draft masih ada, coba Simpan lagi.', 'error', 8000);
@@ -6802,8 +6816,9 @@ function djpPlanData() {
         const r = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_plan_delete', session_token:st, tgl:this.viewTgl, username_sf }) });
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal hapus');
-        try { localStorage.removeItem('djp_plandata_' + this.viewTgl); } catch(e) {}
-        await this.loadPlan(true);
+        // Hapus dari tampilan lokal (server sudah menghapus) — tanpa muat ulang dari GAS
+        this.planData = (this.planData || []).filter(r => (r.username_sf || r[1]) !== username_sf);
+        try { localStorage.setItem('djp_plandata_' + this.viewTgl, JSON.stringify({ data: this.planData, ts: Date.now() })); } catch(e) {}
         this._toast(`🗑 Plan ${username_sf} dihapus (${d.deleted} baris)`, 'info');
       } catch(e) { this._toast('❌ ' + e.message, 'error', 6000); }
     },

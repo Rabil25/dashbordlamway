@@ -1,26 +1,39 @@
 // ================================================================
 //  Vercel Serverless Function – Data endpoint
-//  GET /api/data?token=lpgLampung2026&type=all&bulan=10
+//  GET /api/data?type=all&bulan=10
+//  Header: Authorization: Bearer <session token dari login>
 //
 //  Menggantikan GAS endpoint untuk READ data (bukan auth).
 //  Auth masih diteruskan ke GAS_AUTH_URL.
 // ================================================================
 
 const { getAllData, getRawSheetCached, getListBulan } = require('../lib/sheets');
+const { verifySession } = require('../lib/session');
 
-const DATA_TOKEN = process.env.DATA_TOKEN || 'lpgLampung2026';
+// Token bersama lama HANYA berlaku bila env DATA_TOKEN diisi di Vercel
+// (untuk integrasi non-browser, mis. bot). Tidak ada lagi nilai default di kode.
+const DATA_TOKEN = process.env.DATA_TOKEN || '';
 
 module.exports = async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Hanya dipanggil dari situs ini sendiri (same-origin) → tidak perlu CORS terbuka
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization');
+  if (req.method === 'OPTIONS') return res.status(204).end();
 
   const { token, type = '', bulan = '' } = req.query;
 
-  // Validasi token
-  if (token !== DATA_TOKEN) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  // SEC-04: wajib session login yang valid (atau token integrasi bila diset di env)
+  const auth = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  let allowed = false;
+  if (type.toLowerCase() === 'ping') allowed = true;
+  else if (DATA_TOKEN && token === DATA_TOKEN) allowed = true;
+  else if (auth) {
+    try { allowed = !!(await verifySession(auth)); }
+    catch (e) { console.error('verifySession:', e.message); return res.status(503).json({ ok: false, error: 'Verifikasi sesi gagal, coba lagi.' }); }
+  }
+  if (!allowed) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(401).json({ ok: false, error: 'Sesi tidak valid. Silakan login ulang.' });
   }
 
   if (!process.env.SHEETS_API_KEY) {
@@ -60,14 +73,13 @@ module.exports = async function handler(req, res) {
         data = { ok: false, error: 'Unknown type. Use: all | bulan_ini | update_sf | list_bulan | wilayah | ping' };
     }
 
-    // Cache di CDN Vercel: request yang sama dalam 5 menit dilayani instan dari edge,
-    // lalu diperbarui di belakang layar (stale-while-revalidate). Hanya respons sukses yang di-cache.
-    if (data && data.ok) {
-      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=900');
-    }
+    // Data hanya untuk user login → TIDAK boleh di-cache CDN publik.
+    // (Vercel juga tidak meng-cache request ber-header Authorization.)
+    // Cache memori server 10 menit (lib/sheets.js) tetap berlaku.
+    res.setHeader('Cache-Control', 'private, no-store');
     return res.status(200).json(data);
   } catch (err) {
     console.error('Data handler error:', err.message);
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Gagal membaca data sheet.' });
   }
 };
