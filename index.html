@@ -4028,7 +4028,6 @@ table td { font-size: max(12px, 1em); }
 // ============================================================
 const DEFAULT_GAS_URL  = 'https://script.google.com/macros/s/AKfycbzBskwSjBBScoZPdwkZxKNJ9PcN5Yihb-8rVAwq26O2dodfraHxxClqlL379ryM04jupA/exec';
 const DEFAULT_VERCEL_URL = 'https://dashbordlamway.vercel.app/api/data';
-const GAS_TOKEN        = 'lpgLampung2026';
 
 // Pilih URL terbaik: data endpoint pakai Vercel jika tersedia, auth tetap GAS
 function getDataUrl(cfg) {
@@ -4659,7 +4658,7 @@ function app() {
         // SEC-04: API Vercel hanya melayani user login → kirim session token di header
         // (bukan di URL). Fallback ke Apps Script tetap memakai token lama.
         const viaGas = base.includes('script.google.com');
-        const url  = viaGas ? `${base}?token=${GAS_TOKEN}&type=all&bulan=${bulanStr}`
+        const url  = viaGas ? `${base}?session_token=${encodeURIComponent(this.sessionToken)}&type=all&bulan=${bulanStr}`
                             : `${base}?type=all&bulan=${bulanStr}` + (forceRefresh ? `&_=${Date.now()}` : '');
         const res  = await fetch(url, viaGas ? {} : { headers: { Authorization: 'Bearer ' + this.sessionToken } });
         if (res.status === 401) {
@@ -5187,7 +5186,7 @@ function app() {
       try {
         // Fetch GAS (PS per kec/desa) + odp.json (port available per kec/desa) in parallel
         const [gasRes, odpRes] = await Promise.all([
-          fetch((this.cfg.gasUrl || DEFAULT_GAS_URL) + '?token=' + encodeURIComponent(GAS_TOKEN) + '&type=deepdive_odp&bulan=' + encodeURIComponent(this.cfg.bulan)),
+          fetch((this.cfg.gasUrl || DEFAULT_GAS_URL) + '?session_token=' + encodeURIComponent(this.sessionToken) + '&type=deepdive_odp&bulan=' + encodeURIComponent(this.cfg.bulan)),
           fetchOdpJson()
         ]);
         const gasText = await gasRes.text();
@@ -5343,7 +5342,7 @@ function app() {
         // Fetch odp.json + GAS deepdive_odp (PS per desa) secara paralel
         const [odpRes, gasRes] = await Promise.all([
           fetchOdpJson(),
-          fetch(`${gasBase}?token=${GAS_TOKEN}&type=deepdive_odp&bulan=${encodeURIComponent(bulan)}`)
+          fetch(`${gasBase}?session_token=${encodeURIComponent(this.sessionToken)}&type=deepdive_odp&bulan=${encodeURIComponent(bulan)}`)
         ]);
         const odpRaw  = await odpRes.json();
         const gasText = await gasRes.text();

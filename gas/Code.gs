@@ -9,7 +9,7 @@
 
 const CONFIG = {
   SHEET_ID: '1IhU91CyYKQRDLysUYgpPn258ieoADixO30Cl5YS3YeM',
-  TOKEN:    'lpgLampung2026',
+  // TOKEN bersama dihapus (13 Nov 2026) — endpoint data kini memakai session login
   TIMEZONE: 'Asia/Jakarta',
   TOKEN_TTL_MS: 24 * 60 * 60 * 1000,  // 24 jam
 };
@@ -125,9 +125,12 @@ function doGet(e) {
     }
   }
 
-  // ── Data endpoints butuh CONFIG.TOKEN ─────────────────────
-  if (params.token !== CONFIG.TOKEN) {
-    return jsonOut({ ok:false, error:'Unauthorized' });
+  // ── Data endpoints: wajib session login yang valid ───────────
+  // Token bersama lama tidak lagi diterima: nilainya tertulis di kode
+  // halaman & repo publik, jadi siapa pun bisa memakainya.
+  if (type !== 'ping') {
+    const sess = verifyToken((params.session_token || '').toString().trim());
+    if (!sess.ok) return jsonOut({ ok:false, error:'Unauthorized' });
   }
 
   try {
