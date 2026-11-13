@@ -60,6 +60,11 @@ module.exports = async function handler(req, res) {
         data = { ok: false, error: 'Unknown type. Use: all | bulan_ini | update_sf | list_bulan | wilayah | ping' };
     }
 
+    // Cache di CDN Vercel: request yang sama dalam 5 menit dilayani instan dari edge,
+    // lalu diperbarui di belakang layar (stale-while-revalidate). Hanya respons sukses yang di-cache.
+    if (data && data.ok) {
+      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=900');
+    }
     return res.status(200).json(data);
   } catch (err) {
     console.error('Data handler error:', err.message);

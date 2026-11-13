@@ -57,7 +57,7 @@
   /* ── Text ── */
   --text-1:          #eef2ff;
   --text-2:          #7a8ba8;
-  --text-3:          #374151;
+  --text-3:          #8b97ad;  /* was #374151 (1.8:1) → 6.3:1 */
 
   --font:            'Poppins', sans-serif;
   --sidebar-w:       220px;
@@ -66,6 +66,14 @@
   --r-lg:            12px;
   --dur:             180ms;
   --ease:            cubic-bezier(.22,.68,0,1.2);
+
+  /* ── Alias: nama lama yang dipakai halaman DJP/Prioritas → token resmi ── */
+  --border:          var(--surface-border);
+  --surface-2:       var(--surface-elevated);
+  --card-bg:         var(--surface-card);
+  --bg-2:            var(--surface-elevated);
+  --surface-active:  var(--brand-dim);
+  --clr-muted:       var(--text-3);
 }
 
 /* ══ LIGHT THEME — Warm Red/Brown (Tiger Eyes style) ══ */
@@ -88,7 +96,7 @@
   --success:         #27863a;
   --success-dim:     rgba(39,134,58,.10);
   --info:            #0e7a9e;
-  --warning:         #c07010;
+  --warning:         #a15c0a;  /* was #c07010 (3.8:1) → 5.2:1 */
   --warning-dim:     rgba(192,112,16,.10);
   --danger:          #b91c1c;
   --danger-dim:      rgba(185,28,28,.10);
@@ -102,7 +110,7 @@
 
   --text-1:          #1c0e08;
   --text-2:          #6b4f42;
-  --text-3:          #b09080;
+  --text-3:          #7d6052;  /* was #b09080 (2.9:1) → ≥4.7:1 */
 }
 
 /* Light theme body */
@@ -183,7 +191,7 @@
 [data-theme="light"] .sidebar-brand .brand-sub { color: rgba(255,255,255,.4); }
 [data-theme="light"] .sidebar-footer { color: rgba(255,255,255,.3); border-top-color: rgba(255,255,255,.1); }
 [data-theme="light"] .sidebar-footer span { color: rgba(255,255,255,.55); }
-[data-theme="light"] .nav-group-lbl { color: rgba(255,255,255,.3); }
+[data-theme="light"] .nav-group-lbl { color: #9a9089; }
 [data-theme="light"] .nav-sub-item { color: rgba(255,255,255,.55); }
 [data-theme="light"] .nav-sub-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
 [data-theme="light"] .nav-sub-item.active { color: #ff9070; background: rgba(201,60,32,.2); }
@@ -668,14 +676,14 @@ table.te-tbl tbody tr:hover td { background: var(--surface-hover); }
 
 /* ── NAV GROUPS (Tiger Eyes style) ── */
 .nav-group-lbl {
-  font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text-3); padding: 14px 14px 4px;
 }
 .nav-sub-item {
   display: flex; align-items: center; gap: 9px;
   padding: 7px 14px 7px 28px; border-radius: 7px; margin: 1px 8px;
-  font-size: 11px; color: var(--text-2); cursor: pointer; border: none;
-  background: none; width: calc(100% - 16px); text-align: left; transition: all .15s;
+  font-size: 12.5px; color: var(--text-2); cursor: pointer; border: none;
+  background: none; width: calc(100% - 16px); text-align: left; transition: background .15s, color .15s;
 }
 .nav-sub-item:hover { background: var(--surface-hover); color: var(--text-1); }
 .nav-sub-item.active { background: var(--surface-active); color: var(--brand); font-weight: 600; }
@@ -1357,10 +1365,64 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
     height: 320px !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   PERBAIKAN AUDIT Nov 2026 — aksesibilitas, mobile, tabel
+   ════════════════════════════════════════════════════════════ */
+/* Fokus keyboard terlihat (WCAG 2.4.7) — hanya saat navigasi keyboard */
+:focus-visible { outline: 2px solid var(--brand) !important; outline-offset: 2px; border-radius: 4px; }
+button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
+
+/* Hormati pengaturan "kurangi animasi" di perangkat */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Angka tabel & KPI rata dan tidak "loncat" saat berubah */
+table td, .stat-card__val, .te-kpi-val { font-variant-numeric: tabular-nums; }
+
+/* Header tabel menempel saat discroll */
+.tbl-wrap thead th, .tbl-scroll thead th { position: sticky; top: 0; z-index: 2; }
+
+@media (max-width: 768px) {
+  /* Top bar: dua baris, semua kontrol terlihat (sebelumnya terdorong keluar layar) */
+  .topbar { flex-wrap: wrap !important; overflow-x: visible !important; row-gap: 6px; padding: 8px 10px 8px 2px; }
+  .topbar-title { flex: 1 1 auto; min-width: 0; font-size: 14px; }
+  .cluster-btn { font-size: 11.5px; padding: 6px 12px; min-height: 32px; }
+  .topbar-bulan-select { font-size: 12px; height: 32px; }
+  .datepicker-btn { font-size: 12px; min-height: 32px; }
+  .topbar .btn { font-size: 12px; min-height: 32px; }
+
+  /* Top bar ringkas di HP: sembunyikan kontrol yang jarang dipakai di lapangan */
+  .topbar [aria-label="Export halaman sebagai PDF"],
+  .topbar [aria-label="Konfigurasi API"],
+  .topbar .glossary-btn,
+  .topbar .profile-name, .topbar .profile-role-badge { display: none !important; }
+  .topbar-title { flex-basis: 100%; }
+
+  /* Plan DJP: form satu kolom di HP (pilihan tidak lagi terpotong) */
+  .djp-grid-3, .djp-grid-2 { grid-template-columns: 1fr !important; }
+  .djp-grid-3 .select, .djp-grid-3 input { min-height: 40px; font-size: 14px; }
+
+  /* Tabel: kolom pertama menempel saat digeser ke samping + bayangan petunjuk geser */
+  .tbl-wrap { position: relative; background:
+      linear-gradient(to right, var(--surface-card) 30%, transparent) left / 24px 100% no-repeat local,
+      linear-gradient(to left, var(--surface-card) 30%, transparent) right / 24px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.14), transparent) left / 10px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.14), transparent) right / 10px 100% no-repeat scroll; }
+  .tbl-wrap tbody td:first-child, .tbl-wrap thead th:first-child,
+  .tbl-scroll tbody td:first-child, .tbl-scroll thead th:first-child { position: sticky; left: 0; background: var(--surface-card); z-index: 1; }
+  .tbl-wrap thead th:first-child, .tbl-scroll thead th:first-child { z-index: 3; }
+  .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table td, table th { font-size: 12px; }
+
+  /* Target sentuh minimal ±40px untuk tombol kecil di halaman DJP */
+  .page button { min-height: 36px; }
+}
 </style>
 </head>
 
-<body x-data="app()" x-init="init()">
+<body x-data="app()">
 
 <!-- SKIP NAVIGATION -->
 <a href="#main-content" class="skip-nav">Lewati navigasi</a>
@@ -1721,7 +1783,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div>
         </div>
       </div>
-      <button class="btn" @click="loadData()" :disabled="loading" aria-label="Refresh data">
+      <button class="btn" @click="loadData(true)" :disabled="loading" aria-label="Refresh data">
         <span :style="loading ? 'display:none' : ''">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="23,4 23,11 16,11"/><polyline points="1,20 1,13 8,13"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 11M1 13l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </span>
@@ -3428,7 +3490,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
 
           <div style="padding:16px">
           <!-- Baris 1: Tanggal · Kab · Kantor -->
-          <div style="display:grid;grid-template-columns:148px 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
+          <div class="djp-grid-3" style="display:grid;grid-template-columns:148px 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
             <div>
               <label class="input-lbl">Tanggal</label>
               <input type="date" class="select" style="width:100%" x-model="form.tgl">
@@ -3454,7 +3516,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
           </div>
 
           <!-- Baris 2: Pilih Desa + Pilih SF -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div class="djp-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
 
             <!-- Panel Desa -->
             <div>
@@ -3696,7 +3758,7 @@ table.sfp-tbl tbody tr:hover td { background: var(--surface-hover); }
                       </tr>
                     </thead>
                     <tbody>
-                      <template x-for="(odp, i) in sf.odps" :key="odp.odp">
+                      <template x-for="(odp, i) in sf.odps" :key="i+'|'+odp.odp">
                         <tr style="border-top:1px solid var(--border);transition:background .1s" :style="i%2===1?'background:var(--surface-2)':''"
                           @mouseenter="$el.style.background='var(--surface-elevated)'" @mouseleave="$el.style.background=i%2===1?'var(--surface-2)':''">
                           <td style="padding:6px 8px;color:var(--text-3);font-size:11px;text-align:center;font-variant-numeric:tabular-nums" x-text="i+1"></td>
@@ -4009,6 +4071,23 @@ const C = {
   SPEED:       41,   // DT
 };
 
+// ── odp.json dimuat SEKALI, dipakai bersama semua halaman (sebelumnya 5 kali fetch) ──
+let _odpPromise = null;
+function getOdpJson() {
+  if (!_odpPromise) {
+    _odpPromise = fetch('data/odp.json').then(r => { if (!r.ok) throw new Error('odp.json HTTP ' + r.status); return r.json(); })
+      .catch(e => { _odpPromise = null; throw e; });
+  }
+  return _odpPromise;
+}
+// Bungkus agar kode lama yang memanggil res.json() tetap jalan
+function fetchOdpJson() { return getOdpJson().then(d => ({ ok: true, json: () => Promise.resolve(d) })); }
+
+// Escape teks dari sheet sebelum masuk HTML (pop-up peta) — cegah injeksi HTML
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 // Cluster config
 const CLUSTER = {
   'Lampung Barat': { kab: ['LAMPUNG BARAT','TANGGAMUS','PESISIR BARAT'] },
@@ -4213,6 +4292,8 @@ function app() {
 
     // ── Init ──
     async init() {
+      // Store bersama agar komponen DJP memakai URL Apps Script dari Pengaturan
+      try { Alpine.store('cfg', this.cfg); } catch(e) {}
       // Expose deferred render to window for nested x-data components (date picker)
       window._deferredRender = () => this._deferredRender();
       window._deferredUpdateTgl = (a, b) => this._deferredUpdateTgl(a, b);
@@ -4220,43 +4301,22 @@ function app() {
       // Apply saved theme
       document.documentElement.setAttribute('data-theme', this.themeMode);
 
-      // Verifikasi session token jika ada
+      // Verifikasi session token jika ada — PARALEL dengan muat data.
+      // Sebelumnya data baru diminta setelah auth_verify selesai (~10 detik ke Apps Script).
       if (this.sessionToken && this.currentUser) {
-        // Langsung set loading=true agar skeleton muncul, bukan empty state
         this.loading = true;
-        try {
-          const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
-          const url = gasBase + '?type=auth_verify&session_token=' + encodeURIComponent(this.sessionToken);
-          const res = await fetch(url);
-          const json = await res.json();
-          if (!json.ok) {
-            // Token expired/invalid → paksa login ulang
-            this.loading       = false;
-            this.currentUser   = null;
-            this.sessionToken  = '';
-            localStorage.removeItem('wok_user');
-            localStorage.removeItem('wok_token');
-            return;
-          }
-          // Refresh user data
-          this.currentUser = json.user;
-          localStorage.setItem('wok_user', JSON.stringify(json.user));
-        } catch(e) {
-          // Network error: biarkan masuk (offline mode), loading akan reset di loadData
-        }
+        if (this.cfg.gasUrl) this.loadData();
+        const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
+        fetch(gasBase + '?type=auth_verify&session_token=' + encodeURIComponent(this.sessionToken))
+          .then(r => r.json())
+          .then(json => {
+            if (!json.ok) { this.doLogout(); this.toast('Sesi habis, silakan login ulang.', 'err'); return; }
+            this.currentUser = json.user;
+            localStorage.setItem('wok_user', JSON.stringify(json.user));
+          })
+          .catch(() => { /* jaringan error: tetap pakai sesi lokal */ });
       } else {
-        // Tidak ada session → tampilkan login (auth-overlay sudah handle via x-show)
         this.currentUser = null;
-      }
-
-      // Jika sudah login, langsung muat data (loading sudah true dari atas)
-      if (this.currentUser) {
-        if (this.cfg.gasUrl) {
-          this.loadData();
-        } else {
-          this.loading = false;
-          this.showConfig = this.currentUser.role === 'admin';
-        }
       }
 
       window.addEventListener('resize', () => {
@@ -4590,7 +4650,8 @@ function app() {
 
         // Belum di cache atau forceRefresh → 1 request ke endpoint type=all
         const base = getDataUrl(this.cfg);
-        const url  = `${base}?token=${GAS_TOKEN}&type=all&bulan=${bulanStr}`;
+        // forceRefresh (tombol Refresh) → lewati cache CDN 5 menit
+        const url  = `${base}?token=${GAS_TOKEN}&type=all&bulan=${bulanStr}` + (forceRefresh ? `&_=${Date.now()}` : '');
         const res  = await fetch(url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const json = await res.json();
@@ -4610,11 +4671,13 @@ function app() {
           const listBulanRaw = json.listBulan.bulan;
           if (listBulanRaw.length > 0) {
             const bulanAvail = listBulanRaw.map(String);
-            if (!bulanAvail.includes(bulanStr)) {
-              this.cfg.bulan = String(Math.max(...listBulanRaw));
-              this.saveCfg();
-            }
             this._availBulanList = listBulanRaw;
+            if (!bulanAvail.includes(bulanStr)) {
+              // Bulan terpilih belum punya data (mis. tanggal 1) → pindah ke bulan terakhir yang ada, muat ulang
+              this.cfg.bulan = String(Math.max(...listBulanRaw));
+              this.loading = false;
+              return this.loadData(forceRefresh);
+            }
           }
         }
 
@@ -5149,7 +5212,7 @@ function app() {
         // Fetch GAS (PS per kec/desa) + odp.json (port available per kec/desa) in parallel
         const [gasRes, odpRes] = await Promise.all([
           fetch((this.cfg.gasUrl || DEFAULT_GAS_URL) + '?token=' + encodeURIComponent(GAS_TOKEN) + '&type=deepdive_odp&bulan=' + encodeURIComponent(this.cfg.bulan)),
-          fetch('data/odp.json')
+          fetchOdpJson()
         ]);
         const gasText = await gasRes.text();
         const odpRaw  = await odpRes.json();
@@ -5303,7 +5366,7 @@ function app() {
         const bulan   = this.cfg.bulan || '';
         // Fetch odp.json + GAS deepdive_odp (PS per desa) secara paralel
         const [odpRes, gasRes] = await Promise.all([
-          fetch('data/odp.json'),
+          fetchOdpJson(),
           fetch(`${gasBase}?token=${GAS_TOKEN}&type=deepdive_odp&bulan=${encodeURIComponent(bulan)}`)
         ]);
         const odpRaw  = await odpRes.json();
@@ -5491,11 +5554,11 @@ function app() {
         }).addTo(map);
 
         marker.bindPopup(`
-          <b>${d.desa}</b> <span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;background:${color}">${d.katLabel}</span><br>
-          ${d.kec} · ${d.kab}<br>
+          <b>${esc(d.desa)}</b> <span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;background:${color}">${d.katLabel}</span><br>
+          ${esc(d.kec)} · ${esc(d.kab)}<br>
           <hr style="margin:4px 0">
           Avail: <b>${d.totalAvail}</b> port · Occ: <b>${Math.round(d.occ_rate*100)}%</b><br>
-          PS Aktif: <b>${d.psAktif||0}</b> · Jarak: <b>${d.nearestDist.toFixed(1)} km</b> dari ${d.nearestOffice}<br>
+          PS Aktif: <b>${d.psAktif||0}</b> · Jarak: <b>${d.nearestDist.toFixed(1)} km</b> dari ${esc(d.nearestOffice)}<br>
           Skor Potensi: <b>${d.skorPotensi}</b>
         `);
 
@@ -5513,7 +5576,7 @@ function app() {
       OFFICES.forEach(of => {
         L.marker([of.lat, of.lng], {
           icon: L.divIcon({ className:'', html:`<div style="background:#4f8ef7;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)">K</div>`, iconSize:[28,28], iconAnchor:[14,14] })
-        }).addTo(map).bindPopup(`<b>Kantor</b><br>${of.name}`);
+        }).addTo(map).bindPopup(`<b>Kantor</b><br>${esc(of.name)}`);
       });
 
       if (bounds.length) map.fitBounds(bounds, { padding: [30, 30] });
@@ -6100,9 +6163,9 @@ function app() {
           fillOpacity: 0.85,
         });
         circle.bindPopup(`<div style="font-family:'Poppins',sans-serif;font-size:12px;line-height:1.7">
-          <b>${r.id}</b><br>
-          SF: <b>${r.sf}</b><br>
-          Status: <b style="color:${color}">${r.status}</b><br>
+          <b>${esc(r.id)}</b><br>
+          SF: <b>${esc(r.sf)}</b><br>
+          Status: <b style="color:${color}">${esc(r.status)}</b><br>
           <small>${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}</small>
         </div>`);
         markers.addLayer(circle);
@@ -6148,9 +6211,8 @@ function app() {
       // Fetch JSON (cache)
       if (!this._odpData) {
         try {
-          const url = 'https://raw.githubusercontent.com/Rabil25/dashbordlamway/main/data/odp.json';
-          const resp = await fetch(url);
-          this._odpData = await resp.json();
+          // Dari situs sendiri (cache bersama), bukan raw.githubusercontent.com
+          this._odpData = await getOdpJson();
         } catch(e) {
           console.error('Gagal load ODP JSON:', e);
           return;
@@ -6180,9 +6242,9 @@ function app() {
           opacity: 0.9,
         });
         circle.bindPopup(`<div style="font-family:'Poppins',sans-serif;font-size:12px;line-height:1.8">
-          <b>${o.odp || '-'}</b><br>
-          Avail: <b>${o.avai ?? '-'}</b> &nbsp;|&nbsp; Total Port: <b>${o.occ ?? '-'}</b><br>
-          <small style="color:#888">${o.kec || ''}, ${o.kab || ''}</small>
+          <b>${esc(o.odp || '-')}</b><br>
+          Avail: <b>${esc(o.avai ?? '-')}</b> &nbsp;|&nbsp; Total Port: <b>${esc(o.occ ?? '-')}</b><br>
+          <small style="color:#888">${esc(o.kec || '')}, ${esc(o.kab || '')}</small>
         </div>`);
         this._odpLayer.addLayer(circle);
       });
@@ -6342,8 +6404,30 @@ function app() {
 // ════════════════════════════════════════════════════════
 // DJP – Plan DJP (v2 — multi-desa + multi-SF generate)
 // ════════════════════════════════════════════════════════
+// Tanggal lokal perangkat (WIB) — toISOString() memakai UTC, jadi sebelum jam 07.00 jatuh ke kemarin
+function localYMD(d = new Date()) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// Toast untuk halaman DJP — warna mengikuti tema (bukan biru/indigo)
+function djpToast(msg, type='info', ms=2800) {
+  const bar = { success:'#27863a', error:'#b91c1c', info:'#c93c20' }[type] || '#c93c20';
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.setAttribute('role', type==='error' ? 'alert' : 'status');
+  Object.assign(t.style, {
+    position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
+    background:'#1c1917', color:'#fff', padding:'11px 18px', borderRadius:'10px',
+    fontSize:'13px', fontWeight:'600', zIndex:'9999', fontFamily:'inherit',
+    boxShadow:'0 6px 20px rgba(0,0,0,.25)', borderLeft:'4px solid ' + bar,
+    maxWidth:'min(92vw,520px)', textAlign:'left', lineHeight:'1.45', transition:'opacity .3s',
+  });
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(), 300); }, ms);
+}
+
 function djpPlanData() {
-  const _today = new Date().toISOString().slice(0,10);
+  const _today = localYMD();
   const _year  = new Date().getFullYear().toString();
   return {
     // ── Setup state ──
@@ -6366,13 +6450,9 @@ function djpPlanData() {
     planLoading: false,
     saving:      false,
 
-    async init() {
-      this._initCluster();
-      try {
-        await Promise.all([this._loadODP(), this._loadSF()]);
-        await this.loadPlan();
-      } catch(e) {}
-    },
+    // init() sengaja kosong: data DJP baru dimuat saat menu Plan DJP dibuka (event page-djp_plan).
+    // Sebelumnya djp_users (~14 dtk) + odp.json 1,2 MB ikut dimuat di halaman dashboard.
+    init() {},
 
     async initPlan() {
       this._initCluster();
@@ -6405,7 +6485,7 @@ function djpPlanData() {
     // ── Load ODP (all, no avai filter — filter at generate time) ──
     async _loadODP() {
       if (this._odpAll.length) return;
-      const r = await fetch('data/odp.json');
+      const r = await fetchOdpJson();
       const raw = await r.json();
       const data = Array.isArray(raw) ? raw : (raw.data || []);
       this._odpAll = data
@@ -6452,8 +6532,9 @@ function djpPlanData() {
         const r = await fetch(`${gasUrl}?type=djp_users&session_token=${encodeURIComponent(st)}&kabs=${kabsParam}`);
         const d = await r.json();
         if (d.ok && d.users && d.users.length) {
-          this.sfList = d.users;
-          try { localStorage.setItem(SF_CACHE_KEY, JSON.stringify({ data: d.users, ts: Date.now() })); } catch(e) {}
+          const seen = new Set();
+          this.sfList = d.users.filter(u => u.username && !seen.has(u.username) && seen.add(u.username));
+          try { localStorage.setItem(SF_CACHE_KEY, JSON.stringify({ data: this.sfList, ts: Date.now() })); } catch(e) {}
           return;
         }
         throw new Error('no users');
@@ -6471,22 +6552,7 @@ function djpPlanData() {
       return (cfg && cfg.gasUrl) || DEFAULT_GAS_URL;
     },
 
-    _toast(msg, type='info') {
-      const colors = { success:'#22c55e', error:'#ef4444', info:'#3b82f6' };
-      const t = document.createElement('div');
-      t.textContent = msg;
-      Object.assign(t.style, {
-        position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
-        background: type==='success'?'#166534':type==='error'?'#7f1d1d':'#1e3a5f',
-        color:'#fff', padding:'10px 20px', borderRadius:'10px',
-        fontSize:'13px', fontWeight:'600', zIndex:'9999',
-        boxShadow:'0 4px 16px rgba(0,0,0,0.3)',
-        borderLeft: '4px solid ' + (colors[type]||colors.info),
-        maxWidth:'90vw', textAlign:'center', transition:'opacity 0.3s',
-      });
-      document.body.appendChild(t);
-      setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(), 300); }, 2800);
-    },
+    _toast(msg, type='info', ms=2800) { djpToast(msg, type, ms); },
 
     // ── Getters: kabupaten list (filtered by cluster) ──
     get kabList() {
@@ -6614,12 +6680,22 @@ function djpPlanData() {
         const maxOdp = this.sfSelected.length * 4;
         const chosen = pool.slice(0, maxOdp);
 
-        // 5. Geographic sort of chosen: by lat then lng
-        chosen.sort((a, b) => {
-          const latA = parseFloat(a.lat)||0, latB = parseFloat(b.lat)||0;
-          if (Math.abs(latA - latB) > 0.0001) return latA - latB;
-          return (parseFloat(a.lng)||0) - (parseFloat(b.lng)||0);
-        });
+        // 5. Urutan geografis ODP terpilih:
+        //    - Kantor Referensi dipilih → urut jarak dari kantor (terdekat dulu), sesuai aturan
+        //      "sort by jarak ke kantor → block-assign 4 ODP/SF"
+        //    - Tanpa kantor → urut lintang lalu bujur (perilaku lama)
+        const kantor = (typeof OFFICES !== 'undefined' ? OFFICES : []).find(o => o.name === this.form.kantor);
+        if (kantor) {
+          const dist = o => haversineKm(kantor.lat, kantor.lng, parseFloat(o.lat)||0, parseFloat(o.lng)||0);
+          chosen.forEach(o => { o._jarakKm = Math.round(dist(o) * 10) / 10; });
+          chosen.sort((a, b) => a._jarakKm - b._jarakKm);
+        } else {
+          chosen.sort((a, b) => {
+            const latA = parseFloat(a.lat)||0, latB = parseFloat(b.lat)||0;
+            if (Math.abs(latA - latB) > 0.0001) return latA - latB;
+            return (parseFloat(a.lng)||0) - (parseFloat(b.lng)||0);
+          });
+        }
 
         // 6. Block-assign to SFs
         const sfObjs = this.sfSelected.map(u => this.sfList.find(s => s.username === u)).filter(Boolean);
@@ -6637,7 +6713,12 @@ function djpPlanData() {
           }));
         } catch(e) {}
         const total = draft.reduce((s, sf) => s + sf.odps.length, 0);
-        this._toast(`✅ Draft dibuat: ${total} ODP untuk ${sfObjs.length} SF`, 'success');
+        const kurang = draft.filter(sf => sf.odps.length < 4).map(sf => sf.nama_sf);
+        if (kurang.length) {
+          this._toast(`⚠️ ODP tersedia hanya ${pool.length}. ${kurang.length} SF dapat kurang dari 4 ODP: ${kurang.slice(0,3).join(', ')}${kurang.length>3?'…':''}. Tambah desa bila perlu.`, 'error', 7000);
+        } else {
+          this._toast(`✅ Draft dibuat: ${total} ODP untuk ${sfObjs.length} SF`, 'success');
+        }
       } catch(e) {
         this._toast('❌ ' + e.message, 'error');
       }
@@ -6674,31 +6755,31 @@ function djpPlanData() {
         }
       }
 
-      // ── OPTIMISTIC SAVE: langsung update UI tanpa nunggu GAS ──
-      // 1. Update planData + cache lokal → UI responsif instan
-      this.planData = allRows.map(r => ({...r}));
-      this.viewTgl = this.form.tgl;
+      // ── SIMPAN JUJUR: UI baru bilang "tersimpan" setelah server mengonfirmasi ──
+      // Draft TIDAK dihapus sampai GAS menjawab ok, jadi simpan yang gagal tidak menghilangkan plan.
+      const tglSimpan = this.form.tgl;
+      this._toast('⏳ Menyimpan ' + allRows.length + ' ODP ke server…', 'info');
       try {
-        const cacheKey = 'djp_plandata_' + this.form.tgl;
-        localStorage.setItem(cacheKey, JSON.stringify({ data: this.planData, ts: Date.now() }));
-        localStorage.removeItem('djp_draft_' + this.form.tgl);
-      } catch(e) {}
-      this.draftPlan = [];
-      this.saving = false;
-      this._toast(`✅ ${allRows.length} ODP disimpan untuk ${activeSFs.length} SF`, 'success');
+        const r = await fetch(gasUrl, {
+          method: 'POST',
+          body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:tglSimpan, rows: allRows }),
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error || 'Server menolak simpan');
 
-      // 2. Kirim ke GAS di background — user tidak perlu nunggu
-      fetch(gasUrl, {
-        method: 'POST',
-        body: JSON.stringify({ type:'djp_plan_save', session_token:st, tgl:this.form.tgl, rows: allRows }),
-      })
-        .then(r => r.json())
-        .then(d => {
-          if (!d.ok) this._toast('⚠️ Sinkronisasi GAS gagal: ' + (d.error||''), 'error');
-          // Refresh data dari GAS setelah berhasil sync (silent)
-          else this.loadPlan(true).catch(()=>{});
-        })
-        .catch(() => this._toast('⚠️ Gagal sinkron ke server, coba 🔄 Muat', 'error'));
+        // Sukses → baru hapus draft, lalu muat ulang isi sheet yang sebenarnya
+        try { localStorage.removeItem('djp_draft_' + tglSimpan); } catch(e) {}
+        try { localStorage.removeItem('djp_plandata_' + tglSimpan); } catch(e) {}
+        this.draftPlan = [];
+        this.viewTgl = tglSimpan;
+        this._toast(`✅ ${d.saved || allRows.length} ODP tersimpan untuk ${activeSFs.length} SF`, 'success');
+        await this.loadPlan(true);
+      } catch(e) {
+        // Gagal → draft tetap ada di layar dan di localStorage, user bisa klik Simpan lagi
+        this._toast('❌ Gagal menyimpan: ' + (e.message || 'koneksi terputus') + '. Draft masih ada, coba Simpan lagi.', 'error', 8000);
+      } finally {
+        this.saving = false;
+      }
     },
 
     // ── Load plan tersimpan ──
@@ -6750,9 +6831,10 @@ function djpPlanData() {
         const r = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_plan_delete', session_token:st, tgl:this.viewTgl, username_sf }) });
         const d = await r.json();
         if (!d.ok) throw new Error(d.error||'Gagal hapus');
+        try { localStorage.removeItem('djp_plandata_' + this.viewTgl); } catch(e) {}
         await this.loadPlan(true);
-        this._toast(`🗑 Plan ${username_sf} dihapus`, 'info');
-      } catch(e) { this._toast('❌ ' + e.message, 'error'); }
+        this._toast(`🗑 Plan ${username_sf} dihapus (${d.deleted} baris)`, 'info');
+      } catch(e) { this._toast('❌ ' + e.message, 'error', 6000); }
     },
 
     get planBySF() {
@@ -6864,14 +6946,11 @@ function djpRealData() {
 // ════════════════════════════════════════════════════════
 function djpDailyData() {
   return {
-    dailyTgl: new Date().toISOString().slice(0,10),
+    dailyTgl: localYMD(),
     dailyData: null,   // { total_sf, total_plan, total_real, summary: [{username_sf,nama_sf,odp_list:[{odp,kec,desa,status,checkin,odp_condition,prospect}]}] }
     loadingDaily: false,
 
-    init() {
-      window.addEventListener('page-djp_daily', () => this.loadDaily());
-      this.loadDaily();
-    },
+    init() {}, // dimuat lewat @page-djp_daily saat menu dibuka
 
     async loadDaily() {
       const cfg = (typeof Alpine!=='undefined' && Alpine.store) ? Alpine.store('cfg') : null;
@@ -6905,7 +6984,10 @@ function djpDailyData() {
           rows,
           summary:    d.summary    || [],
         };
-      } catch(e) { this.dailyData = { total_sf:0, total_plan:0, total_real:0, rows:[], summary:[] }; }
+      } catch(e) {
+        this.dailyData = { total_sf:0, total_plan:0, total_real:0, rows:[], summary:[], error: e.message || 'Gagal memuat' };
+        if (typeof djpToast === 'function') djpToast('❌ DJP Daily gagal dimuat: ' + (e.message||'koneksi'), 'error', 6000);
+      }
       this.loadingDaily = false;
     },
   };
@@ -6915,16 +6997,13 @@ function djpDailyData() {
 // DJP – List ODP (Fix #5)
 // ════════════════════════════════════════════════════════
 function djpOdpListData() {
-  const todayYM = () => new Date().toISOString().slice(0,7); // yyyy-MM
+  const todayYM = () => localYMD().slice(0,7); // yyyy-MM (lokal)
   return {
     bulan: todayYM(),
     loading: false,
     odpData: [],   // [{odp, occ, avail, kab, kec, desa, assign, visit}]
 
-    init() {
-      window.addEventListener('page-djp_odp_list', () => this.loadOdpList());
-      this.loadOdpList();
-    },
+    init() {}, // dimuat lewat @page-djp_odp_list saat menu dibuka
 
     async loadOdpList() {
       const cfg = (typeof Alpine!=='undefined' && Alpine.store) ? Alpine.store('cfg') : null;
@@ -6942,7 +7021,7 @@ function djpOdpListData() {
       try {
         // 1. ODP base data dari data/odp.json (sudah di-export script, cepat)
         const [jsonRes, gasRes] = await Promise.all([
-          fetch('data/odp.json'),
+          fetchOdpJson(),
           fetch(`${gasUrl}?type=djp_odp_list&session_token=${encodeURIComponent(st)}&bulan=${this.bulan}`),
         ]);
         const rawJson = await jsonRes.json();
@@ -6979,7 +7058,7 @@ function djpOdpListData() {
           });
 
         this.odpData = rows;
-      } catch(e) { this.odpData = []; console.error('djpOdpList:', e); }
+      } catch(e) { this.odpData = []; console.error('djpOdpList:', e); if (typeof djpToast === 'function') djpToast('❌ List ODP gagal dimuat: ' + (e.message||'koneksi'), 'error', 6000); }
       this.loading = false;
     },
   };

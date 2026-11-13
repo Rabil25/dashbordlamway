@@ -36,6 +36,40 @@ const R = {
 };
 
 // ================================================================
+//  HELPER BERSAMA
+// ================================================================
+// Normalisasi tanggal dari Sheets ke 'yyyy-MM-dd' (WIB).
+// Sheets otomatis mengubah teks '2026-11-12' menjadi sel bertipe tanggal,
+// jadi getValues() bisa mengembalikan Date ATAU string. Semua perbandingan
+// tanggal di file ini WAJIB lewat fungsi ini.
+function djpNormTgl(val) {
+  if (val === null || val === undefined || val === '') return '';
+  if (val instanceof Date) return Utilities.formatDate(val, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+  return val.toString().trim().slice(0, 10);
+}
+
+// Hapus baris DJP_Plan yang cocok dengan kumpulan kunci 'tgl|username_sf'.
+// Baris berurutan dihapus per blok (deleteRows) supaya cepat.
+// Hanya baris yang cocok yang disentuh; baris lain tidak diubah.
+function djpDeletePlanRows_(ws, keySet) {
+  const values = ws.getDataRange().getValues();
+  const hit = [];
+  for (let i = 1; i < values.length; i++) {          // i=0 → header
+    const key = djpNormTgl(values[i][P.TGL]) + '|' + (values[i][P.USERNAME_SF] || '').toString().trim();
+    if (keySet[key]) hit.push(i + 1);                 // nomor baris sheet (1-based)
+  }
+  // Dari bawah ke atas, gabungkan baris berurutan jadi satu deleteRows
+  let end = hit.length - 1;
+  while (end >= 0) {
+    let start = end;
+    while (start > 0 && hit[start - 1] === hit[start] - 1) start--;
+    ws.deleteRows(hit[start], end - start + 1);
+    end = start - 1;
+  }
+  return hit.length;
+}
+
+// ================================================================
 //  MAIN HANDLER – dipanggil dari doGet di Code.gs
 // ================================================================
 function handleDJP(type, params) {
@@ -142,6 +176,14 @@ function djpPlanSave(params) {
     return { ok:false, error:'rows kosong.' };
   }
 
+  // Lock: cegah dua simpan/hapus berjalan bersamaan dan saling menimpa
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch(e) {
+    return { ok:false, error:'Server sedang memproses simpan lain. Coba lagi sebentar.' };
+  }
+
   try {
     const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
     const ws = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
@@ -149,6 +191,24 @@ function djpPlanSave(params) {
 
     const now = new Date().toISOString();
     const dibuat_oleh = auth.user.username;
+
+    // Validasi minimum: tgl, username_sf, odp wajib ada di setiap baris
+    const bad = rows.filter(r => !/^\d{4}-\d{2}-\d{2}$/.test((r.tgl || '').toString().trim())
+                              || !(r.username_sf || '').toString().trim()
+                              || !(r.odp || '').toString().trim());
+    if (bad.length) {
+      return { ok:false, error: bad.length + ' baris tidak valid (tgl/username_sf/odp kosong atau format tgl salah). Tidak ada yang disimpan.' };
+    }
+
+    // GANTI, bukan tambah: hapus dulu plan lama untuk setiap (tgl, SF) yang dikirim
+    const keySet = {};
+    const tglSet = {};
+    rows.forEach(r => {
+      const t = r.tgl.toString().trim();
+      keySet[t + '|' + r.username_sf.toString().trim()] = true;
+      tglSet[t] = true;
+    });
+    const replaced = djpDeletePlanRows_(ws, keySet);
 
     const toAppend = rows.map(r => [
       r.tgl          || '',
@@ -174,14 +234,18 @@ function djpPlanSave(params) {
         .setValues(batch);
     }
 
-    // Invalidate cache
+    SpreadsheetApp.flush();
+
+    // Invalidate cache untuk semua tanggal yang tersentuh
     try {
-      CacheService.getScriptCache().remove('djp_plan_' + (rows[0].tgl || ''));
+      CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_plan_' + t));
     } catch(e) {}
 
-    return { ok:true, saved: toAppend.length };
+    return { ok:true, saved: toAppend.length, replaced: replaced };
   } catch(e) {
     return { ok:false, error:'djpPlanSave: ' + e.message };
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -213,14 +277,8 @@ function djpPlanGet(params) {
 
     const rows = ws.getDataRange().getValues().slice(1); // skip header
 
-    // Helper: Sheets sering auto-convert string tanggal ke Date object
-    function formatTgl(val) {
-      if (!val) return '';
-      if (val instanceof Date) {
-        return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-      }
-      return val.toString().trim();
-    }
+    // Tanggal dinormalkan lewat helper bersama (zona waktu CONFIG.TIMEZONE)
+    const formatTgl = djpNormTgl;
 
     const data = rows
       .filter(r => {
@@ -270,29 +328,34 @@ function djpPlanDelete(params) {
   const username_sf = (params.username_sf || '').trim();
   if (!tgl || !username_sf) return { ok:false, error:'tgl dan username_sf wajib.' };
 
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch(e) {
+    return { ok:false, error:'Server sedang memproses simpan lain. Coba lagi sebentar.' };
+  }
+
   try {
     const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
     const ws = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
     if (!ws) return { ok:false, error:'Sheet DJP_Plan tidak ditemukan.' };
 
-    const rows = ws.getDataRange().getValues();
-    // Hapus dari bawah supaya index tidak bergeser
-    let deleted = 0;
-    for (let i = rows.length - 1; i >= 1; i--) {
-      const rowTgl = (rows[i][P.TGL]||'').toString().trim();
-      const rowSF  = (rows[i][P.USERNAME_SF]||'').toString().trim();
-      if (rowTgl === tgl && rowSF === username_sf) {
-        ws.deleteRow(i + 1);
-        deleted++;
-      }
-    }
+    const keySet = {};
+    keySet[tgl + '|' + username_sf] = true;
+    const deleted = djpDeletePlanRows_(ws, keySet);
+    SpreadsheetApp.flush();
 
     // Invalidate cache
     try { CacheService.getScriptCache().remove('djp_plan_' + tgl); } catch(e) {}
 
+    if (deleted === 0) {
+      return { ok:false, deleted: 0, error:'Tidak ada baris plan untuk ' + username_sf + ' pada ' + tgl + '.' };
+    }
     return { ok:true, deleted };
   } catch(e) {
     return { ok:false, error:'djpPlanDelete: ' + e.message };
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -390,12 +453,7 @@ function djpDaily(params) {
   try {
     const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
 
-    // Helper: normalize tanggal dari Sheets (bisa Date object atau string)
-    function normTgl(val) {
-      if (!val) return '';
-      if (val instanceof Date) return Utilities.formatDate(val, CONFIG.TIMEZONE, 'yyyy-MM-dd');
-      return val.toString().trim().slice(0, 10); // ambil 10 karakter "yyyy-MM-dd"
-    }
+    const normTgl = djpNormTgl; // helper bersama
 
     // Baca Plan
     const wsPlan = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
@@ -528,7 +586,7 @@ function djpOdpList(params) {
     const wsPlan = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
     if (wsPlan) {
       wsPlan.getDataRange().getValues().slice(1).forEach(r => {
-        if ((r[P.TGL]||'').toString().trim().startsWith(bulan)) {
+        if (djpNormTgl(r[P.TGL]).startsWith(bulan)) {
           const odp = (r[P.ODP]||'').toString().trim();
           if (odp) assignSet[odp] = true;
         }
@@ -539,7 +597,7 @@ function djpOdpList(params) {
     const wsReal = ss.getSheetByName(DJP_CONFIG.SHEET_REAL);
     if (wsReal) {
       wsReal.getDataRange().getValues().slice(1).forEach(r => {
-        if ((r[R.TGL]||'').toString().trim().startsWith(bulan)) {
+        if (djpNormTgl(r[R.TGL]).startsWith(bulan)) {
           const odp = (r[R.ODP]||'').toString().trim();
           if (odp) visitSet[odp] = true;
         }
@@ -583,11 +641,7 @@ function djpPlanHistory(params) {
 
     const rows = ws.getDataRange().getValues().slice(1);
 
-    function normTgl(val) {
-      if (!val) return '';
-      if (val instanceof Date) return Utilities.formatDate(val, CONFIG.TIMEZONE, 'yyyy-MM-dd');
-      return val.toString().trim().slice(0, 10);
-    }
+    const normTgl = djpNormTgl; // helper bersama
 
     // history[odp] = tanggal paling akhir ODP ini di-plan
     const history = {};
