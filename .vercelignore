@@ -1,3 +1,4 @@
 # Tidak ikut di-deploy ke Vercel (tetap ada di repo)
 gas/
 data/update_sf.json
+README.md

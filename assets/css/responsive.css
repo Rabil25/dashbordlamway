@@ -1,0 +1,247 @@
+/* Mobile, cetak, aksesibilitas — dipisah dari index.html (Nov 2026). Urutan file CSS penting: theme → layout → responsive → components. */
+/* ════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — HP Android & iPhone
+   ════════════════════════════════════════════════════════════ */
+
+/* Shared helpers */
+.grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-4col { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+
+@media (max-width: 768px) {
+  /* ── 1. Switch dari "internal scroll" SPA ke natural page scroll ── */
+  html, body {
+    overflow: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    height: auto !important;
+  }
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible !important;
+  }
+  .main {
+    overflow: visible !important;
+    min-width: 0;
+    width: 100%;
+  }
+  .content {
+    overflow: visible !important;
+    padding: 14px 14px 80px;
+    flex: none;
+  }
+
+  /* ── 2. Topbar ── scrollable di mobile ── */
+  /* Wrapper: flex row, hamburger fix di kiri, topbar flex-1 scroll di kanan */
+  .topbar-row {
+    display: flex;
+    align-items: stretch;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(90deg, #0a1020 0%, #080e1a 100%);
+    border-bottom: 1px solid var(--surface-border);
+    flex-shrink: 0;
+  }
+  .topbar {
+    height: auto !important;
+    min-height: 48px;
+    padding: 8px 12px 8px 4px;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    flex: 1;
+    /* Hapus sticky dari .topbar sendiri — sudah dihandle .topbar-row */
+    position: static !important;
+    border-bottom: none;
+    background: transparent;
+    box-shadow: none;
+    scrollbar-width: none;
+  }
+  .topbar::-webkit-scrollbar { display: none; }
+  /* Hamburger: tidak di dalam .topbar lagi, jadi tidak ikut scroll */
+  .hamburger {
+    flex-shrink: 0;
+    align-self: center;
+    margin: 0 4px 0 8px;
+    /* Hapus border kotak — pakai icon-only style di topbar gelap */
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .hamburger span {
+    background: rgba(255,255,255,0.85) !important;
+  }
+  .topbar-title { font-size: 13px; white-space: nowrap; min-width: 80px; flex: 0 0 auto; }
+  .cluster-toggle { flex-shrink: 0; }
+  .cluster-btn { padding: 4px 10px; font-size: 10px; white-space: nowrap; }
+  .topbar-bulan-select { flex-shrink: 0; font-size: 10px; height: 28px; padding: 2px 6px; }
+  .datepicker-btn { font-size: 11px; white-space: nowrap; }
+  .btn { white-space: nowrap; font-size: 11px; padding: 5px 10px; flex-shrink: 0; }
+  .glossary-btn { flex-shrink: 0; }
+  .theme-toggle { flex-shrink: 0; }
+  /* Date picker popup — jangan terlebar layar */
+  .datepicker-popup { right: 0; left: auto; max-width: 95vw; }
+  .tab { padding: 5px 10px; font-size: 11px; }
+
+  /* ── 3. Grids responsive ── */
+  .kpi-grid { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .charts-grid, .charts-grid-3, .two-col { grid-template-columns: 1fr; }
+  .grid-4col { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .grid-2col { grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Inline 4-col grids — override via attribute selector */
+  [style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* ── 4. Kartu dan section ── */
+  .card { padding: 12px 14px; }
+  .stat-card { padding: 12px 14px; }
+  .stat-card__val { font-size: 26px; }
+  .section-hdr { margin-bottom: 10px; }
+  .section-title { font-size: 15px; }
+
+  /* ── 5. Tabel — horizontal scroll ── */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tbl-scroll { max-height: 320px; }
+  table { min-width: 420px; }
+  /* Tabel yang tidak di dalam .tbl-wrap */
+  .heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .djp-tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── 6. DJP Plan ── */
+  .djp-odp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── 7. Funnel ── */
+  .funnel-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    padding-bottom: 8px;
+  }
+
+  /* ── 8. Modal ── */
+  .modal-card { width: 96vw !important; max-width: none !important; padding: 20px 16px !important; }
+
+  /* ── 9. DD cards (filter bar) ── */
+  .dd-cards { flex-wrap: wrap; }
+  .dd-card { flex: 1 1 calc(50% - 8px); min-width: 110px; }
+
+  /* ── 10. SFP tabel ── */
+  .sfp-row { flex-direction: column; gap: 6px; }
+  /* Bungkus tabel sfp-tbl agar bisa scroll horizontal di mobile */
+  .card table.sfp-tbl,
+  [style*="padding:0"] table.sfp-tbl {
+    min-width: 480px; /* pastikan tabel punya lebar minimal */
+  }
+  /* Parent .card yang langsung berisi sfp-tbl: jadikan scrollable */
+  .card[style*="overflow:hidden"] { overflow-x: auto !important; }
+  /* Khusus wrapper scorecard / daftar SF */
+  .sfp-tbl-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── 11. Auth card ── */
+  .auth-card { padding: 24px 20px; }
+
+  /* ── 12. Prevent overflow bursting ── */
+  .content * { max-width: 100%; box-sizing: border-box; }
+  img, video, canvas { max-width: 100%; height: auto; }
+}
+
+/* ── Tiny phone (≤400px) ── */
+@media (max-width: 400px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .grid-2col { grid-template-columns: 1fr; }
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  .stat-card__val { font-size: 22px; }
+  .content { padding: 10px 10px 80px; }
+  .tab { padding: 4px 8px; font-size: 10px; }
+
+  /* Prioritas: stack vertikal di mobile */
+  .prioritas-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .prioritas-map-col {
+    position: static !important;
+  }
+  #prioritas-map {
+    height: 320px !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PERBAIKAN AUDIT Nov 2026 — aksesibilitas, mobile, tabel
+   ════════════════════════════════════════════════════════════ */
+/* Fokus keyboard terlihat (WCAG 2.4.7) — hanya saat navigasi keyboard */
+:focus-visible { outline: 2px solid var(--brand) !important; outline-offset: 2px; border-radius: 4px; }
+button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
+
+/* Hormati pengaturan "kurangi animasi" di perangkat */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Angka tabel & KPI rata dan tidak "loncat" saat berubah */
+table td, .stat-card__val, .te-kpi-val { font-variant-numeric: tabular-nums; }
+
+/* Header tabel menempel saat discroll */
+.tbl-wrap thead th, .tbl-scroll thead th { position: sticky; top: 0; z-index: 2; }
+
+@media (max-width: 768px) {
+  /* Top bar: dua baris, semua kontrol terlihat (sebelumnya terdorong keluar layar) */
+  .topbar { flex-wrap: wrap !important; overflow-x: visible !important; row-gap: 6px; padding: 8px 10px 8px 2px; }
+  .topbar-title { flex: 1 1 auto; min-width: 0; font-size: 14px; }
+  .cluster-btn { font-size: 11.5px; padding: 6px 12px; min-height: 32px; }
+  .topbar-bulan-select { font-size: 12px; height: 32px; }
+  .datepicker-btn { font-size: 12px; min-height: 32px; }
+  .topbar .btn { font-size: 12px; min-height: 32px; }
+
+  /* Top bar ringkas di HP: sembunyikan kontrol yang jarang dipakai di lapangan */
+  .topbar [aria-label="Export halaman sebagai PDF"],
+  .topbar [aria-label="Konfigurasi API"],
+  .topbar .glossary-btn,
+  .topbar .profile-name, .topbar .profile-role-badge { display: none !important; }
+  .topbar-title { flex-basis: 100%; }
+
+  /* Plan DJP: form satu kolom di HP (pilihan tidak lagi terpotong) */
+  .djp-grid-3, .djp-grid-2 { grid-template-columns: 1fr !important; }
+  .djp-grid-3 .select, .djp-grid-3 input { min-height: 40px; font-size: 14px; }
+
+  /* Tabel: kolom pertama menempel saat digeser ke samping + bayangan petunjuk geser */
+  .tbl-wrap { position: relative; background:
+      linear-gradient(to right, var(--surface-card) 30%, transparent) left / 24px 100% no-repeat local,
+      linear-gradient(to left, var(--surface-card) 30%, transparent) right / 24px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.14), transparent) left / 10px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.14), transparent) right / 10px 100% no-repeat scroll; }
+  .tbl-wrap tbody td:first-child, .tbl-wrap thead th:first-child,
+  .tbl-scroll tbody td:first-child, .tbl-scroll thead th:first-child { position: sticky; left: 0; background: var(--surface-card); z-index: 1; }
+  .tbl-wrap thead th:first-child, .tbl-scroll thead th:first-child { z-index: 3; }
+  .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table td, table th { font-size: 12px; }
+
+  /* Target sentuh minimal ±40px untuk tombol kecil di halaman DJP */
+  .page button { min-height: 36px; }
+}
+
+/* UX-02: ukuran teks minimum yang terbaca */
+table td { font-size: max(12px, 1em); }
+.card-title { font-size: max(13px, 1em); }
+.input-lbl, .section-sub { font-size: 11.5px; }

@@ -1,0 +1,223 @@
+/* Token desain & tema (gelap/terang) — dipisah dari index.html (Nov 2026). Urutan file CSS penting: theme → layout → responsive → components. */
+/* ============================================================
+   DESIGN TOKENS — Dashboard WOK Lampung Barat / Way Kanan
+   Dark-first | Poppins | Apache ECharts | Tiger Eyes inspired
+   ============================================================ */
+:root {
+  /* ── Surfaces — deeper blacks with blue-tinted dark ── */
+  --surface-base:    #060a10;
+  --surface-card:    #0d1320;
+  --surface-elevated:#111827;
+  --surface-input:   #161f30;
+  --surface-border:  #1e2d45;
+  --surface-hover:   #162035;
+
+  /* ── Brand — vivid electric blue → cyan ── */
+  --brand:           #00c2ff;
+  --brand-hover:     #00a8e0;
+  --brand-glow:      rgba(0,194,255,.18);
+  --brand-dim:       rgba(0,194,255,.07);
+
+  /* ── Accent purple (2nd accent) ── */
+  --accent:          #a855f7;
+  --accent-glow:     rgba(168,85,247,.18);
+
+  /* ── Semantic ── */
+  --success:         #22d972;
+  --success-dim:     rgba(34,217,114,.12);
+  --info:            #38bdf8;
+  --warning:         #fbbf24;
+  --warning-dim:     rgba(251,191,36,.12);
+  --danger:          #ff4d4d;
+  --danger-dim:      rgba(255,77,77,.12);
+
+  /* ── Chart series ── */
+  --series-1:        #00c2ff;
+  --series-2:        #a855f7;
+  --series-3:        #22d972;
+  --series-4:        #fbbf24;
+  --series-5:        #f472b6;
+  --series-6:        #34d399;
+
+  /* ── Text ── */
+  --text-1:          #eef2ff;
+  --text-2:          #7a8ba8;
+  --text-3:          #8b97ad;  /* was #374151 (1.8:1) → 6.3:1 */
+
+  --font:            'Poppins', sans-serif;
+  --sidebar-w:       220px;
+  --topbar-h:        52px;
+  --r:               8px;
+  --r-lg:            12px;
+  --dur:             180ms;
+  --ease:            cubic-bezier(.22,.68,0,1.2);
+
+  /* ── Alias: nama lama yang dipakai halaman DJP/Prioritas → token resmi ── */
+  --border:          var(--surface-border);
+  --surface-2:       var(--surface-elevated);
+  --card-bg:         var(--surface-card);
+  --bg-2:            var(--surface-elevated);
+  --surface-active:  var(--brand-dim);
+  --clr-muted:       var(--text-3);
+}
+
+/* ══ LIGHT THEME — Warm Red/Brown (Tiger Eyes style) ══ */
+[data-theme="light"] {
+  --surface-base:    #fdf6f3;
+  --surface-card:    #ffffff;
+  --surface-elevated:#f7ede8;
+  --surface-input:   #f2e8e2;
+  --surface-border:  #e8d0c5;
+  --surface-hover:   #fce9e2;
+
+  --brand:           #c93c20;
+  --brand-hover:     #a82f18;
+  --brand-glow:      rgba(201,60,32,.14);
+  --brand-dim:       rgba(201,60,32,.07);
+
+  --accent:          #d97020;
+  --accent-glow:     rgba(217,112,32,.15);
+
+  --success:         #27863a;
+  --success-dim:     rgba(39,134,58,.10);
+  --info:            #0e7a9e;
+  --warning:         #a15c0a;  /* was #c07010 (3.8:1) → 5.2:1 */
+  --warning-dim:     rgba(192,112,16,.10);
+  --danger:          #b91c1c;
+  --danger-dim:      rgba(185,28,28,.10);
+
+  --series-1:        #c93c20;
+  --series-2:        #d97020;
+  --series-3:        #27863a;
+  --series-4:        #0e7a9e;
+  --series-5:        #9b2563;
+  --series-6:        #6b5e00;
+
+  --text-1:          #1c0e08;
+  --text-2:          #6b4f42;
+  --text-3:          #7d6052;  /* was #b09080 (2.9:1) → ≥4.7:1 */
+}
+
+/* Light theme body */
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse 80% 40% at 20% 0%, rgba(201,60,32,.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(217,112,32,.04) 0%, transparent 60%);
+}
+
+/* Light sidebar — coklat gelap, tanpa animasi */
+[data-theme="light"] .sidebar {
+  background: #2d1a0e;
+  border-right: 1px solid #1a0d06;
+  box-shadow: 2px 0 8px rgba(0,0,0,.18);
+}
+[data-theme="light"] .sidebar::before {
+  background: #c93c20;
+  opacity: 1;
+  box-shadow: none;
+}
+[data-theme="light"] .sidebar::after {
+  display: none;
+}
+[data-theme="light"] .nav-item:hover {
+  background: rgba(255,255,255,.07);
+}
+[data-theme="light"] .nav-section-lbl {
+  color: rgba(255,255,255,.35);
+  text-shadow: none;
+}
+
+/* Light topbar */
+[data-theme="light"] .topbar {
+  background: linear-gradient(90deg, #f7ede8 0%, #f5e8e0 100%);
+  box-shadow: 0 1px 0 rgba(201,60,32,.10);
+}
+
+/* Light brand name */
+[data-theme="light"] .brand-name {
+  background: linear-gradient(90deg, #c93c20, #d97020);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+/* Light stat cards */
+[data-theme="light"] .stat-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fdf4f0 100%);
+  box-shadow: 0 1px 4px rgba(100,30,10,.06);
+}
+[data-theme="light"] .stat-card:hover {
+  border-color: #c93c20;
+  box-shadow: 0 0 0 1px #c93c20, 0 4px 20px rgba(201,60,32,.10);
+}
+
+/* Light cards */
+[data-theme="light"] .card {
+  background: linear-gradient(135deg, #ffffff 0%, #fdf5f1 100%);
+  box-shadow: 0 1px 4px rgba(100,30,10,.05);
+}
+[data-theme="light"] .card:hover { border-color: rgba(201,60,32,.28); }
+
+/* Light modal */
+[data-theme="light"] .modal {
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(100,30,10,.15);
+}
+[data-theme="light"] .modal-bg { background: rgba(28,14,8,.35); }
+
+/* Light heatmap */
+[data-theme="light"] .hm-lo  { background: rgba(201,60,32,.09);  color: #a83018; }
+[data-theme="light"] .hm-md  { background: rgba(201,60,32,.26);  color: #8a2010; }
+[data-theme="light"] .hm-hi  { background: rgba(201,60,32,.55);  color: #fff; }
+[data-theme="light"] .hm-vhi { background: rgba(201,60,32,.85);  color: #fff; font-weight:700; }
+
+/* Nav item teks di sidebar gelap */
+[data-theme="light"] .nav-item { color: rgba(255,255,255,.65); }
+[data-theme="light"] .nav-item:hover { color: rgba(255,255,255,.92); }
+[data-theme="light"] .nav-section-lbl { color: rgba(255,255,255,.35); }
+[data-theme="light"] .sidebar-brand .brand-sub { color: rgba(255,255,255,.4); }
+[data-theme="light"] .sidebar-footer { color: rgba(255,255,255,.3); border-top-color: rgba(255,255,255,.1); }
+[data-theme="light"] .sidebar-footer span { color: rgba(255,255,255,.55); }
+[data-theme="light"] .nav-group-lbl { color: #9a9089; }
+[data-theme="light"] .nav-sub-item { color: rgba(255,255,255,.55); }
+[data-theme="light"] .nav-sub-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
+[data-theme="light"] .nav-sub-item.active { color: #ff9070; background: rgba(201,60,32,.2); }
+[data-theme="light"] .sidebar-brand { border-bottom-color: rgba(255,255,255,.1); }
+
+/* Light nav active */
+[data-theme="light"] .nav-item.active {
+  background: rgba(201,60,32,.25);
+  color: #fff;
+  border-left: 2px solid #c93c20;
+  box-shadow: none;
+  text-shadow: none;
+}
+[data-theme="light"] .nav-item:hover { background: rgba(255,255,255,.07); }
+
+/* Light cluster btn */
+[data-theme="light"] .cluster-toggle { background: #f2e8e2; border-color: #e8d0c5; }
+[data-theme="light"] .cluster-btn.active {
+  background: linear-gradient(90deg, #c93c20, #d97020);
+  box-shadow: 0 0 10px rgba(201,60,32,.25);
+}
+
+/* Light tables */
+[data-theme="light"] table thead th { background: #f2e8e2; color: #1c0e08; }
+[data-theme="light"] table tbody tr:hover td { background: #fdf0ea; }
+
+/* Light tier badges */
+[data-theme="light"] .tier-black    { background: rgba(100,80,70,.10); color: #6b4f42; border-color: rgba(100,80,70,.22); }
+[data-theme="light"] .tier-bronze   { background: rgba(180,90,30,.12);  color: #a05018; border-color: rgba(180,90,30,.28); }
+[data-theme="light"] .tier-silver   { background: rgba(120,100,90,.12); color: #6b4f42; border-color: rgba(120,100,90,.28); }
+[data-theme="light"] .tier-gold     { background: rgba(190,140,10,.12); color: #8a6800; border-color: rgba(190,140,10,.28); }
+[data-theme="light"] .tier-platinum { background: rgba(201,60,32,.12);  color: #c93c20; border-color: rgba(201,60,32,.28); }
+[data-theme="light"] .tier-diamond  { background: rgba(217,112,32,.12); color: #a85808; border-color: rgba(217,112,32,.28); }
+
+/* Theme toggle button */
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: var(--r);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-elevated); color: var(--text-2);
+  font-size: 15px; transition: all var(--dur); cursor: pointer;
+}
+.theme-toggle:hover { color: var(--brand); border-color: var(--brand); }
+
