@@ -7,7 +7,7 @@
 //  Auth masih diteruskan ke GAS_AUTH_URL.
 // ================================================================
 
-const { getAllData, getRawSheetCached, getListBulan } = require('../lib/sheets');
+const { getAllData, getRawSheetCached, getListBulan, normPeriod } = require('../lib/sheets');
 const { verifySession } = require('../lib/session');
 
 // Token bersama lama HANYA berlaku bila env DATA_TOKEN diisi di Vercel
@@ -49,7 +49,7 @@ module.exports = async function handler(req, res) {
         data = await getAllData(bulan.toString());
         break;
       case 'bulan_ini':
-        data = await getRawSheetCached('Bulan_Ini', 'CE2:DT', bulan.toString());
+        data = await getRawSheetCached('Bulan_Ini', 'CE2:DT', normPeriod(bulan));
         break;
       case 'update_sf':
         data = await getRawSheetCached('Update SF', 'A2:AG', '');

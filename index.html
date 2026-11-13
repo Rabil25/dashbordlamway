@@ -1461,7 +1461,7 @@ table td { font-size: max(12px, 1em); }
         <label class="input-lbl">Bulan Aktif</label>
         <select class="select" x-model="cfg.bulan">
           <template x-for="m in availableMonths" :key="m.val">
-            <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label + ' ' + new Date().getFullYear()"></option>
+            <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label"></option>
           </template>
         </select>
       </div>
@@ -1736,18 +1736,13 @@ table td { font-size: max(12px, 1em); }
       </div>
       <!-- Bulan filter di topbar -->
       <select class="select topbar-bulan-select" x-model="cfg.bulan" @change="
-        const now = new Date();
-        const selBulan = parseInt(cfg.bulan);
-        const curBulan = now.getMonth() + 1;
-        const curYear  = now.getFullYear();
-        const lastDay  = new Date(curYear, selBulan, 0).getDate();
         cfg.tglAwal  = 1;
-        cfg.tglAkhir = (selBulan === curBulan) ? now.getDate() : lastDay;
+        cfg.tglAkhir = (cfg.bulan === currentPeriod()) ? new Date().getDate() : daysInPeriod(cfg.bulan);
         loading = true;
         $nextTick(()=>loadData(false));
       " aria-label="Pilih bulan" title="Filter bulan">
         <template x-for="m in availableMonths" :key="m.val">
-          <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label + ' ' + new Date().getFullYear()"></option>
+          <option :value="m.val" :selected="m.val === cfg.bulan" x-text="m.label"></option>
         </template>
       </select>
       <!-- Rentang tanggal filter (date picker) -->
@@ -1759,7 +1754,7 @@ table td { font-size: max(12px, 1em); }
         <div class="datepicker-popup" x-show="open" x-cloak @click.outside="open=false" x-transition>
           <!-- Header -->
           <div class="dp-header">
-            <span class="dp-month-label" x-text="(['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][parseInt(cfg.bulan)]||'Bln') + ' ' + new Date().getFullYear()"></span>
+            <span class="dp-month-label" x-text="periodLabel(cfg.bulan)"></span>
             <span class="dp-footer-hint" x-text="picking===1 ? 'Pilih tanggal akhir' : (picking===0 ? 'Pilih tanggal awal' : '')"></span>
           </div>
           <!-- Hari header -->
@@ -2627,7 +2622,7 @@ table td { font-size: max(12px, 1em); }
         <div class="section-hdr">
           <div>
             <div class="section-title">D2D Sales — Harian</div>
-            <div class="section-sub" x-text="'Bulan ' + cfg.bulan + ' · ' + cluster"></div>
+            <div class="section-sub" x-text="periodLabel(cfg.bulan) + ' · ' + cluster"></div>
           </div>
         </div>
 
@@ -2701,7 +2696,7 @@ table td { font-size: max(12px, 1em); }
         <div class="section-hdr">
           <div>
             <div class="section-title">Deepdive Sales</div>
-            <div class="section-sub" x-text="'Bulan ' + cfg.bulan + ' · ' + cluster"></div>
+            <div class="section-sub" x-text="periodLabel(cfg.bulan) + ' · ' + cluster"></div>
           </div>
         </div>
 
@@ -2855,7 +2850,7 @@ table td { font-size: max(12px, 1em); }
         <div class="section-hdr">
           <div>
             <div class="section-title">Outlook Sales</div>
-            <div class="section-sub" x-text="'Proyeksi EOM · Bulan ' + cfg.bulan + ' · ' + cluster"></div>
+            <div class="section-sub" x-text="'Proyeksi EOM · ' + periodLabel(cfg.bulan) + ' · ' + cluster"></div>
           </div>
         </div>
 
@@ -2989,7 +2984,7 @@ table td { font-size: max(12px, 1em); }
         <div class="section-hdr">
           <div>
             <div class="section-title">SF Performance</div>
-            <div class="section-sub" x-text="'Bulan ' + cfg.bulan + ' · ' + cluster"></div>
+            <div class="section-sub" x-text="periodLabel(cfg.bulan) + ' · ' + cluster"></div>
           </div>
         </div>
 
@@ -4089,6 +4084,33 @@ function esc(v) {
   return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// ══ PERIODE = 'YYYY-MM' ══════════════════════════════════════════
+// Kolom Bulan IO/RE/PS (CK/CN/CQ) di sheet hanya berisi angka bulan tanpa tahun.
+// Tahun diambil dari kolom Tanggal yyyymmdd (DH/DI/DJ = C.DATE_IO/RE/PS).
+// Saat data dimuat, normalizePeriods() mengganti isi kolom Bulan di setiap baris
+// dengan 'YYYY-MM', sehingga semua perbandingan "bulan baris === bulan dipilih"
+// di seluruh halaman otomatis memperhitungkan tahun.
+const BULAN_NAMA = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function currentPeriod() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function periodYear(p)  { return parseInt(String(p).slice(0,4)) || new Date().getFullYear(); }
+function periodMonth(p) { return parseInt(String(p).slice(5,7)) || (new Date().getMonth()+1); }
+function daysInPeriod(p) { return new Date(periodYear(p), periodMonth(p), 0).getDate(); }
+function periodDate(p, day) { return new Date(periodYear(p), periodMonth(p)-1, day); }
+function prevPeriod(p) { const y = periodYear(p), m = periodMonth(p); return m === 1 ? (y-1) + '-12' : y + '-' + String(m-1).padStart(2,'0'); }
+function periodLabel(p) { return (BULAN_NAMA[periodMonth(p)] || '?') + ' ' + periodYear(p); }
+// 'YYYYMMDD' (teks atau angka) → 'YYYY-MM'; kosong bila tidak valid
+function ymdToPeriod(v) { const s = String(v ?? '').trim(); return /^20\d{2}(0[1-9]|1[0-2])\d{2}$/.test(s) ? s.slice(0,4) + '-' + s.slice(4,6) : ''; } // abaikan 18991230 (tanggal kosong Excel)
+function normalizePeriods(rows) {
+  for (const r of rows) {
+    if (r._p) continue;
+    r[C.BLN_IO] = ymdToPeriod(r[C.DATE_IO]);
+    r[C.BLN_RE] = ymdToPeriod(r[C.DATE_RE]);
+    r[C.BLN_PS] = ymdToPeriod(r[C.DATE_PS]);
+    r._p = 1;
+  }
+  return rows;
+}
+
 // Cluster config
 const CLUSTER = {
   'Lampung Barat': { kab: ['LAMPUNG BARAT','TANGGAMUS','PESISIR BARAT'] },
@@ -4244,7 +4266,7 @@ function app() {
     cfg: {
       gasUrl:    localStorage.getItem('wok_gas_url')    || DEFAULT_GAS_URL,
       vercelUrl: localStorage.getItem('wok_vercel_url') || DEFAULT_VERCEL_URL,
-      bulan: String(new Date().getMonth() + 1),   // default: bulan sekarang
+      bulan: currentPeriod(),   // default: periode berjalan 'YYYY-MM'
       tglAwal: 1,                                  // default: tanggal 1
       tglAkhir: new Date().getDate(),              // default: hari ini (MTD)
       targets: {},  // diisi dari sheet Target saat loadData
@@ -4569,8 +4591,8 @@ function app() {
     },
 
     get dpCells() {
-      const yr = new Date().getFullYear();
-      const mo = parseInt(this.cfg.bulan) - 1;
+      const yr = periodYear(this.cfg.bulan);
+      const mo = periodMonth(this.cfg.bulan) - 1;
       const first = new Date(yr, mo, 1).getDay();
       const days  = new Date(yr, mo + 1, 0).getDate();
       const cells = [];
@@ -4580,41 +4602,22 @@ function app() {
       return cells;
     },
 
-    get prevBulan() {
-      const b = parseInt(this.cfg.bulan);
-      return b <= 1 ? 12 : b - 1;
-    },
+    // Periode sebelumnya ('YYYY-MM'); Jan 2027 → Des 2026
+    get prevBulan() { return prevPeriod(this.cfg.bulan); },
 
-    // Months: dari list_bulan GAS (pakai _availBulanList), fallback ke allRows, fallback bulan ini
+    // Daftar periode: dari list_bulan server, fallback dari allRows, fallback periode berjalan
     get availableMonths() {
-      const names = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-      // Prioritas 1: daftar bulan dari GAS list_bulan endpoint
-      if (this._availBulanList && this._availBulanList.length > 0) {
-        return this._availBulanList.map(m => ({ val: String(m), label: names[m] || String(m) }));
+      let list = (this._availBulanList || []).map(String).filter(v => /^\d{4}-\d{2}$/.test(v));
+      if (!list.length) {
+        const set = new Set();
+        for (const r of this.allRows) [C.BLN_IO, C.BLN_RE, C.BLN_PS].forEach(c => { const v = r[c]; if (v && /^\d{4}-\d{2}$/.test(v)) set.add(v); });
+        list = [...set];
       }
-      // Prioritas 2: scan dari allRows yang sudah dimuat
-      const bulanSet = new Set();
-      for (const r of this.allRows) {
-        const b  = (r[C.BLN_IO]||'').toString().trim();
-        const b2 = (r[C.BLN_RE]||'').toString().trim();
-        const b3 = (r[C.BLN_PS]||'').toString().trim();
-        if (b  && !isNaN(b))  bulanSet.add(parseInt(b));
-        if (b2 && !isNaN(b2)) bulanSet.add(parseInt(b2));
-        if (b3 && !isNaN(b3)) bulanSet.add(parseInt(b3));
-      }
-      if (bulanSet.size > 0) {
-        return Array.from(bulanSet).sort((a,b) => a-b)
-          .map(m => ({ val: String(m), label: names[m] || String(m) }));
-      }
-      // Fallback: tampilkan bulan berjalan saja
-      const cur = new Date().getMonth() + 1;
-      return [{ val: String(cur), label: names[cur] }];
+      if (!list.length) list = [currentPeriod()];
+      return list.sort().map(v => ({ val: v, label: periodLabel(v) }));
     },
 
-    get prevBulanLabel() {
-      const names = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-      return names[this.prevBulan] || this.prevBulan;
-    },
+    get prevBulanLabel() { return periodLabel(this.prevBulan); },
 
     // ── Load Data via GAS (filter per bulan di server) ──
     async loadData(forceRefresh = false) {
@@ -4643,7 +4646,7 @@ function app() {
             cachedBulan && (nowMs - cachedBulan.ts) < CACHE_BULAN_MS) {
           // Semua data dari cache – tidak perlu request GAS sama sekali
           const d = cachedAll.data;
-          { const seen=new Set(); _loadSeq++; this.allRows=[...(d.bulanIni||[]),...(d.bulanPrev||[])].filter(r=>{ const id=(r[C.ID_ORDER]||'').toString().trim()||JSON.stringify(r); if(seen.has(id))return false; seen.add(id);return true; }); }
+          { const seen=new Set(); _loadSeq++; this.allRows=normalizePeriods([...(d.bulanIni||[]),...(d.bulanPrev||[])]).filter(r=>{ const id=(r[C.ID_ORDER]||'').toString().trim()||JSON.stringify(r); if(seen.has(id))return false; seen.add(id);return true; }); }
           this.sfMaster = d.updateSf || [];
           const nowStr  = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
           this.lastUpdate = nowStr;
@@ -4687,8 +4690,8 @@ function app() {
             const bulanAvail = listBulanRaw.map(String);
             this._availBulanList = listBulanRaw;
             if (!bulanAvail.includes(bulanStr)) {
-              // Bulan terpilih belum punya data (mis. tanggal 1) → pindah ke bulan terakhir yang ada, muat ulang
-              this.cfg.bulan = String(Math.max(...listBulanRaw));
+              // Bulan terpilih belum punya data (mis. tanggal 1) → pindah ke periode terakhir yang ada, muat ulang
+              this.cfg.bulan = [...bulanAvail].sort().pop();
               this.loading = false;
               return this.loadData(forceRefresh);
             }
@@ -4696,7 +4699,7 @@ function app() {
         }
 
         // Terapkan ke state (dedup by ID_ORDER agar baris lintas-bulan tidak double-count)
-        { const seen=new Set(); _loadSeq++; this.allRows=[...allPayload.bulanIni,...allPayload.bulanPrev].filter(r=>{ const id=(r[C.ID_ORDER]||'').toString().trim()||JSON.stringify(r); if(seen.has(id))return false; seen.add(id);return true; }); }
+        { const seen=new Set(); _loadSeq++; this.allRows=normalizePeriods([...allPayload.bulanIni,...allPayload.bulanPrev]).filter(r=>{ const id=(r[C.ID_ORDER]||'').toString().trim()||JSON.stringify(r); if(seen.has(id))return false; seen.add(id);return true; }); }
         this.sfMaster = allPayload.updateSf;
 
         // Ambil target dari sheet (override localStorage)
@@ -4725,9 +4728,8 @@ function app() {
     // ── Fetch daftar bulan dari GAS (ringan) ──
     // Hari ke-berapa dalam bulan terpilih: bulan berjalan → hari ini; bulan lampau → hari terakhir bulan itu
     get hariBerjalan() {
-      const now = new Date(), b = parseInt(this.cfg.bulan);
-      if (b === now.getMonth() + 1) return now.getDate();
-      return new Date(now.getFullYear(), b, 0).getDate();
+      if (this.cfg.bulan === currentPeriod()) return new Date().getDate();
+      return daysInPeriod(this.cfg.bulan);
     },
 
     inRange(val) {
@@ -4977,8 +4979,7 @@ function app() {
       const arr = Object.values(map);
       const today = new Date();
       const hariIni = today.getDate();
-      const bulanIni = (today.getMonth() + 1).toString();
-      const isCurrentMonth = bulan === bulanIni;
+      const isCurrentMonth = bulan === currentPeriod();
 
       arr.forEach(sf => {
         // PS/RE conversion (menggantikan LOS yang salah)
@@ -5055,7 +5056,7 @@ function app() {
       const kabs = CLUSTER[this.cluster]?.kab || [];
       let tgtPS = 0;
       kabs.forEach(k => { tgtPS += (this.cfg.targets[k]?.ps||0); });
-      const daysInMonth = new Date(today.getFullYear(), parseInt(bulan), 0).getDate();
+      const daysInMonth = daysInPeriod(bulan);
       const dailyTgt = daysInMonth > 0 ? tgtPS / daysInMonth : 0;
       let hariCapai = 0;
       for (let d = 1; d <= hariPS; d++) {
@@ -5081,7 +5082,7 @@ function app() {
         map[kab][d] = (map[kab][d]||0) + 1;
         if (map[kab][d] > maxVal) maxVal = map[kab][d];
       });
-      const daysInMonth = new Date(new Date().getFullYear(), parseInt(bulan), 0).getDate();
+      const daysInMonth = daysInPeriod(bulan);
       return { map, kabs, daysInMonth, maxVal };
     },
 
@@ -5186,7 +5187,7 @@ function app() {
       try {
         // Fetch GAS (PS per kec/desa) + odp.json (port available per kec/desa) in parallel
         const [gasRes, odpRes] = await Promise.all([
-          fetch((this.cfg.gasUrl || DEFAULT_GAS_URL) + '?session_token=' + encodeURIComponent(this.sessionToken) + '&type=deepdive_odp&bulan=' + encodeURIComponent(this.cfg.bulan)),
+          fetch((this.cfg.gasUrl || DEFAULT_GAS_URL) + '?session_token=' + encodeURIComponent(this.sessionToken) + '&type=deepdive_odp&periode=' + encodeURIComponent(this.cfg.bulan) + '&bulan=' + periodMonth(this.cfg.bulan)),
           fetchOdpJson()
         ]);
         const gasText = await gasRes.text();
@@ -5342,7 +5343,7 @@ function app() {
         // Fetch odp.json + GAS deepdive_odp (PS per desa) secara paralel
         const [odpRes, gasRes] = await Promise.all([
           fetchOdpJson(),
-          fetch(`${gasBase}?session_token=${encodeURIComponent(this.sessionToken)}&type=deepdive_odp&bulan=${encodeURIComponent(bulan)}`)
+          fetch(`${gasBase}?session_token=${encodeURIComponent(this.sessionToken)}&type=deepdive_odp&periode=${encodeURIComponent(bulan)}&bulan=${periodMonth(bulan)}`)
         ]);
         const odpRaw  = await odpRes.json();
         const gasText = await gasRes.text();
@@ -5622,7 +5623,7 @@ function app() {
       const prevBulan = this.prevBulan.toString();
       const today = new Date();
       const hariPS = this.hariBerjalan;
-      const daysInMonth = new Date(today.getFullYear(), parseInt(bulan), 0).getDate();
+      const daysInMonth = daysInPeriod(bulan);
       const sisaHari = Math.max(daysInMonth - hariPS, 0);
       const kabs = CLUSTER[this.cluster]?.kab || [];
       const map = {};
@@ -5651,7 +5652,7 @@ function app() {
     get outlookMeta() {
       const today = new Date();
       const bulan = this.cfg.bulan;
-      const daysInMonth = new Date(today.getFullYear(), parseInt(bulan), 0).getDate();
+      const daysInMonth = daysInPeriod(bulan);
       const hariPS = this.hariBerjalan;
       const sisaHari = Math.max(daysInMonth - hariPS, 0);
       return { daysInMonth, hariPS, sisaHari };
@@ -5896,7 +5897,7 @@ function app() {
       const chart = this.getOrInit('chart-tren');
       if (!chart) return;
       const bulan = this.cfg.bulan;
-      const dayCount = new Date(new Date().getFullYear(), parseInt(bulan), 0).getDate();
+      const dayCount = daysInPeriod(bulan);
       const days = Array.from({length: dayCount}, (_,i) => i+1);
       const io = new Array(dayCount).fill(0);
       const re = new Array(dayCount).fill(0);
@@ -6230,7 +6231,7 @@ function app() {
       const chart = this.getOrInit('chart-d2d-tren');
       if (!chart) return;
       const bulan = this.cfg.bulan;
-      const dayCount = new Date(new Date().getFullYear(), parseInt(bulan), 0).getDate();
+      const dayCount = daysInPeriod(bulan);
       const days = Array.from({length: dayCount}, (_,i) => i+1);
       const ps = new Array(dayCount).fill(0);
       const cum = new Array(dayCount).fill(0);
@@ -6280,7 +6281,7 @@ function app() {
       if (!chart) return;
       const bulan = this.cfg.bulan;
       const today = new Date();
-      const daysInMonth = new Date(today.getFullYear(), parseInt(bulan), 0).getDate();
+      const daysInMonth = daysInPeriod(bulan);
       const hariPS = this.hariBerjalan;
       const days = Array.from({length: daysInMonth}, (_,i)=>i+1);
       const ps = new Array(daysInMonth).fill(null);
@@ -6304,7 +6305,7 @@ function app() {
       const dayWeights = [0.7, 1.2, 1.2, 1.15, 1.1, 1.1, 0.8]; // Sun=0, Mon=1, ..., Sat=6
       let weightedSum = 0, weightedCount = 0;
       for (let i = 0; i < hariPS; i++) {
-        const dow = new Date(today.getFullYear(), parseInt(bulan)-1, i+1).getDay();
+        const dow = periodDate(bulan, i+1).getDay();
         const w = dayWeights[dow];
         weightedSum += (dayMap[i]||0) / w;
         weightedCount += 1;
@@ -6318,7 +6319,7 @@ function app() {
         // Weighted: multiply DRR by today's day weight for remaining days
         let wEOM = running;
         for (let j = hariPS; j <= i; j++) {
-          const dow = new Date(today.getFullYear(), parseInt(bulan)-1, j+1).getDay();
+          const dow = periodDate(bulan, j+1).getDay();
           wEOM += drrWeighted * dayWeights[dow];
         }
         projWeighted[i] = Math.round(wEOM);

@@ -15,9 +15,27 @@ const CONFIG = {
 };
 
 // ── Index kolom dalam range CE2:DT (0-based dari CE=0) ──────────
-const IDX_BLN_IO = 6;   // CK
-const IDX_BLN_RE = 9;   // CN
-const IDX_BLN_PS = 12;  // CQ
+// Periode 'YYYY-MM' diambil dari kolom Tanggal yyyymmdd (DH/DI/DJ),
+// bukan dari kolom Bulan CK/CN/CQ yang tidak berisi tahun.
+const IDX_DATE_IO = 29; // DH
+const IDX_DATE_RE = 30; // DI
+const IDX_DATE_PS = 31; // DJ
+
+function ymdToPeriod(v) {
+  const s = (v === null || v === undefined) ? '' : v.toString().trim();
+  return /^20\d{2}(0[1-9]|1[0-2])\d{2}$/.test(s) ? s.slice(0, 4) + '-' + s.slice(4, 6) : '';
+}
+// 'YYYY-MM' apa adanya; angka bulan lama ('11') → tahun berjalan
+function normPeriod(b) {
+  const s = (b || '').toString().trim();
+  if (/^\d{4}-\d{2}$/.test(s)) return s;
+  if (/^\d{1,2}$/.test(s)) return Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy') + '-' + ('0' + s).slice(-2);
+  return '';
+}
+function prevPeriod(p) {
+  const y = parseInt(p.slice(0, 4), 10), m = parseInt(p.slice(5, 7), 10);
+  return m === 1 ? (y - 1) + '-12' : y + '-' + ('0' + (m - 1)).slice(-2);
+}
 
 // ── Cluster / Wilayah config ──────────────────────────────────
 const WILAYAH = {
@@ -134,7 +152,8 @@ function doGet(e) {
   }
 
   try {
-    const bulan = (params.bulan || '').toString().trim();
+    // periode 'YYYY-MM' (baru) atau angka bulan (lama)
+    const bulan = normPeriod(params.periode || params.bulan || '');
     let data;
 
     switch (type) {
@@ -179,8 +198,7 @@ function doGet(e) {
 // ================================================================
 function getAllData(bulan) {
   // Hitung bulan lalu
-  const bulanNum = parseInt(bulan) || 0;
-  const bulanLalu = bulanNum > 1 ? (bulanNum - 1).toString() : '';
+  const bulanLalu = bulan ? prevPeriod(bulan) : '';   // Jan 2027 → Des 2026
 
   // Ambil semua data (masing-masing sudah pakai cache)
   const bulanIni  = getRawSheetCached('Bulan_Ini', 'CE2:DT', bulan);
@@ -239,7 +257,7 @@ function getTargetData() {
 // ================================================================
 function getDeepdiveOdp(bulan) {
   const cache    = CacheService.getScriptCache();
-  const cacheKey = 'deepdive_odp_' + (bulan || 'all');
+  const cacheKey = 'deepdive_odp_v2_' + (bulan || 'all');
   try {
     const cached = cache.get(cacheKey);
     if (cached) return JSON.parse(cached);
@@ -259,17 +277,16 @@ function getDeepdiveOdp(bulan) {
     const values = range.getValues();
 
     // Index 0-based dari CE:
-    // IDX_BLN_PS = 12 (CQ), IDX_KEC = 42 (DU), IDX_DESA = 43 (DV)
-    const IDX_PS   = 12;
+    // IDX_DATE_PS = 31 (DJ, yyyymmdd), IDX_KEC = 42 (DU), IDX_DESA = 43 (DV)
     const IDX_KEC  = 42;
     const IDX_DESA = 43;
 
     const map = {}; // key = "kec||desa"
     for (let i = 0; i < values.length; i++) {
       const row    = values[i];
-      const blnPS  = (row[IDX_PS] || '').toString().trim();
-      if (!blnPS) continue;                       // baris belum PS
-      if (bulan && blnPS !== bulan) continue;     // filter bulan
+      const pPS = ymdToPeriod(row[IDX_DATE_PS]);  // DJ yyyymmdd
+      if (!pPS) continue;                         // baris belum PS
+      if (bulan && pPS !== bulan) continue;       // filter periode
 
       const kec  = (row[IDX_KEC]  || '').toString().trim();
       const desa = (row[IDX_DESA] || '').toString().trim();
@@ -301,8 +318,8 @@ function warmupSelf() {
   try {
     const cache  = CacheService.getScriptCache();
     const now    = new Date();
-    const bulanNow  = (now.getMonth() + 1).toString(); // 1-12
-    const bulanPrev = now.getMonth() > 0 ? now.getMonth().toString() : '12';
+    const bulanNow  = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM');   // periode berjalan
+    const bulanPrev = prevPeriod(bulanNow);
 
     // Pre-cache bulan aktif jika belum ada
     const keyNow = 'sheet_Bulan_Ini_' + bulanNow;
@@ -331,9 +348,9 @@ function warmupSelf() {
     }
 
     // Pre-cache list_bulan jika belum ada
-    if (!cache.get('list_bulan__meta') && !cache.get('list_bulan')) {
+    if (!cache.get('list_bulan_v2')) {
       const d = getListBulan();
-      if (d.ok) cache.put('list_bulan', JSON.stringify(d), CACHE_TTL_BULAN);
+      if (d.ok) cache.put('list_bulan_v2', JSON.stringify(d), CACHE_TTL_BULAN);
     }
 
     Logger.log('Warmup selesai: ' + new Date().toISOString());
@@ -617,7 +634,7 @@ function updateUserField(username, colIdx, value) {
 // ── BARU: getListBulan dengan cache ─────────────────────────
 function getListBulanCached() {
   const cache = CacheService.getScriptCache();
-  const cacheKey = 'list_bulan';
+  const cacheKey = 'list_bulan_v2';
 
   try {
     const cached = cache.get(cacheKey);
@@ -672,18 +689,12 @@ function getListBulan() {
   const ws = ss.getSheetByName('Bulan_Ini');
   if (!ws) return { ok:false, error:'Sheet "Bulan_Ini" tidak ditemukan.' };
 
-  const values = ws.getRange('CK2:CQ').getValues();
-  const bulanSet = new Set();
+  const values = ws.getRange('DH2:DJ').getValues();   // Tanggal IO/RE/PS yyyymmdd
+  const bulanSet = {};
   for (let i=0; i<values.length; i++) {
-    const row = values[i];
-    if (row[0]!==''&&row[0]!==null) bulanSet.add(row[0].toString().trim());
-    if (row[3]!==''&&row[3]!==null) bulanSet.add(row[3].toString().trim());
-    if (row[6]!==''&&row[6]!==null) bulanSet.add(row[6].toString().trim());
+    for (let k=0; k<3; k++) { const p = ymdToPeriod(values[i][k]); if (p) bulanSet[p] = true; }
   }
-  const bulanList = Array.from(bulanSet)
-    .filter(function(b){ return /^\d+$/.test(b)&&Number(b)>=1&&Number(b)<=12; })
-    .map(Number)
-    .sort(function(a,b){ return a-b; });
+  const bulanList = Object.keys(bulanSet).sort();
 
   return { ok:true, bulan:bulanList, updatedAt: new Date().toISOString() };
 }
@@ -709,10 +720,10 @@ function getRawSheet(sheetName, range, filterBulan) {
     if (!hasData) continue;
 
     if (isBulanIni) {
-      const blnIO = row[IDX_BLN_IO]!==undefined&&row[IDX_BLN_IO]!=='' ? row[IDX_BLN_IO].toString().trim() : '';
-      const blnRE = row[IDX_BLN_RE]!==undefined&&row[IDX_BLN_RE]!=='' ? row[IDX_BLN_RE].toString().trim() : '';
-      const blnPS = row[IDX_BLN_PS]!==undefined&&row[IDX_BLN_PS]!=='' ? row[IDX_BLN_PS].toString().trim() : '';
-      if (blnIO!==filterBulan && blnRE!==filterBulan && blnPS!==filterBulan) continue;
+      const pIO = ymdToPeriod(row[IDX_DATE_IO]);
+      const pRE = ymdToPeriod(row[IDX_DATE_RE]);
+      const pPS = ymdToPeriod(row[IDX_DATE_PS]);
+      if (pIO!==filterBulan && pRE!==filterBulan && pPS!==filterBulan) continue;
     }
 
     const cleanRow = row.map(function(cell){
