@@ -17,6 +17,15 @@ function djpToast(msg, type='info', ms) { showToast(msg, type, ms); }
 const DJP_SF_COLORS = ['#c93c20', '#2563eb', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#db2777', '#4d7c0f', '#7c3aed', '#0f766e'];
 
 function djpPlanData() {
+  // Cache hasil hitung berat (di luar reaktivitas Alpine): dihitung ulang hanya bila kunci berubah
+  const _memo = {};
+  const memo = (name, key, fn) => {
+    const m = _memo[name];
+    if (m && m.key === key) return m.val;
+    const val = fn();
+    _memo[name] = { key, val };
+    return val;
+  };
   const _today = localYMD();
   const _year  = new Date().getFullYear().toString();
   return {
@@ -170,6 +179,9 @@ function djpPlanData() {
 
     // ── Getters: statistik avail per desa ──
     get desaStats() {
+      return memo('stats', this.form.kab + '|' + this._odpAll.length, () => this._desaStats());
+    },
+    _desaStats() {
       const kab = this.form.kab;
       const stats = {};
       this._odpAll
@@ -186,12 +198,11 @@ function djpPlanData() {
     get desaListFiltered() {
       const kab = this.form.kab;
       if (!kab) return [];
-      const desaSet = new Set(
+      let all = memo('desaAll', kab + '|' + this._odpAll.length, () => [...new Set(
         this._odpAll
           .filter(o => o.kab === kab && (o.avai||0) > 0 && o.desa)
           .map(o => o.desa)
-      );
-      let all = [...desaSet].sort();
+      )].sort());
       const q = this.desaSearch.trim().toLowerCase();
       if (q) all = all.filter(d => d.toLowerCase().includes(q));
       // Mode "Terdekat": desa terpilih di atas, sisanya urut jarak dari titik tengah desa terpilih
@@ -207,6 +218,9 @@ function djpPlanData() {
 
     // Titik tengah ODP per desa (kab terpilih)
     get desaCentroid() {
+      return memo('centroid', this.form.kab + '|' + this._odpAll.length, () => this._desaCentroid());
+    },
+    _desaCentroid() {
       const kab = this.form.kab, acc = {};
       if (!kab) return acc;
       this._odpAll.forEach(o => {
@@ -223,6 +237,9 @@ function djpPlanData() {
 
     // Jarak (km) tiap desa ke titik tengah desa-desa terpilih; null bila belum ada yang dipilih
     get desaDistMap() {
+      return memo('dist', this.form.kab + '|' + this._odpAll.length + '|' + this.desaSelected.join('\u0001'), () => this._desaDistMap());
+    },
+    _desaDistMap() {
       const c = this.desaCentroid;
       const pts = this.desaSelected.map(d => c[d]).filter(Boolean);
       if (!pts.length) return null;
@@ -232,12 +249,18 @@ function djpPlanData() {
       Object.entries(c).forEach(([d, p]) => { out[d] = haversineKm(lat, lng, p.lat, p.lng); });
       return out;
     },
-    desaJarakLabel(d) {
-      const m = this.desaDistMap;
-      if (!m || this.desaSelected.includes(d) || m[d] == null) return '';
-      const km = m[d];
-      return (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km)) + ' km';
+    get desaJarakMap() {
+      return memo('label', this.form.kab + '|' + this._odpAll.length + '|' + this.desaSelected.join('\u0001'), () => {
+        const m = this.desaDistMap, out = {};
+        if (!m) return out;
+        const sel = new Set(this.desaSelected);
+        Object.entries(m).forEach(([d, km]) => {
+          if (!sel.has(d)) out[d] = (km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km)) + ' km';
+        });
+        return out;
+      });
     },
+    desaJarakLabel(d) { return this.desaJarakMap[d] || ''; },
 
     // ── Getters: SF list dengan search ──
     get sfListFiltered() {
