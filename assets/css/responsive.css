@@ -154,6 +154,7 @@
 
   /* ── 12. Prevent overflow bursting ── */
   .content * { max-width: 100%; box-sizing: border-box; }
+  .content .leaflet-container * { max-width: none; } /* penanda/tooltip peta jangan ikut dijepit */
   img, video, canvas { max-width: 100%; height: auto; }
 }
 

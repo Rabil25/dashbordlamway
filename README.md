@@ -223,3 +223,5 @@ Gaya bersama ada di `assets/css/components.css`. Untuk elemen baru:
 - Periode tahun-bulan dari DH/DI/DJ (siap 2027).
 - Tampilan mobile, kontras WCAG, fokus keyboard, komponen seragam.
 - `index.html` dipecah menjadi `assets/css/*` dan `assets/js/*`.
+- Menu **Timeline Desa** (`assets/js/timeline.js`): plan bulan berjalan per tanggal, warna kategori desa dari rumus Prioritas (`klasifikasiDesa()`, dihitung per cluster tanpa filter kab). Data plan via `/api/data?type=djp_plan` (`lib/plan.js`, read-only, wajib login).
+- **Plan DJP jadi wizard 4 langkah** (Setup → Generate → Review dengan peta → Publish). Aturan generate dan simpan tidak berubah.

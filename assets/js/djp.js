@@ -13,6 +13,9 @@ function localYMD(d = new Date()) {
 // Toast halaman DJP memakai komponen bersama (config.js)
 function djpToast(msg, type='info', ms) { showToast(msg, type, ms); }
 
+// Warna penanda SF di peta Review (urut SF dalam draft)
+const DJP_SF_COLORS = ['#c93c20', '#2563eb', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#db2777', '#4d7c0f', '#7c3aed', '#0f766e'];
+
 function djpPlanData() {
   const _today = localYMD();
   const _year  = new Date().getFullYear().toString();
@@ -36,6 +39,14 @@ function djpPlanData() {
     planData:    [],
     planLoading: false,
     saving:      false,
+    // ── Wizard (tampilan) ──
+    step:        1,      // 1 Setup · 2 Generate · 3 Review · 4 Publish
+    genStage:    0,      // 0..4 tahap proses generate (untuk progress)
+    revSf:       0,      // index SF yang dibuka di Review
+    revOdp:      null,   // ODP yang dipilih (detail)
+    revView:     'peta', // tab di HP: 'peta' | 'tabel'
+    savedOk:     false,
+    savedInfo:   null,
 
     // init() sengaja kosong: data DJP baru dimuat saat menu Plan DJP dibuka (event page-djp_plan).
     // Sebelumnya djp_users (~14 dtk) + odp.json 1,2 MB ikut dimuat di halaman dashboard.
@@ -53,6 +64,8 @@ function djpPlanData() {
             const ageMin = (Date.now() - ts) / 60000;
             if (Array.isArray(draft) && ageMin < 120) { // draft valid max 2 jam
               this.draftPlan = draft;
+              this.step = 3;
+              this.$nextTick(() => this.initReviewMap());
               this._toast('📋 Draft sebelumnya dipulihkan', 'info');
             }
           }
@@ -237,6 +250,7 @@ function djpPlanData() {
       if (!this.canGenerate) return;
       this.generating = true;
       this.draftPlan = [];
+      this.genStage = 0;
       try {
         // 1. Build ODP pool: hanya desa yang dipilih, avail > 0
         const pool = this._odpAll.filter(o =>
@@ -251,9 +265,11 @@ function djpPlanData() {
           return;
         }
 
+        this.genStage = 1;
         // 2. Fetch rotation history
         const history = await this._fetchHistory();
         this.planHistory = history;
+        this.genStage = 2;
 
         // 3. Sort pool: (a) never planned first, (b) oldest last-plan asc, (c) avai desc, (d) kapasitas desc
         pool.sort((a, b) => {
@@ -288,6 +304,7 @@ function djpPlanData() {
           });
         }
 
+        this.genStage = 3;
         // 6. Block-assign to SFs
         const sfObjs = this.sfSelected.map(u => this.sfList.find(s => s.username === u)).filter(Boolean);
         const draft = sfObjs.map((sf, i) => ({
@@ -297,6 +314,7 @@ function djpPlanData() {
         }));
 
         this.draftPlan = draft;
+        this.genStage = 4;
         // Simpan draft ke localStorage — persist kalau reload
         try {
           localStorage.setItem('djp_draft_' + this.form.tgl, JSON.stringify({
@@ -314,6 +332,115 @@ function djpPlanData() {
         this._toast('❌ ' + e.message, 'error');
       }
       this.generating = false;
+    },
+
+    // ════════ WIZARD ════════
+    get draftTotal()   { return this.draftPlan.reduce((s, sf) => s + sf.odps.length, 0); },
+    get draftActive()  { return this.draftPlan.filter(sf => sf.odps.length > 0); },
+    get draftBalanced(){ return this.draftPlan.length > 0 && this.draftPlan.every(sf => sf.odps.length === 4); },
+    get draftDesa()    { return [...new Set(this.draftPlan.flatMap(sf => sf.odps.map(o => o.desa)).filter(Boolean))]; },
+    get revSfObj()     { return this.draftPlan[this.revSf] || null; },
+    get selectedSfObjs(){ return this.sfSelected.map(u => this.sfList.find(s => s.username === u)).filter(Boolean); },
+    sfColor(i) { return DJP_SF_COLORS[i % DJP_SF_COLORS.length]; },
+    fmtTglPanjang(t) {
+      if (!t) return '—';
+      return new Date(t + 'T00:00:00').toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    },
+    odpAlasan(o) {
+      const h = this.planHistory[o.odp];
+      return h ? 'Terakhir diplan ' + h + ' — paling lama tidak dikunjungi di pool' : 'Belum pernah masuk rencana kunjungan';
+    },
+
+    goStep(n) {
+      if (n >= 3 && !this.draftPlan.length) return;
+      this.step = n;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (n === 3) this.$nextTick(() => this.initReviewMap());
+    },
+    async startGenerate() {
+      if (!this.canGenerate) return;
+      this.step = 2;
+      this.savedOk = false;
+      const t0 = Date.now();
+      await this.generateDraft();
+      if (!this.draftTotal) { this.step = 1; return; }
+      // jeda singkat agar progress terbaca, lalu ke Review
+      await new Promise(r => setTimeout(r, Math.max(0, 700 - (Date.now() - t0))));
+      this.revSf = 0; this.revOdp = null;
+      this.goStep(3);
+    },
+    async publish() {
+      await this.saveAllDraft();
+      if (this.savedOk) window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    newPlan() {
+      this.savedOk = false; this.savedInfo = null;
+      this.draftPlan = []; this.desaSelected = []; this.sfSelected = [];
+      this.step = 1;
+    },
+    removeOdpReview(odpIdx) {
+      const sf = this.revSfObj; if (!sf) return;
+      const o = sf.odps[odpIdx];
+      sf.odps.splice(odpIdx, 1);
+      if (this.revOdp && o && this.revOdp.odp === o.odp) this.revOdp = null;
+      try {
+        localStorage.setItem('djp_draft_' + this.form.tgl, JSON.stringify({ tgl: this.form.tgl, kab: this.form.kab, draft: this.draftPlan, ts: Date.now() }));
+      } catch(e) {}
+      this.renderReviewMap();
+    },
+    pickSf(i) { this.revSf = i; this.revOdp = null; this.renderReviewMap(true); },
+    pickOdp(o) {
+      this.revOdp = o;
+      const ctx = window._djpRev; if (!ctx || !ctx.map) return;
+      const la = parseFloat(o.lat), ln = parseFloat(o.lng);
+      if (la && ln) ctx.map.setView([la, ln], Math.max(ctx.map.getZoom(), 15), { animate: true });
+    },
+
+    // Peta Review — objek Leaflet disimpan di luar proxy Alpine
+    initReviewMap() {
+      const el = document.getElementById('djp-rev-map');
+      if (!el || typeof L === 'undefined') return;
+      const ctx = window._djpRev || (window._djpRev = {});
+      if (ctx.map && ctx.el !== el) { try { ctx.map.remove(); } catch(e) {} ctx.map = null; }
+      if (!ctx.map) {
+        ctx.el = el;
+        ctx.map = L.map(el, { zoomControl: true, attributionControl: false });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(ctx.map);
+        ctx.layer = L.layerGroup().addTo(ctx.map);
+      }
+      setTimeout(() => { ctx.map.invalidateSize(); this.renderReviewMap(true); }, 60);
+    },
+    renderReviewMap(fit = false) {
+      const ctx = window._djpRev; if (!ctx || !ctx.map) return;
+      ctx.layer.clearLayers();
+      const pts = [], focus = [];
+      this.draftPlan.forEach((sf, i) => {
+        const on = i === this.revSf, c = this.sfColor(i);
+        sf.odps.forEach((o, j) => {
+          const la = parseFloat(o.lat), ln = parseFloat(o.lng);
+          if (!la || !ln) return;
+          pts.push([la, ln]); if (on) focus.push([la, ln]);
+          const m = L.marker([la, ln], {
+            icon: L.divIcon({
+              className: 'djp-pin-wrap',
+              html: `<span class="djp-pin${on ? ' on' : ''}" style="--c:${c}">${on ? j + 1 : ''}</span>`,
+              iconSize: on ? [26, 26] : [12, 12], iconAnchor: on ? [13, 13] : [6, 6],
+            }),
+            zIndexOffset: on ? 1000 : 0,
+          }).addTo(ctx.layer);
+          m.bindTooltip(`<b>${esc(o.odp)}</b><br>${esc(sf.nama_sf)} · ${esc(o.desa || '')}`, { direction: 'top' });
+          m.on('click', () => { if (i !== this.revSf) this.pickSf(i); this.revOdp = this.draftPlan[i].odps[j]; });
+        });
+      });
+      const k = (typeof OFFICES !== 'undefined' ? OFFICES : []).find(o => o.name === this.form.kantor);
+      if (k) {
+        L.marker([k.lat, k.lng], { icon: L.divIcon({ className: 'djp-pin-wrap', html: '<span class="djp-kantor">🏢</span>', iconSize: [26, 26], iconAnchor: [13, 13] }) })
+          .bindTooltip(esc(k.name), { direction: 'top' }).addTo(ctx.layer);
+      }
+      if (fit) {
+        const b = focus.length ? focus : pts;
+        if (b.length) ctx.map.fitBounds(b, { padding: [36, 36], maxZoom: 15 });
+      }
     },
 
     // ── Save all draft (per SF) ──
@@ -369,6 +496,8 @@ function djpPlanData() {
         this.viewTgl = tglSimpan;
         this.planData = [...sebelumnya, ...allRows.map(r => ({ ...r }))];
         try { localStorage.setItem('djp_plandata_' + tglSimpan, JSON.stringify({ data: this.planData, ts: Date.now() })); } catch(e) {}
+        this.savedOk = true;
+        this.savedInfo = { tgl: tglSimpan, odp: d.saved || allRows.length, sf: activeSFs.length };
         this._toast(`✅ ${d.saved || allRows.length} ODP tersimpan untuk ${activeSFs.length} SF`, 'success');
       } catch(e) {
         // Gagal → draft tetap ada di layar dan di localStorage, user bisa klik Simpan lagi

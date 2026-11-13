@@ -2195,332 +2195,315 @@
            HALAMAN DJP: PLAN
       ════════════════════════════════════════════════════ -->
       <div class="page" :class="{active:page==='djp_plan'}" x-show="page==='djp_plan'" x-data="djpPlanData()" @page-djp_plan.window="initPlan()">
-        <!-- ══ HERO HEADER ════════════════════════════════════ -->
-        <div style="background:linear-gradient(135deg,var(--brand) 0%,#a83018 100%);border-radius:14px;padding:20px 22px 18px;margin-bottom:16px;position:relative;overflow:hidden">
-          <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07)"></div>
-          <div style="position:absolute;bottom:-30px;right:60px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.05)"></div>
-          <div style="position:relative;z-index:1">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-              <span style="font-size:22px">📋</span>
-              <span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px">Generate Plan DJP</span>
-            </div>
-            <div style="font-size:12px;color:rgba(255,255,255,.75);max-width:420px">Rencana kunjungan ODP harian untuk SF — otomatis, bergilir, berbasis lokasi</div>
+
+        <div class="section-hdr">
+          <div>
+            <div class="section-title">Plan DJP — Rencana Kunjungan SF</div>
+            <div class="section-sub">Susun agenda kunjungan ODP untuk Sales Force secara terstruktur</div>
           </div>
         </div>
 
-        <!-- ══ STEP INDICATOR ═════════════════════════════════ -->
-        <div style="display:flex;align-items:center;gap:0;margin-bottom:16px;background:var(--surface-elevated);border-radius:10px;padding:10px 14px;border:1.5px solid var(--surface-border)">
-          <div style="display:flex;align-items:center;gap:7px;flex:1">
-            <div :style="'width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;' + (true?'background:var(--brand);color:#fff':'background:var(--surface-border);color:var(--text-3)')">1</div>
-            <span style="font-size:13px;font-weight:600" :style="true?'color:var(--brand)':'color:var(--text-3)'">Setup</span>
-          </div>
-          <div style="flex:0 0 28px;height:2px;background:var(--surface-border);margin:0 4px;border-radius:1px"
-            :style="canGenerate||draftPlan.length>0?'background:var(--brand)':''"></div>
-          <div style="display:flex;align-items:center;gap:7px;flex:1">
-            <div :style="'width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;' + (draftPlan.length>0?'background:var(--brand);color:#fff':'background:var(--surface-border);color:var(--text-3)')">2</div>
-            <span style="font-size:13px;font-weight:600" :style="draftPlan.length>0?'color:var(--brand)':'color:var(--text-3)'">Review Draft</span>
-          </div>
-          <div style="flex:0 0 28px;height:2px;background:var(--surface-border);margin:0 4px;border-radius:1px"
-            :style="planData&&planData.length>0?'background:var(--brand)':''"></div>
-          <div style="display:flex;align-items:center;gap:7px;flex:1">
-            <div :style="'width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;' + (planData&&planData.length>0?'background:var(--brand);color:#fff':'background:var(--surface-border);color:var(--text-3)')">3</div>
-            <span style="font-size:13px;font-weight:600" :style="planData&&planData.length>0?'color:var(--brand)':'color:var(--text-3)'">Tersimpan</span>
-          </div>
-        </div>
+        <!-- ══ STEPPER ══ -->
+        <ol class="wz-steps" aria-label="Langkah plan">
+          <template x-for="(lbl, i) in ['Setup','Generate','Review','Publish']" :key="i">
+            <li class="wz-step" :class="{ 'is-done': step > i+1 || (savedOk && i===3), 'is-cur': step === i+1 && !(savedOk && i===3) }">
+              <button type="button" :disabled="i+1 >= 3 && !draftPlan.length || i+1===2 || generating || saving"
+                      @click="i+1===1 ? goStep(1) : goStep(i+1)" :aria-current="step===i+1 ? 'step' : null">
+                <span class="wz-dot">
+                  <svg x-show="step > i+1 || (savedOk && i===3)" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <span class="wz-lbl"><span class="num" x-text="'0'+(i+1)+'.'"></span> <span x-text="lbl"></span></span>
+              </button>
+            </li>
+          </template>
+        </ol>
 
-        <!-- ══ SETUP PLAN ══════════════════════════════════════ -->
-        <div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-
-          <!-- Card header -->
-          <div style="padding:12px 16px;background:var(--surface-elevated);border-bottom:1.5px solid var(--surface-border);display:flex;align-items:center;gap:8px">
-            <div style="width:28px;height:28px;border-radius:8px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📅</div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text-1)">Setup Plan</div>
-              <div style="font-size:11px;color:var(--text-3)">Pilih tanggal, wilayah, desa, dan SF</div>
-            </div>
+        <!-- ══ 1. SETUP ══ -->
+        <section class="wz-card" x-show="step===1">
+          <div class="wz-head">
+            <span class="wz-ico">📅</span>
+            <div><h3>01. Setup — Tentukan cakupan perencanaan</h3><p>Atur tanggal, wilayah, desa, dan personel SF yang akan menerima agenda.</p></div>
           </div>
-
-          <div style="padding:16px">
-          <!-- Baris 1: Tanggal · Kab · Kantor -->
-          <div class="djp-grid-3" style="display:grid;grid-template-columns:148px 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
-            <div>
-              <label class="input-lbl">Tanggal</label>
-              <input type="date" class="select" style="width:100%" x-model="form.tgl">
-            </div>
-            <div>
-              <label class="input-lbl">Kabupaten</label>
-              <select class="select" style="width:100%" x-model="form.kab" @change="desaSelected=[];sfSelected=[];form.kantor=''">
-                <option value="">-- Semua Kab --</option>
-                <template x-for="k in kabList" :key="k">
-                  <option :value="k" x-text="k"></option>
-                </template>
-              </select>
-            </div>
-            <div>
-              <label class="input-lbl">Kantor Referensi</label>
-              <select class="select" style="width:100%" x-model="form.kantor" :disabled="kantorList.length===0">
-                <option value="">-- Pilih Kantor --</option>
-                <template x-for="o in kantorList" :key="o.name">
-                  <option :value="o.name" x-text="o.name"></option>
-                </template>
-              </select>
-            </div>
-          </div>
-
-          <!-- Baris 2: Pilih Desa + Pilih SF -->
-          <div class="djp-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-
-            <!-- Panel Desa -->
-            <div>
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:var(--surface-elevated);border-radius:8px;padding:7px 10px;border:1px solid var(--surface-border)">
-                <span style="font-size:13px">🏘️</span>
-                <span style="font-size:12px;font-weight:700;color:var(--text-1)">Desa</span>
-                <span x-show="desaSelected.length>0" style="font-size:10px;color:#fff;font-weight:700;background:var(--brand);border-radius:10px;padding:1px 7px" x-text="desaSelected.length"></span>
-                <div style="flex:1"></div>
-                <button type="button" class="btn btn-xs btn-outline-brand" @click="selectAllDesa()">Semua</button>
-                <button type="button" class="btn btn-xs btn-ghost" @click="clearDesa()" x-show="desaSelected.length>0">Kosongkan</button>
+          <div class="wz-setup">
+            <div class="wz-setup-main">
+              <div class="wz-fields">
+                <label class="wz-field"><span>Tanggal kunjungan <b>*</b></span>
+                  <input type="date" class="select" x-model="form.tgl"></label>
+                <label class="wz-field"><span>Kabupaten <b>*</b></span>
+                  <select class="select" x-model="form.kab" @change="desaSelected=[];sfSelected=[];form.kantor=''">
+                    <option value="">Pilih kabupaten</option>
+                    <template x-for="k in kabList" :key="k"><option :value="k" x-text="k"></option></template>
+                  </select></label>
+                <label class="wz-field"><span>Kantor / STO referensi</span>
+                  <select class="select" x-model="form.kantor" :disabled="kantorList.length===0">
+                    <option value="">Tanpa kantor (urut lokasi)</option>
+                    <template x-for="o in kantorList" :key="o.name"><option :value="o.name" x-text="o.name"></option></template>
+                  </select></label>
               </div>
-              <input type="text" class="select" style="width:100%;font-size:11px;padding:4px 8px;margin-bottom:4px;box-sizing:border-box" placeholder="Cari desa…" x-model="desaSearch">
-              <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;background:var(--surface-2)">
-                <template x-if="desaListFiltered.length===0">
-                  <div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px">
-                    <span x-text="form.kab?'Tidak ada desa':'Pilih Kabupaten dulu'"></span>
+
+              <div class="wz-picks">
+                <div class="wz-pick">
+                  <div class="wz-pick-h">
+                    <b>Pilih Desa <i>*</i></b>
+                    <span class="wz-count" x-text="desaSelected.length + ' dipilih'"></span>
                   </div>
-                </template>
-                <template x-for="desa in desaListFiltered" :key="desa">
-                  <button type="button" class="pick-row" :class="{ on: desaSelected.includes(desa) }"
-                    :aria-pressed="desaSelected.includes(desa)" @click="toggleDesa(desa)">
-                    <span class="pick-name" x-text="desa"></span>
-                    <span class="pick-badge" x-text="(desaStats[desa]?.avail||0)+' ODP'"></span>
-                  </button>
-                </template>
-              </div>
-            </div>
-
-            <!-- Panel SF -->
-            <div>
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:var(--surface-elevated);border-radius:8px;padding:7px 10px;border:1px solid var(--surface-border)">
-                <span style="font-size:13px">👥</span>
-                <span style="font-size:12px;font-weight:700;color:var(--text-1)">Sales Force</span>
-                <span x-show="sfSelected.length>0" style="font-size:10px;color:#fff;font-weight:700;background:var(--brand);border-radius:10px;padding:1px 7px" x-text="sfSelected.length"></span>
-                <div style="flex:1"></div>
-                <button type="button" class="btn btn-xs btn-outline-brand" @click="selectAllSF()">Semua</button>
-                <button type="button" class="btn btn-xs btn-ghost" @click="clearSF()" x-show="sfSelected.length>0">Kosongkan</button>
-              </div>
-              <input type="text" class="select" style="width:100%;font-size:11px;padding:4px 8px;margin-bottom:4px;box-sizing:border-box" placeholder="Cari nama SF…" x-model="sfSearch">
-              <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;background:var(--surface-2)">
-                <template x-if="sfListFiltered.length===0">
-                  <div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px">Tidak ada SF ditemukan</div>
-                </template>
-                <template x-for="sf in sfListFiltered" :key="sf.username">
-                  <button type="button" class="pick-row" :class="{ on: sfSelected.includes(sf.username) }"
-                    :aria-pressed="sfSelected.includes(sf.username)" @click="toggleSF(sf.username)">
-                    <span class="pick-name" x-text="sf.nama"></span>
-                    <span class="pick-code" x-text="sf.username"></span>
-                  </button>
-                </template>
-              </div>
-            </div>
-          </div>
-
-          <!-- Generate button row -->
-          <div x-show="!canGenerate && (desaSelected.length===0 || sfSelected.length===0)"
-            style="background:var(--surface-input);border-radius:8px;padding:10px 14px;text-align:center;color:var(--text-3);font-size:12px;border:1.5px dashed var(--surface-border)">
-            💡 Pilih minimal 1 desa dan 1 SF untuk generate plan
-          </div>
-          <div x-show="canGenerate"
-            style="background:linear-gradient(135deg,rgba(201,60,32,.08),rgba(217,112,32,.06));border-radius:10px;padding:12px 16px;border:1.5px solid rgba(201,60,32,.2);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <div style="display:flex;gap:16px;flex-wrap:wrap">
-              <div style="text-align:center">
-                <div style="font-size:20px;font-weight:800;color:var(--brand)" x-text="desaSelected.length"></div>
-                <div style="font-size:10px;color:var(--text-3);font-weight:600">DESA</div>
-              </div>
-              <div style="width:1px;background:var(--surface-border)"></div>
-              <div style="text-align:center">
-                <div style="font-size:20px;font-weight:800;color:var(--brand)" x-text="sfSelected.length"></div>
-                <div style="font-size:10px;color:var(--text-3);font-weight:600">SF</div>
-              </div>
-              <div style="width:1px;background:var(--surface-border)"></div>
-              <div style="text-align:center">
-                <div style="font-size:20px;font-weight:800;color:var(--accent)" x-text="sfSelected.length*4"></div>
-                <div style="font-size:10px;color:var(--text-3);font-weight:600">MAX ODP</div>
-              </div>
-            </div>
-            <div style="flex:1"></div>
-            <button type="button" class="btn btn-primary btn-lg" @click="generateDraft()" :disabled="generating">
-              <span x-show="!generating" style="font-size:16px">⚡</span>
-              <span x-show="generating" style="font-size:14px">⏳</span>
-              <span x-show="!generating">Generate Draft</span>
-              <span x-show="generating">Memproses…</span>
-            </button>
-          </div>
-          </div><!-- end padding wrapper -->
-        </div>
-
-        <!-- ══ DRAFT PLAN ════════════════════════════════════= -->
-        <div class="card" x-show="draftPlan.length>0" style="margin-bottom:14px;padding:0;overflow:hidden">
-          <!-- Header -->
-          <div style="padding:12px 16px;background:linear-gradient(135deg,rgba(22,163,74,.1),rgba(21,128,61,.06));border-bottom:1.5px solid rgba(22,163,74,.2);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:28px;height:28px;border-radius:8px;background:#16a34a;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📝</div>
-              <div>
-                <div style="font-weight:800;font-size:13px;color:var(--text-1)">Review Draft</div>
-                <div style="font-size:11px;color:var(--text-3)" x-text="form.tgl + ' · ' + draftPlan.filter(s=>s.odps.length>0).length+' SF · '+draftPlan.reduce((s,sf)=>s+sf.odps.length,0)+' ODP'"></div>
-              </div>
-            </div>
-            <div style="flex:1"></div>
-            <button type="button" class="btn btn-sm btn-ghost" @click="draftPlan=[]">
-              ✕ Buang
-            </button>
-            <button type="button" class="btn btn-success" @click="saveAllDraft()"
-              :disabled="saving || draftPlan.every(s=>s.odps.length===0)">
-              <span x-show="!saving">💾</span>
-              <span x-show="saving">⏳</span>
-              <span x-show="!saving">Simpan Semua</span>
-              <span x-show="saving">Menyimpan…</span>
-            </button>
-          </div>
-          <div style="padding:16px">
-
-          <!-- Per-SF draft cards -->
-          <template x-for="(sf, sfIdx) in draftPlan" :key="sf.username_sf">
-            <div style="margin-bottom:10px;border:1.5px solid var(--surface-border);border-radius:10px;overflow:hidden">
-              <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-elevated);border-bottom:1px solid var(--surface-border)">
-                <div style="width:30px;height:30px;border-radius:50%;background:var(--brand-dim);border:2px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">👤</div>
-                <div>
-                  <div style="font-weight:700;font-size:13px;color:var(--text-1)" x-text="sf.nama_sf"></div>
-                  <div style="font-size:10px;color:var(--text-3)" x-text="'@'+sf.username_sf"></div>
+                  <div class="wz-search">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+                    <input type="text" placeholder="Cari desa…" x-model="desaSearch" aria-label="Cari desa">
+                  </div>
+                  <div class="wz-pick-tools">
+                    <button type="button" class="btn btn-xs btn-ghost" @click="selectAllDesa()" :disabled="!desaListFiltered.length">Pilih semua</button>
+                    <button type="button" class="btn btn-xs btn-ghost" @click="clearDesa()" x-show="desaSelected.length">Kosongkan</button>
+                  </div>
+                  <div class="wz-list">
+                    <div class="wz-list-empty" x-show="!desaListFiltered.length" x-text="form.kab ? 'Tidak ada desa dengan ODP tersedia' : 'Pilih kabupaten terlebih dahulu'"></div>
+                    <template x-for="desa in desaListFiltered" :key="desa">
+                      <button type="button" class="wz-check" :class="{on: desaSelected.includes(desa)}" :aria-pressed="desaSelected.includes(desa)" @click="toggleDesa(desa)">
+                        <span class="wz-box"></span>
+                        <span class="wz-check-name" x-text="desa"></span>
+                        <span class="wz-check-meta" x-text="(desaStats[desa]?.avail||0)+' ODP'"></span>
+                      </button>
+                    </template>
+                  </div>
                 </div>
-                <div style="flex:1"></div>
-                <span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px"
-                  :style="sf.odps.length>0?'background:rgba(201,60,32,.1);color:var(--brand)':'background:var(--surface-border);color:var(--text-3)'"
-                  x-text="sf.odps.length+' ODP'"></span>
+
+                <div class="wz-pick">
+                  <div class="wz-pick-h">
+                    <b>Pilih SF <i>*</i></b>
+                    <span class="wz-count" x-text="sfSelected.length + ' dipilih'"></span>
+                  </div>
+                  <div class="wz-search">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+                    <input type="text" placeholder="Cari SF…" x-model="sfSearch" aria-label="Cari SF">
+                  </div>
+                  <div class="wz-pick-tools">
+                    <button type="button" class="btn btn-xs btn-ghost" @click="selectAllSF()" :disabled="!sfListFiltered.length">Pilih semua</button>
+                    <button type="button" class="btn btn-xs btn-ghost" @click="clearSF()" x-show="sfSelected.length">Kosongkan</button>
+                  </div>
+                  <div class="wz-list">
+                    <div class="wz-list-empty" x-show="!sfListFiltered.length" x-text="sfList.length ? 'SF tidak ditemukan' : 'Memuat daftar SF…'"></div>
+                    <template x-for="sf in sfListFiltered" :key="sf.username">
+                      <button type="button" class="wz-check" :class="{on: sfSelected.includes(sf.username)}" :aria-pressed="sfSelected.includes(sf.username)" @click="toggleSF(sf.username)">
+                        <span class="wz-box"></span>
+                        <span class="wz-check-name" x-text="sf.nama"></span>
+                        <span class="wz-check-meta mono" x-text="sf.username"></span>
+                      </button>
+                    </template>
+                  </div>
+                </div>
               </div>
-              <div x-show="sf.odps.length===0" style="padding:12px;text-align:center;color:var(--text-3);font-size:12px">— Tidak ada ODP —</div>
-              <div x-show="sf.odps.length>0" style="overflow-x:auto">
-                <table style="width:100%;font-size:12px;border-collapse:collapse">
-                  <thead>
-                    <tr style="background:var(--card-bg,var(--surface-2))">
-                      <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2)">#</th>
-                      <th style="padding:5px 10px;text-align:left;font-weight:600;color:var(--text-2)">Nama ODP</th>
-                      <th style="padding:5px 8px;text-align:left;font-weight:600;color:var(--text-2)">Kec · Desa</th>
-                      <th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--text-2)">Avai</th>
-                      <th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--text-2)">Last Plan</th>
-                      <th style="padding:5px 6px;text-align:center;font-weight:600;color:var(--text-2)"></th>
+            </div>
+
+            <aside class="wz-sum">
+              <h4>Ringkasan Setup</h4>
+              <dl>
+                <div><dt>📅 Tanggal</dt><dd x-text="fmtTglPanjang(form.tgl)"></dd></div>
+                <div><dt>📍 Kabupaten</dt><dd x-text="form.kab || '—'"></dd></div>
+                <div><dt>🏢 Kantor</dt><dd x-text="form.kantor || 'Tanpa kantor'"></dd></div>
+                <div><dt>🏘️ Desa</dt><dd x-text="desaSelected.length + ' desa'"></dd></div>
+                <div><dt>👥 SF</dt><dd x-text="sfSelected.length + ' petugas'"></dd></div>
+                <div><dt>📌 Maks. ODP</dt><dd x-text="sfSelected.length*4 + ' ODP'"></dd></div>
+              </dl>
+            </aside>
+          </div>
+          <div class="wz-foot">
+            <span class="wz-hint" x-show="!canGenerate">Pilih kabupaten, minimal 1 desa dan 1 SF.</span>
+            <span></span>
+            <button type="button" class="btn btn-primary" :disabled="!canGenerate" @click="startGenerate()">Lanjutkan <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+
+        <!-- ══ 2. GENERATE ══ -->
+        <section class="wz-card" x-show="step===2">
+          <div class="wz-head">
+            <span class="wz-ico">⚡</span>
+            <div><h3>02. Generate — Distribusi otomatis ODP</h3><p>Sistem memilih ODP prioritas dan membaginya ke SF sesuai aturan DJP.</p></div>
+          </div>
+          <div class="wz-gen">
+            <div class="wz-gen-main">
+              <div class="wz-gen-ico" :class="{spin: generating}">⚙️</div>
+              <b x-text="generating ? 'Sedang memproses distribusi…' : 'Distribusi selesai'"></b>
+              <div class="wz-prog"><i :style="'width:'+(genStage*25)+'%'"></i></div>
+              <span class="wz-prog-n num" x-text="(genStage*25)+'%'"></span>
+              <ul class="wz-gen-steps">
+                <template x-for="(t, i) in ['Mengambil ODP tersedia pada desa terpilih','Mengambil riwayat kunjungan (rotasi)','Mengurutkan prioritas & lokasi','Membagi ODP ke SF (maks. 4 ODP/SF)']" :key="i">
+                  <li :class="{done: genStage > i, cur: genStage === i && generating}">
+                    <span class="wz-gs-ico"></span><span x-text="t"></span>
+                  </li>
+                </template>
+              </ul>
+            </div>
+            <aside class="wz-rules">
+              <h4>ⓘ Aturan Distribusi DJP</h4>
+              <ul>
+                <li>Hanya ODP dengan port tersedia (avai &gt; 0)</li>
+                <li>Prioritas: belum pernah diplan → paling lama tidak diplan → avai terbanyak</li>
+                <li>Maksimal 4 ODP per SF</li>
+                <li>Urut jarak dari kantor referensi (atau lokasi), lalu dibagi per blok</li>
+                <li>Hasil bisa ditinjau sebelum disimpan</li>
+              </ul>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ══ 3. REVIEW ══ -->
+        <section class="wz-card" x-show="step===3">
+          <div class="wz-head">
+            <span class="wz-ico">🔍</span>
+            <div><h3>03. Review — Periksa dan sesuaikan hasil distribusi</h3><p>Tinjau pembagian ODP per SF dan lokasinya di peta. Hapus ODP yang tidak sesuai.</p></div>
+          </div>
+          <div class="wz-tabs" role="tablist">
+            <button type="button" role="tab" :aria-selected="revView==='peta'" :class="{on: revView==='peta'}" @click="revView='peta'; $nextTick(()=>initReviewMap())">🗺️ Peta</button>
+            <button type="button" role="tab" :aria-selected="revView==='tabel'" :class="{on: revView==='tabel'}" @click="revView='tabel'">📋 Tabel</button>
+          </div>
+          <div class="wz-rev" :class="'v-'+revView">
+            <div class="wz-rev-sf">
+              <div class="wz-rev-h"><b>Distribusi per SF</b><span x-text="'Total: '+draftTotal+' ODP'"></span></div>
+              <template x-for="(sf, i) in draftPlan" :key="sf.username_sf">
+                <button type="button" class="wz-sf" :class="{on: revSf===i, warn: sf.odps.length<4}" @click="pickSf(i)" :style="'--c:'+sfColor(i)">
+                  <span class="wz-sf-dot"></span>
+                  <span class="wz-sf-name" x-text="sf.nama_sf"></span>
+                  <span class="wz-sf-n" x-text="sf.odps.length+' ODP'"></span>
+                </button>
+              </template>
+            </div>
+            <div class="wz-rev-map">
+              <div id="djp-rev-map"></div>
+              <div class="wz-map-leg"><span><i class="on" :style="'--c:'+sfColor(revSf)"></i>ODP SF terpilih</span><span><i></i>ODP SF lain</span><span x-show="form.kantor">🏢 Kantor</span></div>
+            </div>
+            <div class="wz-rev-tbl">
+              <div class="wz-rev-h"><b x-text="'ODP – ' + (revSfObj?.nama_sf||'') "></b><span x-text="(revSfObj?.odps.length||0)+' ODP'"></span></div>
+              <div class="wz-list-empty" x-show="revSfObj && !revSfObj.odps.length">SF ini tidak mendapat ODP. Tambah desa di Setup lalu generate ulang.</div>
+              <table class="wz-table" x-show="revSfObj && revSfObj.odps.length">
+                <thead><tr><th>No</th><th>Kode ODP</th><th class="num">Avai</th><th>Last plan</th><th></th></tr></thead>
+                <tbody>
+                  <template x-for="(o, j) in (revSfObj?.odps||[])" :key="j+'|'+o.odp">
+                    <tr :class="{on: revOdp && revOdp.odp===o.odp}" @click="pickOdp(o)">
+                      <td class="num" x-text="j+1"></td>
+                      <td><b x-text="o.odp"></b><small x-text="o.desa"></small></td>
+                      <td class="num" x-text="o.avai||0"></td>
+                      <td><span x-show="planHistory[o.odp]" x-text="(planHistory[o.odp]||'').slice(5)"></span><span class="wz-new" x-show="!planHistory[o.odp]">BARU</span></td>
+                      <td><button type="button" class="wz-x" @click.stop="removeOdpReview(j)" :aria-label="'Buang '+o.odp">✕</button></td>
                     </tr>
-                  </thead>
+                  </template>
+                </tbody>
+              </table>
+              <div class="wz-detail" x-show="revOdp">
+                <div class="wz-detail-h"><b>Detail ODP</b><span class="wz-pill" x-text="planHistory[revOdp?.odp] ? 'Rotasi' : 'Prioritas tinggi'"></span></div>
+                <dl>
+                  <div><dt>Kode</dt><dd x-text="revOdp?.odp"></dd></div>
+                  <div><dt>Desa</dt><dd x-text="(revOdp?.kec||'')+' · '+(revOdp?.desa||'')"></dd></div>
+                  <div><dt>Riwayat plan</dt><dd x-text="planHistory[revOdp?.odp] || 'Belum pernah'"></dd></div>
+                  <div><dt>Avai / Kapasitas</dt><dd x-text="(revOdp?.avai||0)+' / '+((revOdp?.avai||0)+(revOdp?.used||0))"></dd></div>
+                  <div x-show="revOdp?._jarakKm!=null"><dt>Jarak kantor</dt><dd x-text="(revOdp?._jarakKm)+' km'"></dd></div>
+                  <div><dt>Alasan</dt><dd x-text="revOdp ? odpAlasan(revOdp) : ''"></dd></div>
+                </dl>
+              </div>
+            </div>
+          </div>
+          <div class="wz-foot">
+            <button type="button" class="btn btn-ghost" @click="goStep(1)">← Kembali</button>
+            <span></span>
+            <div class="wz-foot-r">
+              <button type="button" class="btn btn-ghost" @click="startGenerate()" :disabled="!canGenerate">↻ Regenerate</button>
+              <button type="button" class="btn btn-primary" @click="goStep(4)" :disabled="!draftTotal">Lanjutkan →</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ 4. PUBLISH ══ -->
+        <section class="wz-card" x-show="step===4">
+          <div class="wz-head">
+            <span class="wz-ico">📤</span>
+            <div><h3>04. Publish — Simpan agenda kunjungan</h3><p>Pastikan ringkasan sudah sesuai, lalu simpan ke sheet DJP_Plan.</p></div>
+          </div>
+
+          <div class="wz-done" x-show="savedOk">
+            <div class="wz-done-ico">✓</div>
+            <b>Plan tersimpan</b>
+            <p x-text="savedInfo ? savedInfo.odp+' ODP untuk '+savedInfo.sf+' SF · '+fmtTglPanjang(savedInfo.tgl) : ''"></p>
+            <div class="wz-foot-r">
+              <button type="button" class="btn btn-ghost" @click="document.getElementById('djp-saved').scrollIntoView({behavior:'smooth'})">Lihat plan tersimpan</button>
+              <button type="button" class="btn btn-primary" @click="newPlan()">+ Buat plan baru</button>
+            </div>
+          </div>
+
+          <div class="wz-pub" x-show="!savedOk">
+            <div class="wz-pub-sum">
+              <h4>Ringkasan Rencana</h4>
+              <dl>
+                <div><dt>📅 Tanggal kunjungan</dt><dd x-text="fmtTglPanjang(form.tgl)"></dd></div>
+                <div><dt>📍 Kabupaten</dt><dd x-text="form.kab"></dd></div>
+                <div><dt>🏢 Kantor</dt><dd x-text="form.kantor || 'Tanpa kantor'"></dd></div>
+                <div><dt>🏘️ Desa</dt><dd x-text="draftDesa.join(', ') || '—'"></dd></div>
+                <div><dt>👥 SF</dt><dd x-text="draftActive.length + ' petugas'"></dd></div>
+                <div><dt>📌 Total ODP</dt><dd x-text="draftTotal + ' ODP'"></dd></div>
+              </dl>
+            </div>
+            <div class="wz-pub-bars">
+              <h4>Distribusi ODP per SF</h4>
+              <template x-for="(sf, i) in draftPlan" :key="sf.username_sf">
+                <div class="wz-bar-row">
+                  <span class="wz-bar-name" x-text="sf.nama_sf"></span>
+                  <span class="wz-bar"><i :style="'width:'+(sf.odps.length/4*100)+'%;background:'+sfColor(i)"></i></span>
+                  <span class="wz-bar-n num" x-text="sf.odps.length+' ODP'"></span>
+                </div>
+              </template>
+              <div class="wz-note" :class="draftBalanced ? 'ok' : 'warn'">
+                <b x-text="draftBalanced ? '✓ Distribusi seimbang' : '⚠ Distribusi belum seimbang'"></b>
+                <span x-text="draftBalanced ? 'Semua SF mendapat 4 ODP (maks. 4 ODP/SF).' : 'Ada SF yang mendapat kurang dari 4 ODP. Tetap bisa disimpan, atau kembali tambah desa.'"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wz-foot" x-show="!savedOk">
+            <button type="button" class="btn btn-ghost" @click="goStep(3)" :disabled="saving">← Kembali</button>
+            <span></span>
+            <button type="button" class="btn btn-primary" @click="publish()" :disabled="saving || !draftTotal">
+              <span x-text="saving ? 'Menyimpan…' : '📤 Simpan & Publish'"></span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ══ PLAN TERSIMPAN ══ -->
+        <section class="wz-card" id="djp-saved">
+          <div class="wz-head wz-head-row">
+            <span class="wz-ico">📋</span>
+            <div style="flex:1;min-width:0"><h3>Plan tersimpan</h3><p x-text="planData.length ? planData.length+' ODP · '+planBySF.length+' SF · '+fmtTglPanjang(viewTgl) : fmtTglPanjang(viewTgl)"></p></div>
+            <div class="wz-foot-r">
+              <input type="date" class="select" x-model="viewTgl" @change="loadPlan(true)" aria-label="Tanggal plan">
+              <button type="button" class="btn btn-ghost btn-sm" @click="loadPlan(true)" :disabled="planLoading" x-text="planLoading ? 'Memuat…' : '↻ Muat'"></button>
+            </div>
+          </div>
+          <div x-show="planLoading" class="wz-list-empty">Memuat plan…</div>
+          <div x-show="!planLoading && !planData.length" class="wz-list-empty">Belum ada plan tersimpan pada tanggal ini.</div>
+          <div class="wz-saved" x-show="!planLoading && planData.length">
+            <template x-for="(sf, i) in planBySF" :key="sf.username_sf">
+              <div class="wz-saved-sf">
+                <div class="wz-saved-h">
+                  <span class="wz-avatar" x-text="(sf.nama_sf||'?').slice(0,1)"></span>
+                  <div><b x-text="sf.nama_sf"></b><small class="mono" x-text="sf.username_sf"></small></div>
+                  <span class="wz-sf-n" x-text="sf.odps.length+' ODP'"></span>
+                  <button type="button" class="btn btn-xs btn-danger" @click="deletePlanSF(sf.username_sf)">Hapus</button>
+                </div>
+                <table class="wz-table">
+                  <thead><tr><th>No</th><th>Kode ODP</th><th>Kec · Desa</th><th class="num">Avai</th><th>Visit</th></tr></thead>
                   <tbody>
-                    <template x-for="(odp, odpIdx) in sf.odps" :key="odpIdx+'|'+odp.odp">
-                      <tr style="border-top:1px solid var(--border)" :style="odpIdx%2===1?'background:var(--surface-2)':''">
-                        <td style="padding:5px 10px;color:var(--text-3);font-size:11px" x-text="odpIdx+1"></td>
-                        <td style="padding:5px 10px;color:var(--text-1);font-weight:600;font-size:11px;white-space:nowrap" x-text="odp.odp"></td>
-                        <td style="padding:5px 8px;color:var(--text-2);font-size:11px" x-text="(odp.kec?odp.kec+' · ':'')+odp.desa"></td>
-                        <td style="padding:5px 8px;text-align:center">
-                          <span :style="(odp.avai||0)>0?'color:#22c55e;font-weight:700':'color:#ef4444'" x-text="odp.avai||0"></span>
-                        </td>
-                        <td style="padding:5px 8px;text-align:center;font-size:10px">
-                          <span x-show="planHistory[odp.odp]" x-text="(planHistory[odp.odp]||'').slice(5)" style="color:var(--text-2)"></span>
-                          <span x-show="!planHistory[odp.odp]" style="color:#22c55e;font-weight:700;font-size:9px">BARU</span>
-                        </td>
-                        <td style="padding:5px 6px;text-align:center">
-                          <button type="button" class="btn btn-xs btn-danger" @click="removeDraftOdp(sfIdx, odpIdx)" :aria-label="'Buang ' + odp.odp + ' dari draft'">✕</button>
-                        </td>
+                    <template x-for="(odp, j) in sf.odps" :key="j+'|'+odp.odp">
+                      <tr>
+                        <td class="num" x-text="j+1"></td>
+                        <td><b x-text="odp.odp"></b></td>
+                        <td x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
+                        <td class="num" x-text="odp.avai||'—'"></td>
+                        <td><span x-show="odp.visit" title="Sudah visit">✅</span><span x-show="!odp.visit">—</span></td>
                       </tr>
                     </template>
                   </tbody>
                 </table>
               </div>
-            </div>
-          </template>
-
-          </div><!-- end padding:16px -->
-        </div>
-
-        <!-- ══ PLAN TERSIMPAN ════════════════════════════════= -->
-        <div class="card" style="padding:0;overflow:hidden">
-          <div style="padding:12px 16px;background:var(--surface-elevated);border-bottom:1.5px solid var(--surface-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:28px;height:28px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📋</div>
-              <div>
-                <div style="font-weight:700;font-size:13px;color:var(--text-1)">Plan Tersimpan</div>
-                <div style="font-size:11px;color:var(--text-3)" x-show="planData.length>0" x-text="planData.length + ' ODP · ' + planBySF.length + ' SF'"></div>
-              </div>
-            </div>
-            <div style="flex:1"></div>
-            <input type="date" class="select" x-model="viewTgl" @change="loadPlan(true)" style="font-size:12px;padding:4px 8px;max-width:148px">
-            <button type="button" class="btn btn-sm" @click="loadPlan(true)" :disabled="planLoading">
-              <span x-show="!planLoading">🔄 Muat</span>
-              <span x-show="planLoading">…</span>
-            </button>
-          </div>
-          <div style="padding:16px">
-
-          <div x-show="planLoading" style="text-align:center;padding:24px;color:var(--text-3);font-size:13px">⏳ Memuat plan…</div>
-
-          <div x-show="!planLoading">
-            <template x-for="sf in planBySF" :key="sf.username_sf">
-              <div style="margin-bottom:14px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
-                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface-elevated);border-bottom:1.5px solid var(--border)">
-                  <div style="width:30px;height:30px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                    <span style="font-size:13px;line-height:1">👤</span>
-                  </div>
-                  <div style="flex:1;min-width:0">
-                    <div style="font-weight:700;font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" x-text="sf.nama_sf"></div>
-                    <div style="font-size:10px;color:var(--text-3);font-family:monospace;letter-spacing:.3px" x-text="'@' + sf.username_sf"></div>
-                  </div>
-                  <span style="font-size:11px;font-weight:700;color:var(--brand);background:rgba(201,60,32,.1);border-radius:12px;padding:2px 10px;white-space:nowrap" x-text="sf.odps.length + ' ODP'"></span>
-                  <button type="button" class="btn btn-xs btn-danger" @click="deletePlanSF(sf.username_sf)">
-                    Hapus
-                  </button>
-                </div>
-                <div style="overflow-x:auto">
-                  <table style="width:100%;font-size:12px;border-collapse:collapse;table-layout:fixed">
-                    <colgroup>
-                      <col style="width:36px">
-                      <col style="width:30%">
-                      <col style="width:22%">
-                      <col>
-                      <col style="width:52px">
-                      <col style="width:56px">
-                    </colgroup>
-                    <thead>
-                      <tr style="background:var(--surface-elevated);border-bottom:1.5px solid var(--border)">
-                        <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">#</th>
-                        <th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Nama ODP</th>
-                        <th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Kab</th>
-                        <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Kec · Desa</th>
-                        <th style="padding:6px 8px;text-align:right;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Avai</th>
-                        <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--text-3);font-size:10px;letter-spacing:.5px;text-transform:uppercase">Visit</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <template x-for="(odp, i) in sf.odps" :key="i+'|'+odp.odp">
-                        <tr style="border-top:1px solid var(--border);transition:background .1s" :style="i%2===1?'background:var(--surface-2)':''"
-                          @mouseenter="$el.style.background='var(--surface-elevated)'" @mouseleave="$el.style.background=i%2===1?'var(--surface-2)':''">
-                          <td style="padding:6px 8px;color:var(--text-3);font-size:11px;text-align:center;font-variant-numeric:tabular-nums" x-text="i+1"></td>
-                          <td style="padding:6px 10px;color:var(--text-1);font-weight:600;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.2px" x-text="odp.odp"></td>
-                          <td style="padding:6px 10px;color:var(--text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" x-text="odp.kab||'—'"></td>
-                          <td style="padding:6px 8px;color:var(--text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
-                          <td style="padding:6px 8px;text-align:right;color:var(--text-1);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums" x-text="odp.avai||'—'"></td>
-                          <td style="padding:6px 8px;text-align:center;font-size:12px">
-                            <span x-show="odp.visit" style="color:var(--success)" title="Sudah visit bulan ini">✅</span>
-                            <span x-show="!odp.visit" style="color:var(--text-3)">—</span>
-                          </td>
-                        </tr>
-                      </template>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             </template>
-
-            <div x-show="planData.length===0" style="text-align:center;padding:40px 20px;color:var(--text-3)">
-              <div style="font-size:36px;margin-bottom:10px">📋</div>
-              <div style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text-2)">Belum ada plan tersimpan</div>
-              <div style="font-size:12px">Generate draft di atas → review → klik Simpan Semua</div>
-            </div>
-          </div><!-- end padding:16px -->
-        </div>
+          </div>
+        </section>
       </div>
 
       <!-- ═══════════════════════════════════════════════════
