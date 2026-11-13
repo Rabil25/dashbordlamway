@@ -438,6 +438,7 @@ function handleAuth(type, params) {
         updateUserField(row[U.USERNAME], U.TOKEN,  '');
         updateUserField(row[U.USERNAME], U.EXPIRY, '');
       }
+      dropSessionCache(token);   // SEC-07: sesi langsung berakhir, bukan 5 menit kemudian
       return { ok:true };
     }
 
@@ -456,7 +457,11 @@ function handleAuth(type, params) {
       if (row[U.HASH] !== oldHash) return { ok:false, error:'Password lama salah.' };
 
       updateUserField(verified.user.username, U.HASH, newHash);
-      return { ok:true, message:'Password berhasil diubah.' };
+      // SEC-07: ganti password = semua sesi lama berakhir, user login ulang
+      dropSessionCache(token);
+      updateUserField(verified.user.username, U.TOKEN,  '');
+      updateUserField(verified.user.username, U.EXPIRY, '');
+      return { ok:true, message:'Password berhasil diubah. Silakan login ulang.', relogin:true };
     }
 
     // ── List pending users (admin only) ───────────────────────
@@ -501,6 +506,12 @@ function handleAuth(type, params) {
 
       const newStatus = action === 'approve' ? 'active' : 'rejected';
       updateUserField(target, U.STATUS, newStatus);
+      if (newStatus === 'rejected') {
+        // SEC-07: user yang ditolak langsung kehilangan sesi aktifnya
+        dropSessionCache((row[U.TOKEN] || '').toString());
+        updateUserField(target, U.TOKEN,  '');
+        updateUserField(target, U.EXPIRY, '');
+      }
 
       return { ok:true, message: 'User ' + target + ' ' + (action === 'approve' ? 'disetujui' : 'ditolak') + '.' };
     }
@@ -545,6 +556,12 @@ function verifyToken(token) {
   try { cache.put(cacheKey, JSON.stringify(result), CACHE_TTL_SESSION); } catch(e) {}
 
   return result;
+}
+
+// ── Hapus cache verifikasi sesi (dipakai logout/reject/ganti password) ──
+function dropSessionCache(token) {
+  if (!token) return;
+  try { CacheService.getScriptCache().remove('sess_' + token.substring(0, 40)); } catch(e) {}
 }
 
 // ── Cari user by username (lowercase) ───────────────────────
