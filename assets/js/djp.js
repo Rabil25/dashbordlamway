@@ -13,6 +13,14 @@ function localYMD(d = new Date()) {
 // Toast halaman DJP memakai komponen bersama (config.js)
 function djpToast(msg, type='info', ms) { showToast(msg, type, ms); }
 
+// Kategori desa — label & warna sama dengan menu Prioritas / Timeline
+const DJP_KAT = {
+  prioritas: { label: 'Prioritas', color: '#ef4444', order: 1 },
+  strategis: { label: 'Strategis', color: '#f97316', order: 2 },
+  cadangan:  { label: 'Cadangan',  color: '#eab308', order: 3 },
+  skip:      { label: 'Skip',      color: '#9ca3af', order: 4 },
+};
+
 // Warna penanda SF di peta Review (urut SF dalam draft)
 const DJP_SF_COLORS = ['#c93c20', '#2563eb', '#16a34a', '#9333ea', '#d97706', '#0891b2', '#db2777', '#4d7c0f', '#7c3aed', '#0f766e'];
 
@@ -37,7 +45,8 @@ function djpPlanData() {
     desaSelected: [],
     sfSelected:   [],
     desaSearch:   '',
-    desaSort:     'dekat',   // 'dekat' = urut jarak dari desa terpilih · 'az' = abjad
+    desaSort:     'dekat',
+    desaKat:      '',        // filter kategori desa ('' = semua)   // 'dekat' = urut jarak dari desa terpilih · 'az' = abjad
     sfSearch:     '',
     // ── Generate ──
     draftPlan:   [],
@@ -64,6 +73,8 @@ function djpPlanData() {
 
     async initPlan() {
       this._initCluster();
+      // Kategori desa (rumus menu Prioritas) dimuat di latar belakang — daftar desa tidak menunggu
+      try { if (!this.prioritasOdpRaw.length && !this.prioritasLoading) this.loadPrioritas(); } catch(e) {}
       try {
         await Promise.all([this._loadODP(), this._loadSF()]);
         // Restore draft dari localStorage kalau masih ada (misal: tab di-reload)
@@ -198,13 +209,10 @@ function djpPlanData() {
     get desaListFiltered() {
       const kab = this.form.kab;
       if (!kab) return [];
-      let all = memo('desaAll', kab + '|' + this._odpAll.length, () => [...new Set(
-        this._odpAll
-          .filter(o => o.kab === kab && (o.avai||0) > 0 && o.desa)
-          .map(o => o.desa)
-      )].sort());
+      let all = this.desaAllKab;
       const q = this.desaSearch.trim().toLowerCase();
       if (q) all = all.filter(d => d.toLowerCase().includes(q));
+      if (this.desaKat) { const km = this.desaKatMap; all = all.filter(d => (km[d]?.kat || '') === this.desaKat); }
       // Mode "Terdekat": desa terpilih di atas, sisanya urut jarak dari titik tengah desa terpilih
       const dist = this.desaDistMap;
       if (this.desaSort === 'dekat' && dist) {
@@ -214,6 +222,36 @@ function djpPlanData() {
         return [...sel, ...rest];
       }
       return all;
+    },
+
+    // Kategori desa (Prioritas/Strategis/Cadangan/Skip) — rumus menu Prioritas, per cluster
+    get desaKatMap() {
+      const raw = this.prioritasOdpRaw || [], pen = this.penetrasiData || [];
+      const kab = this.form.kab;
+      return memo('kat', this.cluster + '|' + kab + '|' + raw.length + '|' + pen.length, () => {
+        const out = {};
+        if (!raw.length || !kab) return out;
+        this.klasifikasiDesa('', '').forEach(d => {
+          if ((d.kab || '').toUpperCase() !== kab) return;
+          const prev = out[d.desa];
+          if (!prev || DJP_KAT[d.kat].order < DJP_KAT[prev.kat].order) out[d.desa] = { kat: d.kat, skor: d.skorPotensi };
+        });
+        return out;
+      });
+    },
+    // Semua desa di kab terpilih yang punya ODP avai > 0 (urut abjad)
+    get desaAllKab() {
+      const kab = this.form.kab;
+      return memo('desaAll', kab + '|' + this._odpAll.length, () => [...new Set(
+        this._odpAll.filter(o => o.kab === kab && (o.avai||0) > 0 && o.desa).map(o => o.desa)
+      )].sort());
+    },
+    get desaKatReady() { return Object.keys(this.desaKatMap).length > 0; },
+    get desaKatCounts() {
+      const km = this.desaKatMap, all = this.desaAllKab;
+      const c = { prioritas: 0, strategis: 0, cadangan: 0, skip: 0 };
+      all.forEach(d => { const k = km[d]?.kat; if (k) c[k]++; });
+      return c;
     },
 
     // Titik tengah ODP per desa (kab terpilih)

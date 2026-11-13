@@ -2230,7 +2230,7 @@
                 <label class="wz-field"><span>Tanggal kunjungan <b>*</b></span>
                   <input type="date" class="select" x-model="form.tgl"></label>
                 <label class="wz-field"><span>Kabupaten <b>*</b></span>
-                  <select class="select" x-model="form.kab" @change="desaSelected=[];sfSelected=[];form.kantor=''">
+                  <select class="select" x-model="form.kab" @change="desaSelected=[];sfSelected=[];form.kantor='';desaKat=''">
                     <option value="">Pilih kabupaten</option>
                     <template x-for="k in kabList" :key="k"><option :value="k" x-text="k"></option></template>
                   </select></label>
@@ -2259,13 +2259,26 @@
                       <button type="button" :class="{on: desaSort==='az'}" :aria-pressed="desaSort==='az'" @click="desaSort='az'">A–Z</button>
                     </span>
                   </div>
+                  <div class="wz-katf" role="group" aria-label="Filter kategori desa" x-show="form.kab">
+                    <button type="button" :class="{on: !desaKat}" :aria-pressed="!desaKat" @click="desaKat=''">Semua</button>
+                    <template x-for="id in ['prioritas','strategis','cadangan','skip']" :key="id">
+                      <button type="button" :class="{on: desaKat===id}" :aria-pressed="desaKat===id" :disabled="!desaKatReady"
+                              @click="desaKat = desaKat===id ? '' : id" :style="'--kc:'+DJP_KAT[id].color">
+                        <i></i><span x-text="DJP_KAT[id].label"></span>
+                        <b class="num" x-show="desaKatReady" x-text="desaKatCounts[id]"></b>
+                      </button>
+                    </template>
+                    <span class="wz-kat-load" x-show="!desaKatReady && prioritasLoading">Memuat kategori…</span>
+                  </div>
                   <div class="wz-sort-hint" x-show="desaSort==='dekat'" x-text="desaSelected.length ? 'Diurutkan dari yang terdekat dengan desa terpilih' : 'Pilih 1 desa, daftar akan diurutkan dari yang terdekat'"></div>
                   <div class="wz-list">
-                    <div class="wz-list-empty" x-show="!desaListFiltered.length" x-text="form.kab ? 'Tidak ada desa dengan ODP tersedia' : 'Pilih kabupaten terlebih dahulu'"></div>
+                    <div class="wz-list-empty" x-show="!desaListFiltered.length" x-text="!form.kab ? 'Pilih kabupaten terlebih dahulu' : (desaKat ? 'Tidak ada desa '+DJP_KAT[desaKat].label+' dengan ODP tersedia' : 'Tidak ada desa dengan ODP tersedia')"></div>
                     <template x-for="desa in desaListFiltered" :key="desa">
                       <button type="button" class="wz-check" :class="{on: desaSelected.includes(desa)}" :aria-pressed="desaSelected.includes(desa)" @click="toggleDesa(desa)">
                         <span class="wz-box"></span>
                         <span class="wz-check-name" x-text="desa"></span>
+                        <span class="wz-kat" x-show="desaKatMap[desa]" :style="'--kc:'+(DJP_KAT[desaKatMap[desa]?.kat]?.color||'#9ca3af')"
+                              x-text="DJP_KAT[desaKatMap[desa]?.kat]?.label||''" :title="'Skor potensi '+(desaKatMap[desa]?.skor??'')"></span>
                         <span class="wz-km" x-show="desaJarakLabel(desa)" x-text="desaJarakLabel(desa)"></span>
                         <span class="wz-check-meta" x-text="(desaStats[desa]?.avail||0)+' ODP'"></span>
                       </button>
