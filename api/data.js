@@ -9,6 +9,7 @@
 
 const { getAllData, getRawSheetCached, getListBulan, normPeriod } = require('../lib/sheets');
 const { verifySession } = require('../lib/session');
+const { getPlanMonth } = require('../lib/plan');
 
 // Token bersama lama HANYA berlaku bila env DATA_TOKEN diisi di Vercel
 // (untuk integrasi non-browser, mis. bot). Tidak ada lagi nilai default di kode.
@@ -57,6 +58,9 @@ module.exports = async function handler(req, res) {
       case 'list_bulan':
         data = await getListBulan();
         break;
+      case 'djp_plan':
+        data = await getPlanMonth(normPeriod(bulan));
+        break;
       case 'wilayah':
         data = {
           ok: true,
@@ -70,7 +74,7 @@ module.exports = async function handler(req, res) {
         data = { ok: true, message: 'pong (Vercel)', updatedAt: new Date().toISOString() };
         break;
       default:
-        data = { ok: false, error: 'Unknown type. Use: all | bulan_ini | update_sf | list_bulan | wilayah | ping' };
+        data = { ok: false, error: 'Unknown type. Use: all | bulan_ini | update_sf | list_bulan | djp_plan | wilayah | ping' };
     }
 
     // Data hanya untuk user login → TIDAK boleh di-cache CDN publik.

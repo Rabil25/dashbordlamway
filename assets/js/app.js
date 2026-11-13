@@ -130,8 +130,21 @@ function app() {
         this.currentUser = null;
       }
 
+      // Resize hanya grafik yang sedang terlihat (halaman lain display:none → resize error),
+      // di-debounce agar tidak berulang saat address bar HP muncul/hilang.
+      let _rzT;
       window.addEventListener('resize', () => {
-        Object.values(this._charts).forEach(c => c && c.resize && c.resize());
+        clearTimeout(_rzT);
+        _rzT = setTimeout(() => {
+          Object.values(this._charts).forEach(c => {
+            try {
+              if (!c || !c.resize || (c.isDisposed && c.isDisposed())) return;
+              const el = c.getDom && c.getDom();
+              if (el && el.offsetParent === null) return;
+              c.resize();
+            } catch (e) { /* abaikan grafik yang belum siap */ }
+          });
+        }, 150);
       });
     },
 
@@ -305,7 +318,7 @@ function app() {
       this.$nextTick(() => {
         this.renderCharts();
         // dispatch event untuk DJP pages supaya auto-load
-        if (['djp_plan','djp_real','djp_daily','djp_odp_list'].includes(p)) {
+        if (['djp_plan','djp_real','djp_daily','djp_odp_list','timeline'].includes(p)) {
           window.dispatchEvent(new CustomEvent('page-' + p));
         }
       });
@@ -316,7 +329,7 @@ function app() {
         dashboard:'Sales Dashboard', d2d:'D2D Sales', deepdive:'Deepdive Sales',
         outlook:'Outlook Sales', sfperf:'SF Performance',
         sf:'Performa SF', order:'Detail Order', kendala:'Kendala', peta:'Peta', prioritas:'Prioritas Kunjungan',
-        djp_plan:'Plan DJP', djp_real:'Realisasi DJP', djp_daily:'DJP Daily', djp_odp_list:'List ODP',
+        djp_plan:'Plan DJP', timeline:'Timeline Desa', djp_real:'Realisasi DJP', djp_daily:'DJP Daily', djp_odp_list:'List ODP',
       };
       return map[this.page] || '';
     },
@@ -1178,8 +1191,14 @@ function app() {
     },
 
     get prioritasDesaList() {
+      return this.klasifikasiDesa(this.prioritasKabFilter, this.prioritasKategoriFilter);
+    },
+
+    // Klasifikasi kuadran desa (Prioritas/Strategis/Cadangan/Skip).
+    // Dipakai menu Prioritas (dengan filter kab) dan Timeline Desa (kabFilter='' → per cluster).
+    klasifikasiDesa(kabFilter = '', katFilter = '') {
       const clusterKabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
-      const kabF = this.prioritasKabFilter.toUpperCase();
+      const kabF = (kabFilter || '').toUpperCase();
       const data = this.prioritasOdpRaw;
       if (!data.length) return [];
 
@@ -1256,7 +1275,7 @@ function app() {
         skip:      { label:'Skip',       color:'#9ca3af', order:4 },
       };
 
-      const katF = this.prioritasKategoriFilter;
+      const katF = katFilter;
 
       return desas.map(d => {
         const tinggi = d.skorPotensi >= medOpp;

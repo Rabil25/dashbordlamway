@@ -284,6 +284,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/></svg>
         Plan DJP
       </button>
+      <button class="nav-sub-item" :class="{active:page==='timeline'}" @click="nav('timeline');menuOpen=false" aria-label="Timeline Desa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="2" y1="12" x2="22" y2="12"/><circle cx="6" cy="12" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/><line x1="6" y1="5" x2="6" y2="9"/><line x1="18" y1="15" x2="18" y2="19"/></svg>
+        Timeline Desa
+      </button>
       <button class="nav-sub-item" :class="{active:page==='djp_real'}" @click="nav('djp_real');menuOpen=false" aria-label="Realisasi DJP">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Realisasi DJP
@@ -2032,6 +2036,162 @@
       </div>
 
 <!-- ═══════════════════════════════════════════════════
+           HALAMAN DJP: TIMELINE DESA
+      ════════════════════════════════════════════════════ -->
+      <div class="page" :class="{active:page==='timeline'}" x-show="page==='timeline'"
+           x-data="timelineData()" @page-timeline.window="tlLoad()">
+
+        <div class="section-hdr">
+          <div>
+            <div class="section-title">Timeline Desa</div>
+            <div class="section-sub">Arah plan DJP per desa · <span x-text="periodLabel(tlPeriode)"></span> · <span x-text="cluster"></span></div>
+          </div>
+          <div class="tl-filters">
+            <select class="select" x-model="tlKab" aria-label="Filter kabupaten">
+              <option value="">Semua Kabupaten</option>
+              <template x-for="k in (CLUSTER[cluster]?.kab||[])" :key="k"><option :value="k" x-text="k"></option></template>
+            </select>
+            <select class="select" x-model="tlSf" aria-label="Filter SF">
+              <option value="">Semua SF</option>
+              <template x-for="s in tlSfList" :key="s.u"><option :value="s.u" x-text="s.n"></option></template>
+            </select>
+            <button class="btn btn-ghost btn-sm" @click="tlLoad(true)" :disabled="tlLoading"
+                    x-text="tlLoading ? 'Memuat…' : '↻ Refresh'"></button>
+          </div>
+        </div>
+
+        <div x-show="tlError" class="alert-warn" style="margin-bottom:12px" x-text="'Gagal memuat: ' + tlError"></div>
+
+        <!-- Skeleton -->
+        <div x-show="tlLoading && !tlLoaded" class="tl-card tl-skel" aria-busy="true">
+          <div class="tl-skel-bar"></div><div class="tl-skel-bar" style="width:70%"></div><div class="tl-skel-bar" style="width:40%"></div>
+        </div>
+
+        <template x-if="tlLoaded">
+          <div>
+            <!-- Angka besar -->
+            <div class="tl-stats">
+              <div class="tl-stat"><span class="tl-stat-v num" x-text="tlTotals.desa"></span><span class="tl-stat-l">Desa diplan</span></div>
+              <div class="tl-stat"><span class="tl-stat-v num" x-text="tlTotals.odp"></span><span class="tl-stat-l">ODP diplan</span></div>
+              <div class="tl-stat"><span class="tl-stat-v num" x-text="tlTotals.hari"></span><span class="tl-stat-l">Hari ada plan</span></div>
+              <div class="tl-stat"><span class="tl-stat-v num" x-text="tlTotals.sf"></span><span class="tl-stat-l">SF terlibat</span></div>
+            </div>
+
+            <!-- Cakupan per kategori (klik = filter) -->
+            <div class="tl-kats" role="group" aria-label="Filter kategori desa">
+              <template x-for="k in tlSummary" :key="k.id">
+                <button type="button" class="tl-kat" :class="{'is-on': tlKat===k.id, 'is-dim': tlKat && tlKat!==k.id}"
+                        :aria-pressed="tlKat===k.id" @click="tlKat = tlKat===k.id ? '' : k.id" :style="'--kc:'+k.color">
+                  <span class="tl-kat-top"><span class="tl-dot"></span><span x-text="k.label"></span></span>
+                  <span class="tl-kat-v">
+                    <b class="num" x-text="k.done"></b>
+                    <small x-show="k.total!==null" x-text="'/ ' + k.total + ' desa'"></small>
+                    <small x-show="k.total===null">desa</small>
+                  </span>
+                  <span class="tl-bar" x-show="k.total!==null"><i :style="'width:'+k.pct+'%'"></i></span>
+                  <span class="tl-kat-f" x-text="k.total!==null ? k.pct+'% tercakup · '+k.share+'% dari plan' : 'belum ada di data ODP'"></span>
+                </button>
+              </template>
+            </div>
+
+            <!-- Garis tanggal -->
+            <div class="tl-card">
+              <div class="tl-card-h">
+                <b>Garis tanggal</b>
+                <div class="tl-nav">
+                  <button class="btn btn-ghost btn-xs" @click="tlStep(-1)" aria-label="Tanggal sebelumnya">‹</button>
+                  <button class="btn btn-ghost btn-xs" @click="tlSel = localYMD(new Date()); tlStep(0)">Hari ini</button>
+                  <button class="btn btn-ghost btn-xs" @click="tlStep(1)" aria-label="Tanggal berikutnya">›</button>
+                </div>
+              </div>
+              <div class="tl-track" role="listbox" aria-label="Pilih tanggal">
+                <div class="tl-line" aria-hidden="true"></div>
+                <template x-for="d in tlDays" :key="d.tgl">
+                  <button type="button" role="option" class="tl-day"
+                          :class="{'is-sel': d.tgl===tlSel, 'is-today': d.isToday, 'is-empty': !d.desas.length, 'is-future': d.isFuture, 'is-sun': d.minggu}"
+                          :aria-selected="d.tgl===tlSel" @click="tlSel=d.tgl"
+                          :title="d.desas.length ? d.desas.length+' desa · '+d.odpCount+' ODP' : 'Belum ada plan'">
+                    <span class="tl-hari" x-text="d.hari"></span>
+                    <span class="tl-node"><span class="num" x-text="d.day"></span></span>
+                    <span class="tl-dots">
+                      <template x-for="x in d.desas.slice(0,8)" :key="x.key">
+                        <i :style="'background:'+TL_KAT[x.kat].color"></i>
+                      </template>
+                      <em x-show="d.desas.length>8" x-text="'+'+(d.desas.length-8)"></em>
+                    </span>
+                    <span class="tl-cnt" x-text="d.desas.length ? d.desas.length+' desa' : '–'"></span>
+                  </button>
+                </template>
+              </div>
+              <div class="tl-legend">
+                <template x-for="id in ['prioritas','strategis','cadangan','skip']" :key="id">
+                  <span><i :style="'background:'+TL_KAT[id].color"></i><span x-text="TL_KAT[id].label"></span></span>
+                </template>
+                <span class="tl-legend-note">1 titik = 1 desa</span>
+              </div>
+            </div>
+
+            <div class="tl-grid">
+              <!-- Detail tanggal terpilih -->
+              <div class="tl-card">
+                <div class="tl-card-h">
+                  <div>
+                    <b x-text="tlFmtTgl(tlSel)"></b>
+                    <div class="tl-sub" x-show="tlSelDay && tlSelDay.desas.length"
+                         x-text="(tlSelDay?.desas.length||0)+' desa · '+(tlSelDay?.odpCount||0)+' ODP · '+(tlSelDay?.sfCount||0)+' SF'"></div>
+                  </div>
+                </div>
+                <div x-show="!tlSelDay || !tlSelDay.desas.length" class="tl-empty">
+                  <span x-text="tlKat ? 'Tidak ada desa kategori ini pada tanggal tersebut.' : 'Belum ada plan pada tanggal ini.'"></span>
+                </div>
+                <div class="tl-list">
+                  <template x-for="x in (tlSelDay?.desas||[])" :key="x.key">
+                    <div class="tl-desa" :style="'--kc:'+TL_KAT[x.kat].color">
+                      <button type="button" class="tl-desa-h" @click="tlOpen[x.key] = !tlOpen[x.key]" :aria-expanded="!!tlOpen[x.key]">
+                        <span class="tl-desa-name">
+                          <b x-text="x.desa"></b>
+                          <small x-text="x.kec + ' · ' + x.kab"></small>
+                        </span>
+                        <span class="tl-badge" x-text="TL_KAT[x.kat].label"></span>
+                        <span class="tl-desa-n num" x-text="x.odps.length+' ODP'"></span>
+                      </button>
+                      <div class="tl-desa-sf" x-text="'SF: ' + x.sfNames.join(', ')"></div>
+                      <div class="tl-odps" x-show="tlOpen[x.key]">
+                        <template x-for="o in x.odps" :key="o.odp+o.sf">
+                          <span class="tl-odp"><code x-text="o.odp"></code><small x-text="o.sf"></small></span>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Desa Prioritas belum disentuh -->
+              <div class="tl-card" x-show="!tlSf">
+                <div class="tl-card-h">
+                  <div>
+                    <b>Desa Prioritas belum diplan</b>
+                    <div class="tl-sub" x-text="tlBelumDisentuh.length + ' desa · urut skor potensi'"></div>
+                  </div>
+                </div>
+                <div x-show="!tlBelumDisentuh.length" class="tl-empty">Semua desa Prioritas sudah masuk plan bulan ini 🎉</div>
+                <div class="tl-todo">
+                  <template x-for="d in tlBelumDisentuh.slice(0,30)" :key="d.key">
+                    <div class="tl-todo-i">
+                      <span><b x-text="d.desa"></b><small x-text="d.kec + ' · ' + d.kab"></small></span>
+                      <span class="tl-todo-s"><span class="num" x-text="d.skor"></span><small>skor</small></span>
+                    </div>
+                  </template>
+                  <div x-show="tlBelumDisentuh.length>30" class="tl-sub" style="padding:6px 2px"
+                       x-text="'+' + (tlBelumDisentuh.length-30) + ' desa lain — lihat menu Prioritas'"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+<!-- ═══════════════════════════════════════════════════
            HALAMAN DJP: PLAN
       ════════════════════════════════════════════════════ -->
       <div class="page" :class="{active:page==='djp_plan'}" x-show="page==='djp_plan'" x-data="djpPlanData()" @page-djp_plan.window="initPlan()">
@@ -2595,5 +2755,6 @@
 <script src="assets/js/config.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/djp.js"></script>
+<script src="assets/js/timeline.js"></script>
 </body>
 </html>
