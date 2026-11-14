@@ -296,3 +296,25 @@
 [data-theme="medieval"] .tbl-wrap table :is(td, th) { padding-left: 6px; padding-right: 6px; }
 [data-theme="medieval"] .tbl-wrap table td.mono, [data-theme="medieval"] .tbl-wrap table td .mono { font-size: 12px; letter-spacing: -.01em; }
 [data-theme="medieval"] .tbl-wrap table :is(.badge, .te-pill, .tier-badge) { font-size: 10.5px; padding: 0 5px; transform: none; }
+
+/* ── Peta Wilayah: panel & kartu ala perkamen, peta dasar sepia ── */
+[data-theme="medieval"] .wl-panel, [data-theme="medieval"] .wl-pop .leaflet-popup-content-wrapper {
+  --text-1: #3b2a1e; --text-2: #5e4836; --text-3: #6f5945; color: #3b2a1e;
+  background: linear-gradient(rgba(243,230,198,.5), rgba(243,230,198,.5)), #ecdcb6 var(--md-paper); background-size: auto, 420px;
+  border: 1px solid rgba(110,75,35,.55); box-shadow: inset 0 0 18px rgba(120,72,22,.35), 0 4px 12px rgba(30,15,5,.45); border-radius: 4px;
+}
+[data-theme="medieval"] .wl-panel-t { font-family: var(--md-label); font-weight: 400; font-size: 14px; }
+[data-theme="medieval"] .wl-seg button { font-family: var(--md-label); color: #3b2a1e; border-color: rgba(110,75,35,.55); }
+[data-theme="medieval"] .wl-seg button.on { background: radial-gradient(circle at 35% 30%, #c9452f, #8e1b14 78%); color: #fbe9d0; }
+[data-theme="medieval"] .wl-card-h { font-family: var(--md-head); font-weight: 900; }
+[data-theme="medieval"] .wl-kv b { font-family: var(--md-head); font-weight: 900; }
+[data-theme="medieval"] .wl-tag { font-family: var(--md-hand); transform: rotate(-1.5deg); }
+[data-theme="medieval"] .wl-lbl-kab { font-family: var(--md-head); font-weight: 900; }
+[data-theme="medieval"] .wl-lbl-kec { font-family: var(--md-label); font-weight: 400; font-size: 13.5px; }
+[data-theme="medieval"] .wl-lbl-kec small { font-family: var(--md-hand); font-weight: 700; }
+[data-theme="medieval"] .wl-lbl-desa { font-family: var(--font); font-size: 12.5px; }
+[data-theme="medieval"] .wl-tip { font-family: var(--font); background: #f3e6c8; color: #3b2a1e; border-color: #8a6236; }
+[data-theme="medieval"] .peta-page .leaflet-tile-pane { filter: sepia(.55) saturate(.75) brightness(1.03) contrast(.95); }
+[data-theme="medieval"] .peta-page #leaflet-map.satellite-mode .leaflet-tile-pane { filter: sepia(.25) saturate(.9); }
+[data-theme="medieval"] .peta-page .leaflet-container { filter: none; }
+[data-theme="medieval"] .peta-page .wl-panel :is(.select, input[type="date"]) { background: #f6ead0; color: #3b2a1e; }

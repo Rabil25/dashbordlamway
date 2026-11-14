@@ -426,3 +426,45 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 .te-card { background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--r); display: flex; flex-direction: column; }
 .te-card .te-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
 .te-card .te-value { font-size: 20px; font-weight: 800; color: var(--text-1); }
+
+/* ── Peta Wilayah: panel lapisan, label, kartu desa ── */
+.peta-map-card { position: relative; }
+.wl-panel { position: absolute; top: 10px; right: 10px; z-index: 800; width: 270px; max-height: calc(100% - 20px); overflow: auto;
+  background: var(--surface-card); color: var(--text-1); border: 1px solid var(--surface-border); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.3); padding: 8px 10px; font-size: 12.5px; }
+.wl-panel.closed { width: auto; }
+.wl-panel-t { all: unset; cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; width: 100%; gap: 10px; }
+.wl-seg { display: flex; gap: 3px; margin: 8px 0 6px; }
+.wl-seg button { flex: 1; font: inherit; font-size: 11px; padding: 4px 2px; border-radius: 5px; border: 1px solid var(--surface-border); background: transparent; color: var(--text-2); cursor: pointer; }
+.wl-seg button.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+.wl-ly { display: flex; align-items: center; gap: 6px; margin: 4px 0; cursor: pointer; flex-wrap: wrap; }
+.wl-ly small { color: var(--text-3); font-size: 10.5px; width: 100%; padding-left: 20px; margin-top: -3px; }
+.wl-row { display: flex; gap: 5px; margin: 4px 0 6px; align-items: center; }
+.wl-row .select { flex: 1; min-width: 0; font-size: 11.5px; padding: 3px 5px; }
+.wl-row small { color: var(--text-3); font-size: 10.5px; white-space: nowrap; }
+.wl-hl { border-top: 1px dashed var(--surface-border); padding-top: 6px; margin-top: 6px; font-weight: 700; }
+.wl-hls div { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.wl-hls i { width: 12px; height: 12px; border: 2.5px solid; border-radius: 2px; flex: none; }
+.wl-hls b { margin-left: auto; }
+.wl-lbl { pointer-events: none; text-align: center; white-space: nowrap; line-height: 1.15; color: #2b1a0e;
+  text-shadow: -1px -1px 0 rgba(255,250,235,.9), 1px -1px 0 rgba(255,250,235,.9), -1px 1px 0 rgba(255,250,235,.9), 1px 1px 0 rgba(255,250,235,.9); }
+.wl-lbl-kab { font-weight: 800; font-size: 16px; letter-spacing: .12em; color: #6b4423; opacity: .85; }
+.wl-lbl-kec { font-weight: 700; font-size: 12.5px; }
+.wl-lbl-kec small { display: block; font-weight: 600; font-size: 10.5px; color: #2e6a2a; }
+.wl-lbl-desa { font-size: 11px; }
+.wl-tip { font-size: 12px; }
+.wl-office { font-size: 20px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+.wl-plan { width: 22px; height: 22px; border-radius: 50%; color: #fff; border: 2px solid #fff; display: grid; place-items: center; font-weight: 700; font-size: 11px; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.wl-card { min-width: 240px; font-size: 12.5px; }
+.wl-card-h { font-size: 17px; font-weight: 800; }
+.wl-card-s { color: #6b5440; font-style: italic; margin-bottom: 4px; }
+.wl-tag { display: inline-block; font-weight: 700; font-size: 11.5px; padding: 0 8px; border: 2px solid currentColor; border-radius: 12px; margin: 2px 4px 2px 0; }
+.wl-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin: 8px 0; }
+.wl-kv div { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #6b5440; }
+.wl-kv b { display: block; font-size: 18px; color: #2b1a0e; text-transform: none; letter-spacing: 0; }
+.wl-kv b.sm { font-size: 14px; }
+.wl-mini { width: 100%; border-collapse: collapse; font-size: 12px; }
+.wl-mini th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #6b5440; padding: 2px 0; }
+.wl-mini td { padding: 3px 2px; border-top: 1px dashed rgba(59,42,30,.3); }
+.wl-mini td.n { text-align: right; white-space: nowrap; font-weight: 700; }
+.wl-none, .wl-note { color: #6b5440; font-style: italic; font-size: 11.5px; margin-top: 4px; }
+@media (max-width: 640px) { .wl-panel { width: 220px; font-size: 12px; top: 6px; right: 6px; } .wl-panel:not(.closed) { max-height: 60%; } }

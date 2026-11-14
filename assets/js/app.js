@@ -39,6 +39,9 @@ function app() {
     loading: false,
     filterLoading: false,
     showConfig: false,
+    // Peta Wilayah: mode batas auto/desa/kec/kab, layer, filter SF, tanggal plan
+    wl: { mode: 'auto', kat: true, visit: true, plan: true, kantor: true, hl: true, labels: false, sf: '', kab: '', planTgl: (typeof localYMD === 'function' ? localYMD(new Date()) : new Date().toISOString().slice(0, 10)), open: true },
+    wlStats: null, wlPlanInfo: '',
     themeMode: localStorage.getItem('dashTheme2') || 'medieval',   // default tema Medieval (Nov 2026); light/dark tetap bisa dipilih
     allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)
     _availBulanList: null,  // daftar bulan tersedia dari GAS list_bulan
@@ -1924,6 +1927,12 @@ function app() {
       }));
     },
 
+    get wlSfList() {
+      return (this.sfTable || []).map(s => ({ code: String(s.code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), nama: String(s.nama || s.code).replace(/\[.*?\]\s*/g, '') }))
+        .filter(s => s.code).sort((a, b) => a.nama.localeCompare(b.nama));
+    },
+    wlRefresh() { if (this._leafletMap && typeof wlRender === 'function') wlRender(this, this._leafletMap); },
+
     // Peta setinggi sisa layar (tanpa perlu scroll); dipanggil saat render & resize
     fitPetaMap() {
       const el = document.getElementById('leaflet-map');
@@ -1976,6 +1985,11 @@ function app() {
         }).addTo(map);
       }
 
+      // Lapisan Peta Wilayah (batas desa/kecamatan, kategori, kunjungan DJP, plan, kantor)
+      const wlGo = () => { if (typeof wlRender === 'function') wlRender(this, map); };
+      wlGo();
+      if (!this.prioritasOdpRaw.length) this.loadPrioritas().then(wlGo).catch(() => {});
+
       if (rows.length === 0) {
         map.setView([DEFAULT_LAT, DEFAULT_LNG], 9);
         return;
@@ -1999,7 +2013,8 @@ function app() {
 
         const color = typeColor[r.type] || '#fbbf24';
         const circle = L.circleMarker([r.lat, r.lng], {
-          radius: r.type === 'ps' ? 8 : 6,
+          pane: 'markerPane',
+          radius: r.type === 'ps' ? 6 : 5,
           fillColor: color,
           color: '#fff',
           weight: 1,

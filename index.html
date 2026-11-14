@@ -276,9 +276,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Kendala
       </button>
-      <button class="nav-sub-item" :class="{active:page==='peta'}" @click="nav('peta');menuOpen=false" aria-label="Peta Sebaran">
+      <button class="nav-sub-item" :class="{active:page==='peta'}" @click="nav('peta');menuOpen=false" aria-label="Peta Wilayah">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-        Peta
+        Peta Wilayah
       </button>
       <button class="nav-sub-item" :class="{active:page==='prioritas'}" @click="nav('prioritas');menuOpen=false" aria-label="Prioritas Kunjungan">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8l4 4-4 4M8 12h8"/></svg>
@@ -1158,8 +1158,8 @@
       <!-- ══ PAGE: PETA ══ -->
       <div class="page peta-page" :class="{active:page==='peta'}" x-show="!loading && allRows.length>0">
         <div class="section-hdr">
-          <div class="section-title">Peta Koordinat Order</div>
-          <div class="section-sub" x-text="koordinatRows.length + ' order dengan koordinat · ' + cluster"></div>
+          <div class="section-title">Peta Wilayah</div>
+          <div class="section-sub" x-text="'Batas desa & kecamatan · kunjungan DJP ' + ((wlStats && wlStats.djp) || '3 bulan') + ' · ' + koordinatRows.length + ' order · ' + cluster"></div>
         </div>
         <!-- Filter STO & Produk -->
         <div class="peta-tools">
@@ -1234,6 +1234,39 @@
           <span style="font-size:11px;color:var(--text-3)" x-show="showODP">4.061 titik ODP</span>
         </div>
         <div class="card peta-map-card" style="padding:0;overflow:hidden;position:relative">
+          <!-- Panel lapisan Peta Wilayah -->
+          <div class="wl-panel" :class="{ closed: !wl.open }">
+            <button type="button" class="wl-panel-t" @click="wl.open=!wl.open" :aria-expanded="wl.open">🗺 Lapisan Peta <span x-text="wl.open ? '▴' : '▾'"></span></button>
+            <div x-show="wl.open">
+              <div class="wl-seg" role="group" aria-label="Batas wilayah">
+                <template x-for="m in [['auto','Otomatis'],['desa','Desa'],['kec','Kecamatan'],['kab','Kabupaten']]" :key="m[0]">
+                  <button type="button" :class="{ on: wl.mode===m[0] }" @click="wl.mode=m[0]; wlRefresh()" x-text="m[1]"></button>
+                </template>
+              </div>
+              <label class="wl-ly"><input type="checkbox" x-model="wl.kat" @change="wlRefresh()"> Warna kategori desa</label>
+              <label class="wl-ly"><input type="checkbox" x-model="wl.visit" @change="wlRefresh()"> Kunjungan DJP 3 bln <small>makin pekat = makin sering</small></label>
+              <label class="wl-ly"><input type="checkbox" x-model="wl.plan" @change="wlRefresh()"> Plan DJP</label>
+              <div class="wl-row" x-show="wl.plan"><input type="date" class="select" x-model="wl.planTgl" @change="wlRefresh()"><small x-text="wlPlanInfo"></small></div>
+              <label class="wl-ly"><input type="checkbox" x-model="wl.kantor" @change="wlRefresh()"> Kantor</label>
+              <label class="wl-ly"><input type="checkbox" x-model="wl.labels" @change="wlRefresh()"> Tampilkan semua nama desa</label>
+              <div class="wl-row">
+                <select class="select" x-model="wl.kab" @change="wlRefresh()" aria-label="Filter kabupaten">
+                  <option value="">Semua kabupaten</option>
+                  <template x-for="k in (CLUSTER[cluster]||{kab:[]}).kab" :key="k"><option :value="k.toUpperCase()" x-text="k"></option></template>
+                </select>
+                <select class="select" x-model="wl.sf" @change="wlRefresh()" aria-label="Teritori SF">
+                  <option value="">Teritori: semua SF</option>
+                  <template x-for="s in wlSfList" :key="s.code"><option :value="s.code" x-text="s.nama"></option></template>
+                </select>
+              </div>
+              <label class="wl-ly wl-hl"><input type="checkbox" x-model="wl.hl" @change="wlRefresh()"> Sorotan</label>
+              <div class="wl-hls" x-show="wl.hl && wlStats">
+                <div><i style="border-color:#a8231c;border-style:dashed"></i>Prioritas belum disentuh <b x-text="wlStats && wlStats.untouched"></b></div>
+                <div><i style="border-color:#c0622a"></i>Jenuh: kunjungan tinggi, PS ≤1 <b x-text="wlStats && wlStats.jenuh"></b></div>
+                <div><i style="border-color:#3f7d3a"></i>Skip tapi ada PS <b x-text="wlStats && wlStats.skipps"></b></div>
+              </div>
+            </div>
+          </div>
           <div id="leaflet-map" style="width:100%" role="img" aria-label="Peta sebaran order dengan koordinat"></div>
           <div class="peta-legend">
             <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:4px"></span>PS (Put In Service)</span>
@@ -2791,5 +2824,6 @@
 <script src="assets/js/report.js"></script>
 <script src="assets/js/report_cmp.js"></script>
 <script src="assets/js/report_an.js"></script>
+<script src="assets/js/wilayah.js"></script>
 </body>
 </html>

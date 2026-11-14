@@ -253,3 +253,11 @@ Tombol tema (🏰/☀️/🌙) berganti Medieval → Terang → Gelap; pilihan d
 - Tekstur: `assets/img/medieval/*.jpg` · Font: `assets/fonts/*.woff2` (self-host).
 - Grafik: filter SVG `#md-ink` / `#md-chalk` di `index.html`; warna neon lama dipetakan ke warna tinta oleh `mdRecolor()` (config.js) lewat `getOrInit`.
 - Grafik papan tulis: `#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time` (tambah ID di medieval.css bila ingin grafik lain di papan).
+
+### Peta Wilayah (Nov 2026)
+Menu Peta menjadi **Peta Wilayah**: satu peta berisi batas desa/kecamatan/kabupaten (`assets/geo/*.json`, dari GeoJSON batas desa BIG,
+5 kabupaten WOK, disederhanakan dengan mapshaper), warna kategori desa, intensitas kunjungan DJP 3 bulan (M-1..M-3, SF × desa × hari),
+order bulan berjalan, plan DJP per tanggal (rute bernomor per SF), kantor, filter kabupaten & teritori SF, serta sorotan
+(prioritas belum disentuh, jenuh, skip tapi ada PS). Mode batas **Otomatis**: zoom < 11 = kecamatan, ≥ 11 = desa.
+Label anti-tabrakan; nama desa muncul mulai zoom 12 (atau tombol "Tampilkan semua nama desa"). Klik desa = kartu ringkas.
+Kode: `assets/js/wilayah.js` (`wlRender`), dipanggil dari `renderPeta()`. Pencocokan nama: kecamatan+desa dinormalisasi (huruf/angka saja).
