@@ -1,0 +1,225 @@
+/* ================================================================
+   TEMA MEDIEVAL (default, Nov 2026) — kertas perkamen tua, papan kayu,
+   papan tulis kapur. Hanya tampilan: semua aturan di bawah [data-theme="medieval"],
+   tema lama (light/dark) tetap utuh dan bisa dipilih lewat tombol tema.
+   Tekstur: assets/img/medieval/*.jpg (dibuat dari noise, seamless).
+   Font self-host: assets/fonts (Cinzel Decorative, IM Fell English, Kalam, Fondamento).
+   Grafik: ECharts renderer SVG → efek tinta/kapur memakai filter SVG (#md-ink, #md-chalk)
+   yang didefinisikan di index.html. Grafik papan tulis = warna dibalik (invert + hue-rotate)
+   sehingga tinta gelap menjadi kapur terang dengan warna yang sama.
+   ================================================================ */
+@font-face { font-family: 'Cinzel Decorative'; font-weight: 700; font-display: swap; src: url(../fonts/cinzel-decorative-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Cinzel Decorative'; font-weight: 900; font-display: swap; src: url(../fonts/cinzel-decorative-latin-900-normal.woff2) format('woff2'); }
+@font-face { font-family: 'IM Fell English'; font-weight: 400; font-display: swap; src: url(../fonts/im-fell-english-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'IM Fell English'; font-weight: 400; font-style: italic; font-display: swap; src: url(../fonts/im-fell-english-latin-400-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Kalam'; font-weight: 400; font-display: swap; src: url(../fonts/kalam-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Kalam'; font-weight: 700; font-display: swap; src: url(../fonts/kalam-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Fondamento'; font-weight: 400; font-display: swap; src: url(../fonts/fondamento-latin-400-normal.woff2) format('woff2'); }
+
+[data-theme="medieval"] {
+  --md-ink: #3b2a1e; --md-ink2: #6b5440; --md-red: #a8231c; --md-grn: #3f7d3a; --md-ochre: #b07812; --md-blue: #2f5f8a;
+  --md-paper: url(../img/medieval/parchment.jpg); --md-wood: url(../img/medieval/wood.jpg);
+  --md-table: url(../img/medieval/table.jpg); --md-board: url(../img/medieval/chalkboard.jpg);
+  --md-head: 'Cinzel Decorative', 'IM Fell English', serif;
+  --md-label: 'Fondamento', 'IM Fell English', serif;
+  --md-hand: 'Kalam', 'IM Fell English', cursive;
+
+  --surface-base: #6f4f33; --surface-card: #ecdcb6; --surface-elevated: #e2cc9f; --surface-input: #f3e6c8;
+  --surface-border: #b8975f; --surface-hover: #e6d2a6;
+  --brand: #a8231c; --brand-hover: #8a1a14; --brand-glow: rgba(168,35,28,.18); --brand-dim: rgba(168,35,28,.09);
+  --accent: #b07812; --accent-glow: rgba(176,120,18,.2);
+  --success: #3f7d3a; --success-dim: rgba(63,125,58,.13); --info: #2f5f8a;
+  --warning: #9a6510; --warning-dim: rgba(176,120,18,.14); --danger: #a8231c; --danger-dim: rgba(168,35,28,.12);
+  --series-1: #a8231c; --series-2: #3f7d3a; --series-3: #2f5f8a; --series-4: #b07812; --series-5: #7a3b6b; --series-6: #5a6b1f;
+  --text-1: #3b2a1e; --text-2: #5e4836; --text-3: #6f5945;
+  --font: 'IM Fell English', Georgia, serif;
+  --r: 3px; --r-lg: 5px;
+}
+
+/* ── teks yang langsung di atas latar gelap: terang; di dalam kertas: tinta (lihat reset di daftar kertas) ── */
+[data-theme="medieval"] .page { --text-1: #f6e7c3; --text-2: #ecd7a8; --text-3: #dcc394; }
+[data-theme="medieval"] .page .section-title { font-family: var(--md-head); font-weight: 900; font-size: 22px; color: #f6e7c3; text-shadow: 2px 2px 0 #2b1a0e; }
+[data-theme="medieval"] .page .section-sub { color: #e3c48c; font-style: italic; }
+[data-theme="medieval"] :is(.ol-tab, .sfp-tab, .dd-tab) { font-family: var(--md-label); color: #f0e0bb; }
+[data-theme="medieval"] :is(.ol-tab, .sfp-tab, .dd-tab).active { background: #ecdcb6 var(--md-paper); background-size: 420px; color: #3b2a1e; border-color: transparent; clip-path: polygon(3% 0, 100% 6%, 97% 100%, 0 92%); }
+
+/* ── latar: meja kayu tua + vignette ── */
+[data-theme="medieval"] body {
+  background: #6f4f33 var(--md-table) repeat;
+  background-size: 512px;
+  font-size: 15px;
+}
+[data-theme="medieval"] .main { background: radial-gradient(ellipse at 50% 0%, rgba(255,220,160,.12), transparent 60%), radial-gradient(ellipse at 50% 120%, rgba(30,15,5,.45), transparent 60%); }
+
+/* ── kertas tua: perkamen bernoda + tepi terbakar ── */
+[data-theme="medieval"] :is(.card, .stat-card, .te-ps-block, .te-metric-card, .te-kab-card, .dd-card, .sfp-kpi-card, .d2d-kpi-card,
+  .tl-card, .tl-stat, .tl-kat, .tl-list, .tl-filters, .tl-empty, .wz-card, .wz-box, .modal, .ui-dialog, .glossary-modal, .funnel-step,
+  .profile-dropdown, .ppt-pop, .datepicker-popup, .tbl-wrap, .heatmap-wrap, .auth-card, .admin-panel, .admin-user-card, .chpwd-modal) {
+  --text-1: #3b2a1e; --text-2: #5e4836; --text-3: #6f5945;
+  background: linear-gradient(rgba(243,230,198,.42), rgba(243,230,198,.42)), #ecdcb6 var(--md-paper) repeat;
+  background-size: auto, 420px;
+  border: 1px solid rgba(110,75,35,.45);
+  border-radius: 4px 7px 5px 8px / 7px 4px 8px 5px;
+  box-shadow: inset 0 0 28px rgba(120,72,22,.38), inset 0 0 3px rgba(80,45,10,.5), 0 5px 12px rgba(30,15,5,.45), 0 1px 2px rgba(30,15,5,.4);
+  color: var(--md-ink);
+}
+[data-theme="medieval"] :is(.card, .stat-card, .te-ps-block, .te-metric-card, .te-kab-card):hover {
+  border-color: rgba(110,75,35,.6); transform: none;
+  box-shadow: inset 0 0 28px rgba(120,72,22,.42), inset 0 0 3px rgba(80,45,10,.55), 0 8px 18px rgba(30,15,5,.5);
+}
+/* kartu kecil KPI: pinggir sobek */
+[data-theme="medieval"] :is(.stat-card, .te-metric-card, .dd-card, .sfp-kpi-card, .d2d-kpi-card) {
+  clip-path: polygon(0 3%,4% 0,11% 2%,19% .4%,28% 2.4%,37% .6%,46% 2%,55% .3%,64% 2.2%,73% .5%,82% 2.5%,91% .7%,100% 2.2%,99.3% 25%,100% 50%,99.2% 75%,100% 97%,93% 99.4%,84% 97.6%,75% 100%,66% 98%,57% 99.7%,48% 97.8%,39% 99.8%,30% 98%,21% 99.6%,12% 97.7%,5% 99.5%,0 97.5%,.7% 74%,0 50%,.8% 26%);
+  box-shadow: inset 0 0 26px rgba(120,72,22,.45), inset 0 0 2px rgba(80,45,10,.6);
+  filter: drop-shadow(0 4px 6px rgba(30,15,5,.45));
+}
+[data-theme="medieval"] :is(.stat-card, .te-ps-block, .te-metric-card)::before,
+[data-theme="medieval"] .stat-card::after, [data-theme="medieval"] .stat-card__accent { display: none; }
+/* noda tinta/tetesan di sudut kartu besar */
+[data-theme="medieval"] :is(.card, .te-ps-block, .te-kab-card) { position: relative; }
+[data-theme="medieval"] :is(.card, .te-ps-block)::after {
+  content: ''; position: absolute; right: 14px; bottom: 10px; width: 46px; height: 34px; pointer-events: none; opacity: .16;
+  background: radial-gradient(ellipse at 40% 50%, #4a2c12 0 30%, transparent 62%), radial-gradient(circle at 80% 30%, #4a2c12 0 12%, transparent 14%);
+}
+
+/* ── tipografi ── */
+[data-theme="medieval"] body, [data-theme="medieval"] button, [data-theme="medieval"] input, [data-theme="medieval"] select { font-family: var(--font); }
+[data-theme="medieval"] :is(.card-title, .te-kab-title, .section-title, .modal-title, .glossary-title, .tl-card-h, .wz-head, .empty-state-title) {
+  font-family: var(--md-label); font-weight: 400; font-size: 16px; letter-spacing: .03em; color: var(--md-ink);
+}
+[data-theme="medieval"] :is(.card-subtitle, .te-kab-sub, .section-sub, .stat-card__sub, .te-mc-ach, .te-meta) { font-style: italic; color: var(--md-ink2); }
+[data-theme="medieval"] :is(.stat-card__lbl, .te-hero-lbl, .te-mc-lbl, .dd-card-lbl, .sfp-kpi-lbl, .d2d-kpi-lbl, .tl-stat-l, .input-lbl) {
+  font-family: var(--md-label); font-weight: 400; letter-spacing: .12em; color: var(--md-ink2); font-size: 12px;
+}
+[data-theme="medieval"] :is(.te-hero-num, .stat-card__val, .te-mc-val, .dd-card-num, .sfp-kpi-num, .d2d-kpi-num, .ol-eom-num, .tl-stat-v, .funnel-val) {
+  font-family: var(--md-head); font-weight: 900; letter-spacing: 0;
+  text-shadow: 1px 1px 0 rgba(255,240,210,.5), 0 0 1px rgba(60,30,10,.35);
+}
+[data-theme="medieval"] .te-hero-num { font-size: 76px; }
+[data-theme="medieval"] .topbar-title { font-family: var(--md-head); font-weight: 900; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f6e7c3; text-shadow: 2px 2px 0 #2b1a0e; }
+
+/* ── sidebar: kayu tua ── */
+[data-theme="medieval"] .sidebar {
+  background: #5e3d22 var(--md-wood) repeat; background-size: 512px;
+  border-right: 3px solid #2e1c0e;
+  box-shadow: inset -8px 0 18px rgba(0,0,0,.45), 4px 0 14px rgba(0,0,0,.45);
+}
+[data-theme="medieval"] .sidebar::before { background: linear-gradient(180deg, #c99a4a, #7a4f22); width: 3px; opacity: .8; }
+[data-theme="medieval"] .sidebar::after { display: none; }
+[data-theme="medieval"] .sidebar-brand { border-bottom: 1px dashed rgba(233,200,140,.35); text-align: center; }
+[data-theme="medieval"] .brand-name { font-family: var(--md-head); font-weight: 900; font-size: 19px; background: none; -webkit-text-fill-color: #f6e7c3; color: #f6e7c3; text-shadow: 2px 2px 0 #2b1a0e; }
+[data-theme="medieval"] .brand-sub { font-style: italic; color: #e3c48c; font-size: 12px; }
+[data-theme="medieval"] .sidebar-brand::after { content: '❦ ✦ ❦'; display: block; color: #c99a4a; letter-spacing: 6px; font-size: 13px; margin-top: 6px; }
+[data-theme="medieval"] :is(.nav-section-lbl, .nav-group-lbl) { font-family: var(--md-label); color: #d9b26a; opacity: 1; letter-spacing: .16em; font-size: 11px; text-shadow: 1px 1px 0 rgba(0,0,0,.5); }
+[data-theme="medieval"] :is(.nav-item, .nav-sub-item) { color: #f0e0bb; font-size: 15px; text-shadow: 1px 1px 0 rgba(0,0,0,.45); border-radius: 2px; }
+[data-theme="medieval"] :is(.nav-item, .nav-sub-item):hover { background: rgba(255,230,180,.1); color: #fff3d6; }
+[data-theme="medieval"] :is(.nav-item, .nav-sub-item).active {
+  background: #ecdcb6 var(--md-paper); background-size: 420px; color: var(--md-ink); font-weight: 700; text-shadow: none; border: none;
+  clip-path: polygon(0 10%, 95% 0, 100% 50%, 96% 100%, 2% 92%); box-shadow: inset 0 0 12px rgba(120,72,22,.45);
+}
+[data-theme="medieval"] .nav-item.active svg { color: var(--md-red); }
+[data-theme="medieval"] .sidebar-footer { color: rgba(240,224,187,.6); border-top: 1px dashed rgba(233,200,140,.3); }
+[data-theme="medieval"] .sidebar-footer span { color: #f0e0bb; }
+
+/* ── topbar: papan nama kayu gelap ── */
+[data-theme="medieval"] .topbar {
+  background: #4a2f1a var(--md-wood); background-size: 512px;
+  border-bottom: 3px solid #2e1c0e; box-shadow: 0 4px 10px rgba(0,0,0,.4), inset 0 -6px 12px rgba(0,0,0,.3);
+}
+[data-theme="medieval"] .topbar :is(.topbar-tgl-label, .topbar-tgl-sep) { color: #ecd7a8; }
+[data-theme="medieval"] .cluster-toggle { background: rgba(0,0,0,.25); border: 1px solid rgba(233,200,140,.3); border-radius: 3px; }
+[data-theme="medieval"] .cluster-btn { color: #f0e0bb; font-family: var(--md-label); font-size: 13px; border-radius: 2px; }
+[data-theme="medieval"] .cluster-btn.active {
+  background: radial-gradient(circle at 35% 30%, #c9452f, #8e1b14 75%); color: #fbe9d0;
+  box-shadow: 0 2px 4px rgba(0,0,0,.45), inset 0 0 0 2px rgba(0,0,0,.15); clip-path: polygon(3% 0, 100% 8%, 97% 100%, 0 90%);
+}
+
+/* ── tombol & input: kertas, aktif = segel lilin ── */
+[data-theme="medieval"] :is(.btn, .btn-outline, .btn-ghost, .theme-toggle, .glossary-btn, .profile-btn, .topbar-bulan-select, .datepicker-btn, .select, .input, .tbl-search, .auth-input, .sim-input, .target-input, .tgl-input) {
+  background: linear-gradient(rgba(245,234,206,.5),rgba(245,234,206,.5)), #efe0bd var(--md-paper); background-size: auto, 420px; color: var(--md-ink);
+  border: 1px solid rgba(110,75,35,.55); border-radius: 3px 5px 3px 6px / 5px 3px 6px 3px;
+  box-shadow: inset 0 0 8px rgba(120,72,22,.3), 0 1px 2px rgba(0,0,0,.3);
+  font-family: var(--md-label);
+}
+[data-theme="medieval"] :is(.btn, .btn-outline, .btn-ghost):hover { background-color: #f6ead0; border-color: var(--md-red); color: var(--md-red); }
+[data-theme="medieval"] :is(.btn-primary, .btn-danger, .btn-success, .btn-approve, .auth-btn, .wz-pub button.btn-primary) {
+  background: radial-gradient(circle at 35% 30%, #c9452f, #8e1b14 78%); color: #fbe9d0; border: 1px solid #6a120d;
+  text-shadow: 0 1px 0 rgba(0,0,0,.35); box-shadow: 0 2px 5px rgba(0,0,0,.4), inset 0 0 0 2px rgba(0,0,0,.12);
+}
+[data-theme="medieval"] .btn-success { background: radial-gradient(circle at 35% 30%, #5d9a52, #2e5e2a 78%); border-color: #234a20; }
+[data-theme="medieval"] :is(.btn-primary, .btn-danger, .btn-success, .auth-btn):hover { filter: brightness(1.08); color: #fff; }
+[data-theme="medieval"] .profile-avatar { background: radial-gradient(circle at 35% 30%, #c9452f, #8e1b14 75%); color: #fbe9d0; font-family: var(--md-head); }
+
+/* ── badge & pill: coretan tangan ── */
+[data-theme="medieval"] :is(.te-pill, .badge, .tier-badge, .pick-badge, .wz-pill, .tl-badge, .stat-card__delta, .ol-hari-badge, .sync-badge, .profile-role-badge) {
+  font-family: var(--md-hand); font-weight: 700; background: transparent !important;
+  border: 2px solid currentColor !important; border-radius: 14px 10px 16px 9px / 9px 14px 10px 16px; transform: rotate(-1.5deg);
+}
+[data-theme="medieval"] .te-pill-up { color: var(--md-grn); }
+[data-theme="medieval"] .te-pill-down { color: var(--md-red); }
+[data-theme="medieval"] .te-pill-neu { color: var(--md-ink2); }
+
+/* ── bar progres: arsiran krayon ── */
+[data-theme="medieval"] :is(.te-bar, .te-mc-bar, .te-mini-bar, .pb, .wz-bar, .tl-bar, .funnel-bar-wrap, .wz-prog) {
+  background: rgba(110,75,35,.13); border: 1px solid rgba(80,50,20,.45); border-radius: 2px; height: 12px;
+}
+[data-theme="medieval"] :is(.te-bar-fill, .te-mc-bar-fill, .te-mini-bar-fill, .pb-fill, .funnel-bar, .wz-bar > *, .tl-bar > *) {
+  border-radius: 1px;
+  background-image: repeating-linear-gradient(115deg, rgba(255,245,225,.45) 0 2px, transparent 2px 6px) !important;
+  filter: url(#md-ink);
+}
+
+/* ── tabel: tinta di atas perkamen ── */
+[data-theme="medieval"] table thead th, [data-theme="medieval"] table.te-tbl thead th {
+  background: transparent !important; color: var(--md-ink2); font-family: var(--md-label); font-weight: 400; font-size: 12px; letter-spacing: .1em;
+  border-bottom: 2px solid var(--md-ink) !important;
+}
+[data-theme="medieval"] table tbody td { border-bottom: 1px dashed rgba(59,42,30,.35) !important; color: var(--md-ink); }
+[data-theme="medieval"] table tbody tr:hover td { background: rgba(176,120,18,.12) !important; }
+[data-theme="medieval"] :is(td.mono, .mono, td.num, .n) { font-family: var(--md-hand); font-weight: 700; }
+
+/* ── heatmap: tinta merah ── */
+[data-theme="medieval"] .hm-lo  { background: rgba(168,35,28,.12); color: #7a1a14; }
+[data-theme="medieval"] .hm-md  { background: rgba(168,35,28,.30); color: #6a120d; }
+[data-theme="medieval"] .hm-hi  { background: rgba(168,35,28,.58); color: #fbe9d0; }
+[data-theme="medieval"] .hm-vhi { background: rgba(140,25,18,.85); color: #fbe9d0; }
+
+/* ── grafik di kertas: goresan tinta ── */
+[data-theme="medieval"] .chart-area svg { filter: url(#md-ink); }
+/* ── grafik di papan tulis: kapur (tren harian & garis waktu) ── */
+[data-theme="medieval"] .card:has(> :is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time)),
+[data-theme="medieval"] .card:has(:is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time)) {
+  background: #2f3a33 var(--md-board); background-size: 512px;
+  border: 12px solid #6b4423; border-radius: 3px;
+  box-shadow: inset 0 0 40px rgba(0,0,0,.6), inset 0 0 0 2px #3e2512, 0 6px 14px rgba(30,15,5,.55);
+  outline: 2px solid #4a2c14; outline-offset: -2px;
+  --text-1: #f1ede0; --text-2: #d9dfd6; --text-3: #c3cbc1;
+}
+[data-theme="medieval"] .card:has(:is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time))::after { display: none; }
+[data-theme="medieval"] .card:has(:is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time)) :is(.card-title, .card-subtitle, .ol-tab, .dd-tab) {
+  color: #f1ede0; font-family: var(--md-hand); font-style: normal;
+}
+[data-theme="medieval"] .card:has(:is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time)) .card-title { font-size: 19px; font-weight: 700; }
+[data-theme="medieval"] :is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time) svg { filter: invert(1) hue-rotate(180deg) saturate(1.4) url(#md-chalk); }
+
+/* ── modal latar ── */
+[data-theme="medieval"] .modal-bg, [data-theme="medieval"] .glossary-modal-bg { background: rgba(30,15,5,.55); }
+/* ── scrollbar ── */
+[data-theme="medieval"] ::-webkit-scrollbar-thumb { background: #8a6236; border-radius: 0; }
+/* ── peta: bingkai kayu ── */
+[data-theme="medieval"] .leaflet-container { border: 8px solid #6b4423; border-radius: 3px; filter: sepia(.35) saturate(.85); }
+[data-theme="medieval"] .leaflet-popup-content-wrapper { background: #ecdcb6 var(--md-paper); background-size: 420px; color: var(--md-ink); font-family: var(--font); border-radius: 3px; }
+/* ── toast ── */
+[data-theme="medieval"] .toast { background: #ecdcb6 var(--md-paper); background-size: 420px; color: var(--md-ink); border: 1px solid rgba(110,75,35,.55); font-family: var(--font); }
+
+/* ── cetak: tanpa tekstur ── */
+@media print {
+  [data-theme="medieval"] body, [data-theme="medieval"] :is(.card, .stat-card, .te-ps-block, .te-metric-card, .te-kab-card) { background: #fff !important; box-shadow: none !important; clip-path: none !important; filter: none !important; }
+  [data-theme="medieval"] .chart-area svg { filter: none !important; }
+}
+/* ── layar kecil: kurangi efek berat ── */
+@media (max-width: 640px) {
+  [data-theme="medieval"] .chart-area svg { filter: none; }
+  [data-theme="medieval"] :is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time) svg { filter: invert(1) hue-rotate(180deg) saturate(1.4); }
+  [data-theme="medieval"] .te-hero-num { font-size: 60px; }
+}

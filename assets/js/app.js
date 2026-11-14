@@ -39,7 +39,7 @@ function app() {
     loading: false,
     filterLoading: false,
     showConfig: false,
-    themeMode: localStorage.getItem('dashTheme') || 'light',
+    themeMode: localStorage.getItem('dashTheme2') || 'medieval',   // default tema Medieval (Nov 2026); light/dark tetap bisa dipilih
     allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)
     _availBulanList: null,  // daftar bulan tersedia dari GAS list_bulan
     petaFilter: { io: true, re: true, ps: true },  // checkbox filter peta
@@ -153,10 +153,14 @@ function app() {
       });
     },
 
+    get themeLabel() { return { medieval: 'Medieval', light: 'Terang', dark: 'Gelap' }[this.themeMode] || this.themeMode; },
+
     toggleTheme() {
-      this.themeMode = this.themeMode === 'dark' ? 'light' : 'dark';
+      // urutan: Medieval → Terang → Gelap → Medieval
+      this.themeMode = { medieval: 'light', light: 'dark', dark: 'medieval' }[this.themeMode] || 'medieval';
       document.documentElement.setAttribute('data-theme', this.themeMode);
-      localStorage.setItem('dashTheme', this.themeMode);
+      localStorage.setItem('dashTheme2', this.themeMode);
+      showToast('Tema: ' + this.themeLabel, 'info', 1800);
       // Dispose all charts so they reinit with new theme colors on next render
       setTimeout(() => {
         this.disposeCharts();
@@ -1726,7 +1730,11 @@ function app() {
       const el = document.getElementById(id);
       if (!el) return null;
       if (!this._charts[id]) {
-        this._charts[id] = echarts.init(el, null, { renderer: 'svg' });
+        const ch = echarts.init(el, null, { renderer: 'svg' });
+        // Tema Medieval: warna neon bawaan grafik diganti warna tinta (lihat mdRecolor di config.js)
+        const so = ch.setOption.bind(ch);
+        ch.setOption = (opt, ...rest) => so(isMedieval() ? mdRecolor(opt) : opt, ...rest);
+        this._charts[id] = ch;
       }
       return this._charts[id];
     },

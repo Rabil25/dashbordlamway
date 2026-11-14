@@ -130,10 +130,46 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 }
 
 // ── ECharts theme helpers ──────────────────────────────────────
-function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function isLight() { return document.documentElement.getAttribute('data-theme') !== 'dark'; }
+function isMedieval() { return document.documentElement.getAttribute('data-theme') === 'medieval'; }
+
+// Warna grafik lama (neon) → warna tinta di atas perkamen, hanya untuk tema Medieval
+const MD_COLOR = {
+  '#22d972':'#3f7d3a','#22c55e':'#3f7d3a','#34d399':'#3f7d3a','#fbbf24':'#b07812','#f59e0b':'#b07812','#eab308':'#b07812',
+  '#58a6ff':'#2f5f8a','#00c2ff':'#2f5f8a','#00d4ff':'#2f5f8a','#38bdf8':'#2f5f8a','#a78bfa':'#7a3b6b','#a855f7':'#7a3b6b','#c084fc':'#7a3b6b',
+  '#ff4d4d':'#a8231c','#ef4444':'#a8231c','#f472b6':'#8e3a5a','#f97316':'#c0622a','#f0a060':'#b0682a','#8b949e':'#6b5440','#484f58':'#6b5440',
+  '#e6edf3':'#3b2a1e','#0d1117':'#ecdcb6','#30363d':'#cdb68a','#cdd6e8':'#9a9488','#fcd34d':'#c99a2e','#6b7280':'#6b5f55','#9ca3af':'#9a8a72',
+};
+function mdRecolor(o) {
+  if (typeof o === 'string') {
+    const k = o.toLowerCase();
+    if (MD_COLOR[k]) return MD_COLOR[k];
+    if (/poppins/i.test(o)) return "'Kalam','IM Fell English',serif";
+    const m = k.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/);
+    if (m) { const hex = '#' + [m[1], m[2], m[3]].map(v => (+v).toString(16).padStart(2, '0')).join(''); if (MD_COLOR[hex]) { const h = MD_COLOR[hex]; return `rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},${Math.min(1, +m[4] * 1.6)})`; } }
+    return o;
+  }
+  if (Array.isArray(o)) return o.map(mdRecolor);
+  if (o && typeof o === 'object' && Object.getPrototypeOf(o) === Object.prototype) { const r = {}; for (const k in o) r[k] = mdRecolor(o[k]); return r; }
+  return o;
+}
 
 function getChartTheme() {
   const light = isLight();
+  if (isMedieval()) {
+    // Tinta di atas perkamen (grafik papan tulis dibalik jadi kapur oleh medieval.css)
+    const ink = '#3b2a1e', ink2 = '#6b5440', F = "'Kalam','IM Fell English',serif";
+    return {
+      backgroundColor: 'transparent',
+      textStyle: { fontFamily: F, fontSize: 12, color: ink2 },
+      color: ['#a8231c','#3f7d3a','#2f5f8a','#b07812','#7a3b6b','#5a6b1f'],
+      grid: { left:10, right:10, top:30, bottom:10, containLabel:true },
+      legend: { textStyle: { color: ink2, fontFamily: F, fontSize: 12 }, itemWidth:14, itemHeight:8 },
+      tooltip: { backgroundColor: '#f3e6c8', borderColor: '#8a6236', borderWidth:1, textStyle:{ color: ink, fontFamily: "'IM Fell English',serif", fontSize:13 }, padding:[8,12] },
+      xAxis: { axisLine:{ show:true, lineStyle:{ color: ink, width:1.6 } }, axisTick:{show:false}, axisLabel:{ color: ink2, fontFamily: F, fontSize:12 }, splitLine:{show:false} },
+      yAxis: { axisLine:{show:false}, axisTick:{show:false}, axisLabel:{ color: ink2, fontFamily: F, fontSize:12 }, splitLine:{ lineStyle:{ color:'rgba(80,50,20,.28)', type:'dashed' } } },
+    };
+  }
   return {
     backgroundColor: 'transparent',
     textStyle: { fontFamily:"'Poppins',sans-serif", fontSize:11, color: light ? '#6b4f42' : '#8b949e' },

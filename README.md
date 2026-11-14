@@ -245,3 +245,11 @@ Setiap slide ditutup **analisa silogisme** (premis mayor → premis minor → ke
 Aturan DJP: PS bulan M dibandingkan DJP bulan **M-1, M-2, M-3** (keputusan berlangganan butuh waktu, hasil tampak di bulan ke-4).
 Jendela tidak digeser; bulan yang kosong ditandai "belum tersedia". **Satu kunjungan = 1 SF × 1 desa × 1 hari** (ODP hanya alat check-in).
 Logo: `assets/img/indihome-logo.png`. File lama `report.js`/`report_cmp.js` tetap dimuat untuk helper (loadPptLib, util tanggal).
+
+### Tema Medieval (default, Nov 2026)
+Tampilan default: kertas perkamen tua, sidebar/topbar kayu, grafik tren di papan tulis kapur, grafik lain goresan tinta.
+Tombol tema (🏰/☀️/🌙) berganti Medieval → Terang → Gelap; pilihan disimpan di `localStorage.dashTheme2`.
+- CSS: `assets/css/medieval.css` (semua aturan di bawah `[data-theme="medieval"]`, tema lama tidak diubah).
+- Tekstur: `assets/img/medieval/*.jpg` · Font: `assets/fonts/*.woff2` (self-host).
+- Grafik: filter SVG `#md-ink` / `#md-chalk` di `index.html`; warna neon lama dipetakan ke warna tinta oleh `mdRecolor()` (config.js) lewat `getOrInit`.
+- Grafik papan tulis: `#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time` (tambah ID di medieval.css bila ingin grafik lain di papan).
