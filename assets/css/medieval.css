@@ -10,15 +10,15 @@
    ================================================================ */
 @font-face { font-family: 'Cinzel Decorative'; font-weight: 700; font-display: swap; src: url(../fonts/cinzel-decorative-latin-700-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Cinzel Decorative'; font-weight: 900; font-display: swap; src: url(../fonts/cinzel-decorative-latin-900-normal.woff2) format('woff2'); }
-@font-face { font-family: 'IM Fell English'; font-weight: 400; font-display: swap; src: url(../fonts/im-fell-english-latin-400-normal.woff2) format('woff2'); size-adjust: 128%; }
-@font-face { font-family: 'IM Fell English'; font-weight: 400; font-style: italic; font-display: swap; src: url(../fonts/im-fell-english-latin-400-italic.woff2) format('woff2'); size-adjust: 128%; }
-@font-face { font-family: 'Kalam'; font-weight: 400; font-display: swap; src: url(../fonts/kalam-latin-400-normal.woff2) format('woff2'); size-adjust: 108%; }
-@font-face { font-family: 'Kalam'; font-weight: 700; font-display: swap; src: url(../fonts/kalam-latin-700-normal.woff2) format('woff2'); size-adjust: 108%; }
+@font-face { font-family: 'IM Fell English'; font-weight: 400; font-display: swap; src: url(../fonts/im-fell-english-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'IM Fell English'; font-weight: 400; font-style: italic; font-display: swap; src: url(../fonts/im-fell-english-latin-400-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Kalam'; font-weight: 400; font-display: swap; src: url(../fonts/kalam-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Kalam'; font-weight: 700; font-display: swap; src: url(../fonts/kalam-latin-700-normal.woff2) format('woff2'); }
 /* 'MD Body' = IM Fell English untuk huruf, tetapi angka 0–9 dari Fondamento (angka tegak, lebih mudah dibaca) */
-@font-face { font-family: 'MD Body'; font-display: swap; src: url(../fonts/fondamento-latin-400-normal.woff2) format('woff2'); unicode-range: U+0030-0039, U+0025, U+002C, U+002E; size-adjust: 118%; }
-@font-face { font-family: 'MD Body'; font-display: swap; src: url(../fonts/im-fell-english-latin-400-normal.woff2) format('woff2'); unicode-range: U+0000-002F, U+003A-00FF, U+0100-024F, U+2000-206F, U+20A0-20CF, U+2190-21FF; size-adjust: 128%; }
-@font-face { font-family: 'MD Body'; font-style: italic; font-display: swap; src: url(../fonts/im-fell-english-latin-400-italic.woff2) format('woff2'); unicode-range: U+0000-002F, U+003A-00FF, U+0100-024F, U+2000-206F, U+20A0-20CF, U+2190-21FF; size-adjust: 128%; }
-@font-face { font-family: 'Fondamento'; font-weight: 400; font-display: swap; src: url(../fonts/fondamento-latin-400-normal.woff2) format('woff2'); size-adjust: 112%; }
+@font-face { font-family: 'MD Body'; font-display: swap; src: url(../fonts/fondamento-latin-400-normal.woff2) format('woff2'); unicode-range: U+0030-0039, U+0025, U+002C, U+002E; size-adjust: 106%; }
+@font-face { font-family: 'MD Body'; font-display: swap; src: url(../fonts/im-fell-english-latin-400-normal.woff2) format('woff2'); unicode-range: U+0000-002F, U+003A-00FF, U+0100-024F, U+2000-206F, U+20A0-20CF, U+2190-21FF; }
+@font-face { font-family: 'MD Body'; font-style: italic; font-display: swap; src: url(../fonts/im-fell-english-latin-400-italic.woff2) format('woff2'); unicode-range: U+0000-002F, U+003A-00FF, U+0100-024F, U+2000-206F, U+20A0-20CF, U+2190-21FF; }
+@font-face { font-family: 'Fondamento'; font-weight: 400; font-display: swap; src: url(../fonts/fondamento-latin-400-normal.woff2) format('woff2'); }
 
 [data-theme="medieval"] {
   --md-ink: #3b2a1e; --md-ink2: #6b5440; --md-red: #a8231c; --md-grn: #3f7d3a; --md-ochre: #b07812; --md-blue: #2f5f8a;
@@ -58,7 +58,7 @@
 [data-theme="medieval"] body {
   background: #6f4f33 var(--md-table) repeat;
   background-size: 512px;
-  font-size: 14px;
+  font-size: 15px;
 }
 [data-theme="medieval"] .main { background: radial-gradient(ellipse at 50% 0%, rgba(255,220,160,.12), transparent 60%), radial-gradient(ellipse at 50% 120%, rgba(30,15,5,.45), transparent 60%); }
 
@@ -100,7 +100,7 @@
 [data-theme="medieval"] :is(.card-title, .te-kab-title, .section-title, .modal-title, .glossary-title, .tl-card-h, .wz-head, .empty-state-title) {
   font-family: var(--md-label); font-weight: 400; font-size: 16px; letter-spacing: .03em; color: var(--md-ink);
 }
-[data-theme="medieval"] :is(.card-subtitle, .te-kab-sub, .section-sub, .stat-card__sub, .te-mc-ach, .te-meta) { font-style: italic; color: var(--md-ink2); }
+[data-theme="medieval"] :is(.card-subtitle, .te-kab-sub, .section-sub, .stat-card__sub) { font-style: italic; color: var(--md-ink2); }
 [data-theme="medieval"] :is(.stat-card__lbl, .te-hero-lbl, .te-mc-lbl, .dd-card-lbl, .sfp-kpi-lbl, .d2d-kpi-lbl, .tl-stat-l, .input-lbl) {
   font-family: var(--md-label); font-weight: 400; letter-spacing: .12em; color: var(--md-ink2); font-size: 12px;
 }
@@ -245,15 +245,20 @@
   [data-theme="medieval"] .hamburger span { background: #f0e0bb !important; }
 }
 
-/* ── keterbacaan huruf (umpan balik PJ: kekecilan) ──
-   IM Fell English punya tinggi-x kecil & angka gaya lama, jadi tampak lebih kecil dari Poppins pada px yang sama.
-   Solusi: size-adjust pada @font-face (IM Fell 128%, Fondamento 112%, Kalam 108%) — hanya font itu yang membesar,
-   judul Cinzel tetap. */
-[data-theme="medieval"] table tbody td { font-size: max(1em, 13px); }
+/* ── keterbacaan huruf (umpan balik PJ: ukuran umum sudah pas, hanya teks kecil yang susah dibaca) ──
+   Ukuran dasar tetap. Yang dibesarkan hanya teks keterangan kecil (inline 9–11px & kelas sub/meta),
+   dan angka 0–9 memakai angka tegak Fondamento lewat font 'MD Body' (angka gaya lama IM Fell terlalu kecil). */
+[data-theme="medieval"] :is([style*="font-size:9px"], [style*="font-size:10px"], [style*="font-size: 10px"], [style*="font-size:10.5px"]) { font-size: 13.5px !important; }
+[data-theme="medieval"] :is([style*="font-size:11px"], [style*="font-size: 11px"], [style*="font-size:11.5px"]) { font-size: 14px !important; }
+[data-theme="medieval"] :is(.te-meta, .te-mc-ach, .te-ach-label, .d2d-kpi-sub, .dd-card-sub, .sfp-kpi-sub, .stat-card__sub, .card-subtitle, .section-sub, .te-kab-sub, .tl-stat-l, .tbl-foot) { font-size: 14px; }
+[data-theme="medieval"] table tbody td { font-size: 14px; }
+[data-theme="medieval"] .te-mom-frac, [data-theme="medieval"] .te-ach-label { font-size: 14px; }
 /* judul halaman di topbar jangan terpotong "SA..." */
-[data-theme="medieval"] .topbar-title { flex-shrink: 0; overflow: visible; text-overflow: clip; font-size: 16px; }
+[data-theme="medieval"] .topbar-title { flex-shrink: 0; overflow: visible; text-overflow: clip; font-size: 17px; }
 /* papan tulis: semua teks judul/keterangan ber-kapur terang */
 [data-theme="medieval"] .card:has(:is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time)) { color: #f1ede0; }
 [data-theme="medieval"] .card:has(:is(#chart-tren, #chart-d2d-tren, #chart-ol-tren, #chart-kendala-tren, #chart-time)) :is([class*="title"], [class*="sub"], [class*="hdr"], h2, h3, h4, span, div:not(.chart-area)) {
   color: #f1ede0;
 }
+
+[data-theme="medieval"] :is(.te-meta, .te-mc-ach) { font-size: 15px; font-style: normal; }
