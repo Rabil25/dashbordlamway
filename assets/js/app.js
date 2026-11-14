@@ -1151,12 +1151,12 @@ function app() {
     },
     // Ambil di latar belakang setelah dashboard tampil, agar Prioritas/Timeline/Plan DJP langsung siap
     // ── Export PPT review mingguan (assets/js/report.js) ──
-    async exportPPT() {
+    async exportPPT(mode = 'cluster') {
       if (this.pptBusy) return;
       this.pptBusy = true;
-      showToast('Menyiapkan PPT review mingguan…', 'info', 4000);
+      showToast(mode === 'all' ? 'Menyiapkan PPT semua cluster…' : 'Menyiapkan PPT review mingguan…', 'info', 4000);
       try {
-        const name = await exportWeeklyPPT(this);
+        const name = await exportWeeklyPPT(this, mode);
         showToast('PPT terunduh: ' + name, 'ok');
       } catch (e) {
         showToast('Gagal membuat PPT: ' + (e.message || e), 'err', 6000);

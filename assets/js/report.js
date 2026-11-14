@@ -44,7 +44,7 @@ const shortName = n => { const w = String(n || '').replace(/\[.*?\]\s*/g, '').tr
 // ================================================================
 //  1. KUMPULKAN DATA dari dashboard
 // ================================================================
-async function reportCollect(app) {
+async function reportCollect(app, opts = {}) {
   const bulan = app.cfg.bulan;
   const days = daysInPeriod(bulan);
   // Hari acuan = akhir rentang tanggal yang dipakai KPI dashboard (bulan berjalan: hari ini)
@@ -86,13 +86,17 @@ async function reportCollect(app) {
   const desa = app.prioritasOdpRaw.length ? app.klasifikasiDesa('', '') : [];
 
   // Plan DJP bulan ini (Vercel, read-only)
-  let plan = [];
-  try {
-    const r = await fetch(`/api/data?type=djp_plan&bulan=${encodeURIComponent(bulan)}`,
-      { headers: { Authorization: 'Bearer ' + app.sessionToken } });
-    const d = await r.json();
-    if (d.ok) plan = (d.data || []).filter(p => kabs.includes((p.kab || '').toUpperCase()));
-  } catch (e) {}
+  let planAll = opts.planAll;
+  if (!planAll) {
+    planAll = [];
+    try {
+      const r = await fetch(`/api/data?type=djp_plan&bulan=${encodeURIComponent(bulan)}`,
+        { headers: { Authorization: 'Bearer ' + app.sessionToken } });
+      const d = await r.json();
+      if (d.ok) planAll = d.data || [];
+    } catch (e) {}
+  }
+  const plan = planAll.filter(p => kabs.includes((p.kab || '').toUpperCase()));
 
   // Tanggal acuan "minggu ini": hari terakhir data (bulan berjalan → hari ini)
   const refDay = hari;
@@ -106,7 +110,7 @@ async function reportCollect(app) {
     channel: app.deepdiveChannel, produk: app.deepdiveProduk, speed: app.deepdiveSpeed,
     sf: app.buildSFTable(), tier: app.sfperfTierDist,
     kendala: Object.entries(kendala).map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n),
-    desa, plan, refTgl, weekStart,
+    desa, plan, planAll, refTgl, weekStart,
   };
 }
 
@@ -278,11 +282,13 @@ function reportAnalyze(D) {
 // ================================================================
 //  3. SUSUN SLIDE
 // ================================================================
-function reportBuild(D, A) {
+function reportBuild(items, mode = 'cluster', CMP = null) {
+  const all = mode === 'all';
+  const D0 = items[0].D;
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_16x9';               // 10 × 5.625 in
   pres.author = 'WOK Dashboard';
-  pres.title = `Review Mingguan ${D.cluster} – ${D.periode}`;
+  pres.title = `Review Mingguan ${all ? 'WOK Lampung Barat – Way Kanan' : D0.cluster} – ${D0.periode}`;
   pres.theme = { headFontFace: R_FONT, bodyFontFace: R_FONT };
   const now = new Date();
   const dibuat = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -291,7 +297,7 @@ function reportBuild(D, A) {
     title: 'KONTEN',
     background: { color: RP.white },
     objects: [
-      { text: { text: `WOK Lampung Barat – Way Kanan · ${D.cluster} · ${D.periode}`,
+      { text: { text: `WOK Lampung Barat – Way Kanan · ${D0.periode}`,
         options: { x: 0.5, y: 5.25, w: 7, h: 0.25, fontSize: 9, color: RP.muted, fontFace: R_FONT, margin: 0 } } },
       { placeholder: { options: { name: 'title', type: 'title', x: 0.5, y: 0.3, w: 9, h: 0.55,
         fontSize: 24, bold: true, color: RP.ink, fontFace: R_FONT, margin: 0, valign: 'middle', align: 'left' }, text: '' } },
@@ -300,7 +306,9 @@ function reportBuild(D, A) {
   });
 
   const title = (s, t) => s.addText(t, { placeholder: 'title', align: 'left' });
-  const sub = (s, t) => s.addText(t, { x: 0.5, y: 0.82, w: 9, h: 0.3, fontSize: 12, color: RP.muted, margin: 0, isTextBox: true });
+  let tag = '';   // nama cluster di subjudul (mode semua cluster)
+  const sub = (s, t) => s.addText(tag ? [{ text: tag + ' · ', options: { bold: true, color: RP.brand } }, { text: t }] : t,
+    { x: 0.5, y: 0.82, w: 9, h: 0.3, fontSize: 12, color: RP.muted, margin: 0, isTextBox: true });
   const card = (s, x, y, w, h, fill = RP.card) =>
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, fill: { color: fill }, line: { color: fill }, rectRadius: 0.08 });
   const insight = (s, items, x = 6.35, y = 1.25, w = 3.15, h = 3.85, head = 'Analisa') => {
@@ -326,16 +334,60 @@ function reportBuild(D, A) {
     s.addText(t, { x, y, w, h, fontSize: 12, color: RP.muted, align: 'center', valign: 'middle', isTextBox: true });
   };
 
-  const k = D.kpi, core = A.core;
+  const darkSlide = (kicker, big, line, foot) => {
+    const s = pres.addSlide();
+    s.background = { color: RP.dark };
+    s.addShape(pres.shapes.OVAL, { x: 6.6, y: -1.2, w: 5, h: 5, fill: { color: RP.brand, transparency: 70 }, line: { color: RP.dark, transparency: 100 } });
+    s.addText(kicker, { x: 0.6, y: 1.35, w: 7, h: 0.5, fontSize: 18, color: 'F3C7BB', margin: 0, isTextBox: true });
+    s.addText(big, { x: 0.6, y: 1.8, w: 8.5, h: 0.9, fontSize: 44, bold: true, color: RP.white, margin: 0, isTextBox: true, fit: 'shrink' });
+    s.addText(line, { x: 0.6, y: 2.75, w: 8.5, h: 0.45, fontSize: 20, color: RP.white, margin: 0, isTextBox: true });
+    if (foot) s.addText(foot, { x: 0.6, y: 4.6, w: 8, h: 0.35, fontSize: 12, color: 'D9B8AE', margin: 0, isTextBox: true });
+    return s;
+  };
 
-  // ── 1. Cover ──
-  let s = pres.addSlide();
-  s.background = { color: RP.dark };
-  s.addShape(pres.shapes.OVAL, { x: 6.6, y: -1.2, w: 5, h: 5, fill: { color: RP.brand, transparency: 70 }, line: { color: RP.dark, transparency: 100 } });
-  s.addText('Review Mingguan', { x: 0.6, y: 1.35, w: 7, h: 0.5, fontSize: 18, color: 'F3C7BB', margin: 0, isTextBox: true });
-  s.addText('Sales & DJP', { x: 0.6, y: 1.8, w: 8, h: 0.9, fontSize: 44, bold: true, color: RP.white, margin: 0, isTextBox: true });
-  s.addText(`Cluster ${D.cluster} · ${D.periode}`, { x: 0.6, y: 2.75, w: 8, h: 0.45, fontSize: 20, color: RP.white, margin: 0, isTextBox: true });
-  s.addText(`Data s.d. hari ke-${D.hari} · dibuat ${dibuat}`, { x: 0.6, y: 4.6, w: 8, h: 0.35, fontSize: 12, color: 'D9B8AE', margin: 0, isTextBox: true });
+  // ── Cover ──
+  let s;
+  if (all) darkSlide('Review Mingguan', 'Sales & DJP', `WOK Lampung Barat – Way Kanan · ${D0.periode}`,
+    `${items.map(it => it.D.cluster).join(' & ')} · data s.d. hari ke-${D0.hari} · dibuat ${dibuat}`);
+  else darkSlide('Review Mingguan', 'Sales & DJP', `Cluster ${D0.cluster} · ${D0.periode}`, `Data s.d. hari ke-${D0.hari} · dibuat ${dibuat}`);
+
+  // ── Perbandingan cluster (mode semua) ──
+  if (all && CMP) {
+    const cols = items.map(it => it.D.cluster);
+    s = pres.addSlide({ masterName: 'KONTEN' });
+    title(s, 'Perbandingan cluster');
+    sub(s, `Hari ke-${D0.hari} dari ${D0.days} · ${D0.sisa} hari tersisa`);
+    const hd = o => ({ bold: true, color: RP.muted, fontSize: 10, fill: { color: RP.card }, align: o || 'right' });
+    const rows = [[{ text: 'Indikator', options: hd('left') }, ...cols.map(c => ({ text: c, options: hd() })), { text: 'WOK', options: hd() }]];
+    CMP.rows.forEach(r => rows.push([{ text: r[0], options: { bold: true } }, ...r.slice(1).map((v, j) => ({ text: v,
+      options: { align: 'right', bold: j === r.length - 2, color: CMP.best[r[0]] === j ? RP.green : RP.ink } }))]));
+    s.addTable(rows, { x: 0.5, y: 1.25, w: 5.6, colW: [2.0, 1.25, 1.25, 1.1], fontSize: 11, fontFace: R_FONT, color: RP.ink, rowH: 0.3,
+      border: { type: 'solid', color: RP.line, pt: 0.5 }, margin: 0.05 });
+    s.addText('Hijau = cluster yang lebih baik di indikator itu', { x: 0.5, y: 4.9, w: 5.6, h: 0.25, fontSize: 9, color: RP.muted, margin: 0, isTextBox: true });
+    insight(s, CMP.insight, 6.35, 1.25, 3.15, 3.85, 'Analisa perbandingan');
+
+    s = pres.addSlide({ masterName: 'KONTEN' });
+    title(s, 'Tren & proyeksi per cluster');
+    sub(s, 'PS harian kedua cluster dan proyeksi akhir bulan terhadap target');
+    const dl = []; for (let i = 1; i <= D0.hari; i++) dl.push(String(i));
+    s.addChart(pres.charts.LINE, items.map(it => ({ name: it.D.cluster, labels: dl, values: dl.map(x => it.D.psDay[+x] || 0) })),
+      chartBase({ x: 0.5, y: 1.2, w: 5.6, h: 2.15, chartColors: [RP.brand, RP.dark], lineSize: 2, lineDataSymbol: 'circle', lineDataSymbolSize: 4,
+        showLegend: true, legendPos: 'b', legendFontSize: 9, legendFontFace: R_FONT, legendColor: RP.muted, showTitle: true, title: 'PS per hari' }));
+    s.addChart(pres.charts.BAR, [
+      { name: 'Ach sekarang', labels: cols, values: items.map(it => it.A.core.achPS ?? 0) },
+      { name: 'Proyeksi akhir bulan', labels: cols, values: items.map(it => it.A.core.projPct ?? 0) },
+    ], chartBase({ x: 0.5, y: 3.4, w: 5.6, h: 1.75, barDir: 'bar', chartColors: ['D9B8AE', RP.brand], showValue: true, dataLabelPosition: 'outEnd',
+      dataLabelFormatCode: '0"%"', showLegend: true, legendPos: 'r', legendFontSize: 9, legendFontFace: R_FONT, legendColor: RP.muted,
+      showTitle: true, title: '% target PS', valAxisHidden: true, valGridLine: { style: 'none' }, catAxisOrientation: 'maxMin' }));
+    insight(s, CMP.trend, 6.35, 1.25, 3.15, 3.85, 'Analisa');
+  }
+
+  items.forEach(({ D, A }) => {
+  const k = D.kpi, core = A.core;
+  if (all) {
+    tag = D.cluster;
+    darkSlide('Cluster', D.cluster, `${(CLUSTER[D.cluster]?.kab || []).join(' · ')}`, `${fmtN(k.ps)} PS · ach ${fmtPct(core.achPS)} · proyeksi ${fmtPct(core.projPct)}`);
+  }
 
   // ── 2. Ringkasan analisa ──
   s = pres.addSlide({ masterName: 'KONTEN' });
@@ -450,7 +502,7 @@ function reportBuild(D, A) {
   s.addChart(pres.charts.BAR, [
     { name: 'Sudah diplan', labels: kl, values: kats.map(x => A.cov[x][0]) },
     { name: 'Belum diplan', labels: kl, values: kats.map(x => A.cov[x][1] - A.cov[x][0]) },
-  ], chartBase({ x: 0.5, y: 1.2, w: 5.6, h: 3.9, barDir: 'col', barGrouping: 'stacked', chartColors: [RP.brand, 'EADFDA'], showValue: true,
+  ], chartBase({ x: 0.5, y: 1.2, w: 5.6, h: 3.9, barDir: 'col', barGrouping: 'stacked', chartColors: [RP.brand, 'EADFDA'], showValue: true, dataLabelFormatCode: '#,##0;;',
     dataLabelPosition: 'ctr', showLegend: true, legendPos: 'b', legendFontSize: 9, legendFontFace: R_FONT, legendColor: RP.muted,
     showTitle: true, title: 'Jumlah desa per kategori', valAxisHidden: true, valGridLine: { style: 'none' } }));
   insight(s, A.tl);
@@ -508,20 +560,110 @@ function reportBuild(D, A) {
     s.addTable([head, ...rows], { x: 0.5, y: 1.25, w: 9, colW: [0.4, 2.0, 1.7, 1.7, 1.1, 1.2, 0.9], fontSize: 11, fontFace: R_FONT,
       color: RP.ink, rowH: 0.33, border: { type: 'solid', color: RP.line, pt: 0.5 }, margin: 0.05 });
   } else empty(s, 0.5, 1.25, 9, 3.8, 'Semua desa Prioritas sudah diplan atau sudah ada PS');
+  });
 
   return pres;
 }
 
 // ================================================================
+//  ANALISA PERBANDINGAN antar-cluster
+// ================================================================
+function reportCompare(items) {
+  const C2 = items.map(({ D, A }) => {
+    const k = D.kpi, aktif = D.sf.filter(s => s.ps > 0).length;
+    const w0 = A.w.w0, w1 = A.w.w1;
+    return {
+      name: D.cluster, ps: k.ps, tgt: k.tgtPS, ach: A.core.achPS, proj: A.core.projPct, drr: A.core.drr, need: A.core.needDrr,
+      wow: w1 > 0 ? Math.round((w0 - w1) / w1 * 100) : null, sf: D.sf.length, aktif,
+      prod: aktif ? k.ps / aktif : 0, cov: pct(A.cov.prioritas[0], A.cov.prioritas[1]), psRE: k.re > 0 ? k.ps / k.re * 100 : null,
+      plan: D.plan.length,
+    };
+  });
+  const T = {
+    ps: sum(C2.map(c => c.ps)), tgt: sum(C2.map(c => c.tgt)), sf: sum(C2.map(c => c.sf)), aktif: sum(C2.map(c => c.aktif)),
+    drr: sum(C2.map(c => c.drr)), need: sum(C2.map(c => c.need)), plan: sum(C2.map(c => c.plan)),
+  };
+  const D0 = items[0].D;
+  T.ach = pct(T.ps, T.tgt);
+  T.proj = pct(Math.round(T.ps + T.drr * D0.sisa), T.tgt);
+  const covT = items.reduce((a, { A }) => [a[0] + A.cov.prioritas[0], a[1] + A.cov.prioritas[1]], [0, 0]);
+  T.cov = pct(covT[0], covT[1]);
+  const w0 = sum(items.map(i => i.A.w.w0)), w1 = sum(items.map(i => i.A.w.w1));
+  T.wow = w1 > 0 ? Math.round((w0 - w1) / w1 * 100) : null;
+  const re = sum(items.map(i => i.D.kpi.re));
+  T.psRE = re > 0 ? T.ps / re * 100 : null;
+  T.prod = T.aktif ? T.ps / T.aktif : 0;
+
+  const def = [
+    ['PS', c => fmtN(c.ps), 'max', c => c.ps],
+    ['Target PS', c => fmtN(c.tgt), null],
+    ['Ach PS', c => fmtPct(c.ach), 'max', c => c.ach],
+    ['Proyeksi akhir bln', c => fmtPct(c.proj), 'max', c => c.proj],
+    ['DRR sekarang', c => fmt1(c.drr), null],
+    ['DRR dibutuhkan', c => c.need ? fmt1(c.need) : '–', null],
+    ['Tren 7 hari', c => sgn(c.wow), 'max', c => c.wow],
+    ['SF sudah PS', c => `${c.aktif}/${c.sf}`, 'max', c => c.sf ? c.aktif / c.sf : 0],
+    ['PS per SF aktif', c => fmt1(c.prod), 'max', c => c.prod],
+    ['Konversi RE→PS', c => c.psRE == null ? '–' : fmt1(c.psRE) + '%', 'max', c => c.psRE],
+    ['Cakupan desa Prioritas', c => fmtPct(c.cov), 'max', c => c.cov],
+  ];
+  const rows = [], best = {};
+  def.forEach(([label, f, dir, val]) => {
+    rows.push([label, ...C2.map(f), f(T)]);
+    if (dir && C2.length > 1) {
+      const vs = C2.map(c => val(c) ?? -Infinity);
+      const mx = Math.max(...vs);
+      if (vs.filter(v => v === mx).length === 1) best[label] = vs.indexOf(mx);
+    }
+  });
+
+  const [a, b] = C2;
+  const ins = [];
+  ins.push(`WOK: ${fmtN(T.ps)} PS dari target ${fmtN(T.tgt)} (${fmtPct(T.ach)}), proyeksi ${fmtPct(T.proj)} di akhir bulan.`);
+  if (a && b) {
+    const lead = (a.ach ?? 0) >= (b.ach ?? 0) ? a : b, lag = lead === a ? b : a;
+    ins.push(`${lead.name} unggul ach (${fmtPct(lead.ach)} vs ${fmtPct(lag.ach)}); selisih ${Math.abs((lead.ach ?? 0) - (lag.ach ?? 0))} poin.`);
+    const pr = a.prod >= b.prod ? a : b, pl = pr === a ? b : a;
+    if (pl.prod > 0) ins.push(`Produktivitas SF ${pr.name} ${fmt1(pr.prod)} PS/SF aktif, ${Math.round((pr.prod / pl.prod - 1) * 100)}% di atas ${pl.name}.`);
+    const cv = (a.cov ?? 0) >= (b.cov ?? 0) ? a : b, cl = cv === a ? b : a;
+    ins.push(`Cakupan desa Prioritas: ${cv.name} ${fmtPct(cv.cov)}, ${cl.name} ${fmtPct(cl.cov)}.`);
+    const risk = C2.filter(c => c.proj != null && c.proj < 100).sort((x, y) => x.proj - y.proj)[0];
+    if (risk && D0.sisa > 0) ins.push(`Fokus minggu depan: ${risk.name} (proyeksi ${fmtPct(risk.proj)}, perlu ${fmt1(risk.need)} PS/hari).`);
+  }
+  const tr = [];
+  C2.forEach(c => tr.push(`${c.name}: 7 hari terakhir ${sgn(c.wow)} vs minggu sebelumnya; DRR ${fmt1(c.drr)}${c.need ? ', butuh ' + fmt1(c.need) : ''} PS/hari.`));
+  tr.push(`Gabungan WOK: tren 7 hari ${sgn(T.wow)}; DRR ${fmt1(T.drr)}${T.need ? ' vs butuh ' + fmt1(T.need) : ''} PS/hari.`);
+  return { rows, best, insight: ins, trend: tr };
+}
+
+// ================================================================
 //  4. ENTRY: dipanggil tombol "PPT"
 // ================================================================
-async function exportWeeklyPPT(app) {
+// mode: 'cluster' = cluster aktif · 'all' = semua cluster + perbandingan
+async function reportItems(app, mode = 'cluster') {
+  if (mode !== 'all') { const D = await reportCollect(app); return [{ D, A: reportAnalyze(D) }]; }
+  const asal = app.cluster, items = [];
+  try {
+    let planAll = null;
+    for (const c of Object.keys(CLUSTER)) {
+      app.cluster = c;                      // getter dashboard dihitung untuk cluster ini
+      const D = await reportCollect(app, { planAll });
+      planAll = D.planAll;
+      items.push({ D, A: reportAnalyze(D) });
+    }
+  } finally {
+    app.cluster = asal;
+  }
+  return items;
+}
+
+async function exportWeeklyPPT(app, mode = 'cluster') {
   await loadPptLib();
-  const D = await reportCollect(app);
-  const A = reportAnalyze(D);
-  const pres = reportBuild(D, A);
-  const tgl = localYMD ? localYMD(new Date()) : new Date().toISOString().slice(0, 10);
-  const name = `Review-Mingguan-${D.cluster.replace(/\s+/g, '')}-${tgl}.pptx`;
+  const items = await reportItems(app, mode);
+  const pres = reportBuild(items, mode, mode === 'all' ? reportCompare(items) : null);
+  const tgl = typeof localYMD === 'function' ? localYMD(new Date()) : new Date().toISOString().slice(0, 10);
+  const who = mode === 'all' ? 'WOK-LampungBarat-WayKanan' : items[0].D.cluster.replace(/\s+/g, '');
+  const name = `Review-Mingguan-${who}-${tgl}.pptx`;
   await pres.writeFile({ fileName: name });
   return name;
 }
