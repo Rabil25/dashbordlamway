@@ -115,7 +115,7 @@ async function wlRender(app, map) {
     const k = wlK(f.properties.kec, f.properties.desa), d = desaInfo[k], v = visN(k), fl = st.hl ? flag(k) : '';
     const c = st.kat && d ? WL.KAT_C[d.kat] || '#cdb68a' : '#cdb68a';
     return { pane: 'wlArea', color: fl === 'untouched' ? '#a8231c' : fl === 'jenuh' ? '#c0622a' : fl === 'skipps' ? '#3f7d3a' : '#6b4423',
-      weight: fl ? 2.6 : 0.9, dashArray: fl === 'untouched' ? '4 4' : null, fillColor: c,
+      weight: fl ? 1.6 : 0.5, dashArray: fl === 'untouched' ? '4 4' : null, fillColor: c,
       fillOpacity: (st.kat && d ? 0.22 : 0.08) + (st.visit ? 0.45 * Math.sqrt(v / maxVis) : 0) };
   };
 
@@ -142,15 +142,15 @@ async function wlRender(app, map) {
       onEachFeature: (f, l) => {
         l.bindTooltip(wlEsc(f.properties.desa), { sticky: true, className: 'wl-tip', direction: 'top' });
         l.bindPopup(() => card(f), { maxWidth: 240, className: 'wl-pop', autoPanPadding: [20, 20] });
-        l.on('mouseover', () => l.setStyle({ weight: 2.6 })).on('mouseout', () => l.setStyle(desaStyle(f)));
+        l.on('mouseover', () => l.setStyle({ weight: 1.8 })).on('mouseout', () => l.setStyle(desaStyle(f)));
       },
     }));
-    add(L.geoJSON({ type: 'FeatureCollection', features: kecF }, { style: { pane: 'wlLine', color: '#3b2a1e', weight: 2, dashArray: '8 5', fill: false, opacity: .6 }, interactive: false }));
+    add(L.geoJSON({ type: 'FeatureCollection', features: kecF }, { style: { pane: 'wlLine', color: '#3b2a1e', weight: 1, dashArray: '6 4', fill: false, opacity: .55 }, interactive: false }));
   } else {
     const kecStyle = f => {
       const s = kecSum[wlN(f.properties.kec)] || { desa: 1, prio: 0, vis: 0 }, pr = s.prio / Math.max(1, s.desa);
       const c = m === 'kab' ? '#cdb68a' : pr > .4 ? '#a8231c' : pr > .2 ? '#d48a00' : '#8c8c8c';
-      return { pane: 'wlArea', color: '#4a2c14', weight: m === 'kab' ? 0.6 : 1.6, dashArray: m === 'kab' ? '2 4' : null, fillColor: c, fillOpacity: m === 'kab' ? .12 : .18 + pr * .35 };
+      return { pane: 'wlArea', color: '#4a2c14', weight: m === 'kab' ? 0.4 : 0.8, dashArray: m === 'kab' ? '2 4' : null, fillColor: c, fillOpacity: m === 'kab' ? .12 : .18 + pr * .35 };
     };
     add(L.geoJSON({ type: 'FeatureCollection', features: kecF }, {
       style: kecStyle,
@@ -161,7 +161,7 @@ async function wlRender(app, map) {
       },
     }));
   }
-  if (m !== 'none') add(L.geoJSON({ type: 'FeatureCollection', features: kabF }, { style: { pane: 'wlLine', color: '#8a2a1c', weight: 3, fill: false, opacity: .8 }, interactive: false }));
+  if (m !== 'none') add(L.geoJSON({ type: 'FeatureCollection', features: kabF }, { style: { pane: 'wlLine', color: '#8a2a1c', weight: 1.4, fill: false, opacity: .75 }, interactive: false }));
 
   // ── label (anti-tabrakan) ──
   const lblLayer = add(L.layerGroup());

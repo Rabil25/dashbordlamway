@@ -1947,8 +1947,7 @@ function app() {
       const rows = this.koordinatRows;
       const mapEl = document.getElementById('leaflet-map');
       if (!mapEl) return;
-      this.fitPetaMap();
-      if (!this._petaResize) { this._petaResize = true; window.addEventListener('resize', () => { if (this.page === 'peta') this.fitPetaMap(); }); }
+      if (!this._petaResize) { this._petaResize = true; window.addEventListener('resize', () => {  }); }
       if (!window.L) { mapEl.innerHTML = '<p style="padding:20px;color:var(--text-3)">Leaflet belum tersedia</p>'; return; }
 
       // Destroy existing map instance to avoid "already initialized" error
