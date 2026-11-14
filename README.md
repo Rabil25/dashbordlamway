@@ -229,3 +229,19 @@ Gaya bersama ada di `assets/css/components.css`. Untuk elemen baru:
 - **Export PPT review mingguan** (`assets/js/report.js`, tombol "PPT" di topbar, pilihan: cluster aktif atau semua cluster + perbandingan): 10 slide dengan grafik asli PowerPoint, dibuat di browser dengan pptxgenjs 3.12.0 (`assets/vendor/`, dimuat saat diklik). Analisa otomatis memakai aturan statistik yang bisa ditelusuri: pace vs waktu berjalan, DRR yang dibutuhkan, tren 7 hari dan regresi linear, Pareto 20% SF, pergerakan tier, serta cakupan desa per kategori.
 - **PPT perbandingan LB vs WK** (`assets/js/report_cmp.js`), mode **Mingguan** (7 hari vs 7 hari sebelumnya) dan **Bulanan/MTD** (vs hari yang sama bulan lalu): scorecard pemenang per indikator, kebocoran order per penyebab, channel dan produk, produktivitas SF, efektivitas DJP (dari plan), wilayah basis (SF×desa 3 bulan berturut), serta aksi per cluster. Potensi PS hanya dihitung dari konversi dan pembatalan order yang sudah ada.
 - `/api/data` membaca `Bulan_Ini!CE2:DV` (tambahan DU = kecamatan, DV = desa order; `C.KEC`, `C.DESA`). Jalur fallback Apps Script masih CE:DT, sehingga slide wilayah basis otomatis dilewati bila kolom desa tidak ada.
+
+### PPT Analisa — format standar (Nov 2026)
+Semua pilihan di menu **PPT** sekarang memakai satu format 7 slide (`assets/js/report_an.js`):
+Ringkasan · Pencapaian & Tren · Funnel & Mix · DJP 3 bulan → PS (wilayah desa) · SF · Prioritas, Penetrasi & Plan · Kesimpulan & Aksi.
+Setiap slide ditutup **analisa silogisme** (premis mayor → premis minor → kesimpulan) yang teksnya dihitung dari data. Kendala tidak dimasukkan.
+
+| Pilihan | Pembanding | Jendela PS |
+|---|---|---|
+| Mingguan | LB vs WK | 7 hari terakhir vs 7 hari sebelumnya |
+| Bulanan | LB vs WK | MTD vs hari yang sama bulan lalu |
+| Detail cluster aktif | antar-kabupaten cluster aktif | MTD |
+| Detail semua cluster | semua kabupaten LB + WK | MTD |
+
+Aturan DJP: PS bulan M dibandingkan DJP bulan **M-1, M-2, M-3** (keputusan berlangganan butuh waktu, hasil tampak di bulan ke-4).
+Jendela tidak digeser; bulan yang kosong ditandai "belum tersedia". **Satu kunjungan = 1 SF × 1 desa × 1 hari** (ODP hanya alat check-in).
+Logo: `assets/img/indihome-logo.png`. File lama `report.js`/`report_cmp.js` tetap dimuat untuk helper (loadPptLib, util tanggal).

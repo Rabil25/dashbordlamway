@@ -1154,9 +1154,9 @@ function app() {
     async exportPPT(mode = 'cluster') {
       if (this.pptBusy) return;
       this.pptBusy = true;
-      showToast({ all: 'Menyiapkan PPT semua cluster…', mingguan: 'Menyiapkan PPT mingguan LB vs WK…', bulanan: 'Menyiapkan PPT bulanan LB vs WK…' }[mode] || 'Menyiapkan PPT…', 'info', 4000);
+      showToast({ all: 'Menyiapkan PPT semua kabupaten…', mingguan: 'Menyiapkan PPT mingguan LB vs WK…', bulanan: 'Menyiapkan PPT bulanan LB vs WK…' }[mode] || 'Menyiapkan PPT…', 'info', 4000);
       try {
-        const name = (mode === 'mingguan' || mode === 'bulanan') ? await exportComparePPT(this, mode) : await exportWeeklyPPT(this, mode);
+        const name = await exportAnalisaPPT(this, mode);
         showToast('PPT terunduh: ' + name, 'ok');
       } catch (e) {
         showToast('Gagal membuat PPT: ' + (e.message || e), 'err', 6000);

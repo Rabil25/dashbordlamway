@@ -401,17 +401,17 @@
         </button>
         <div class="ppt-pop" role="menu" x-show="open" x-transition.opacity.duration.120ms style="display:none">
           <button type="button" role="menuitem" @click="open=false; exportPPT('mingguan')">
-            <b>Mingguan · LB vs WK</b><small>7 hari terakhir vs minggu lalu · analisa perbandingan</small>
+            <b>Mingguan · LB vs WK</b><small>7 hari terakhir vs minggu lalu · basis DJP 3 bulan</small>
           </button>
           <button type="button" role="menuitem" @click="open=false; exportPPT('bulanan')">
-            <b>Bulanan (MTD) · LB vs WK</b><small>MTD vs periode sama bulan lalu · proyeksi</small>
+            <b>Bulanan (MTD) · LB vs WK</b><small>MTD vs bulan lalu · outlook · basis DJP 3 bulan</small>
           </button>
           <div class="ppt-sep" role="separator"></div>
           <button type="button" role="menuitem" @click="open=false; exportPPT('cluster')">
-            <b>Detail cluster aktif</b><small x-text="cluster + ' · 10 slide'"></small>
+            <b>Detail cluster aktif</b><small x-text="cluster + ' · antar-kabupaten · 7 slide'"></small>
           </button>
           <button type="button" role="menuitem" @click="open=false; exportPPT('all')">
-            <b>Detail semua cluster</b><small>Kedua cluster lengkap · ±23 slide</small>
+            <b>Detail semua cluster</b><small>Semua kabupaten LB + WK · 7 slide</small>
           </button>
         </div>
       </div>
@@ -2783,5 +2783,6 @@
 <script src="assets/js/timeline.js"></script>
 <script src="assets/js/report.js"></script>
 <script src="assets/js/report_cmp.js"></script>
+<script src="assets/js/report_an.js"></script>
 </body>
 </html>
