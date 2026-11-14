@@ -154,6 +154,16 @@ function mdRecolor(o) {
   return o;
 }
 
+// Font tulisan tangan tema Medieval lebih lebar/tinggi: beri jarak legenda & ruang label sumbu bawah
+function mdTweak(o) {
+  if (!o || typeof o !== 'object') return o;
+  const lg = l => (l && typeof l === 'object' && !Array.isArray(l)) ? { itemGap: 22, ...l, itemGap: Math.max(22, l.itemGap || 0) } : l;
+  if (o.legend) o.legend = Array.isArray(o.legend) ? o.legend.map(lg) : lg(o.legend);
+  const gd = g => (g && typeof g === 'object' && !Array.isArray(g) && typeof (g.bottom ?? 10) === 'number') ? { ...g, bottom: (g.bottom ?? 10) + 8 } : g;
+  if (o.grid) o.grid = Array.isArray(o.grid) ? o.grid.map(gd) : gd(o.grid);
+  return o;
+}
+
 function getChartTheme() {
   const light = isLight();
   if (isMedieval()) {

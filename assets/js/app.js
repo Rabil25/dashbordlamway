@@ -1733,7 +1733,7 @@ function app() {
         const ch = echarts.init(el, null, { renderer: 'svg' });
         // Tema Medieval: warna neon bawaan grafik diganti warna tinta (lihat mdRecolor di config.js)
         const so = ch.setOption.bind(ch);
-        ch.setOption = (opt, ...rest) => so(isMedieval() ? mdRecolor(opt) : opt, ...rest);
+        ch.setOption = (opt, ...rest) => so(isMedieval() ? mdTweak(mdRecolor(opt)) : opt, ...rest);
         this._charts[id] = ch;
         // Grafik yang dibuat saat tab-nya masih tersembunyi lebarnya 0 (tampak kosong).
         // ResizeObserver menyesuaikan ukuran begitu wadahnya tampil/berubah ukuran.
