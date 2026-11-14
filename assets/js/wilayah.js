@@ -324,7 +324,11 @@ async function wlBizAnalysis(app, D, E) {
   // 3) MATRIKS POTENSI (port avai) × PENETRASI (PS/avai)
   let V = { by: {} }; try { V = await wlLoadVisits(app); } catch (e) {}
   const kabs = E.flatMap(e => e.kabs);
-  const pen = (app.penetrasiData || []).filter(p => kabs.includes(String(p.kab).toUpperCase()) && +p.avai > 0);
+  // potensi & PS per desa: dari klasifikasi desa (port avai) + order bulan aktif (tidak bergantung data Deepdive yang dimuat terpisah)
+  const psDesa = {}, bp = D.bulan.replace('-', '');
+  (D.allRows || app.filteredRows).forEach(r => { if (!(r[C.VAL_PS] || '').toString().trim()) return; if (String(ymdNum(r[C.DATE_PS])).slice(0, 6) !== bp) return; const k = wlK(r[C.KEC], r[C.DESA]); psDesa[k] = (psDesa[k] || 0) + 1; });
+  const pen = Object.values(katOf).filter(d => kabs.includes(String(d.kab).toUpperCase()) && +d.totalAvail > 0)
+    .map(d => ({ kab: d.kab, kec: d.kec, desa: d.desa, avai: +d.totalAvail, ps: psDesa[wlK(d.kec, d.desa)] || 0 }));
   const med = a => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : 0; };
   const mA = med(pen.map(p => +p.avai)), rates = pen.map(p => +p.ps / +p.avai);
   let mP = med(rates); if (!mP) mP = rates.reduce((a, b) => a + b, 0) / Math.max(1, rates.length);
@@ -374,7 +378,9 @@ async function wlBizAnalysis(app, D, E) {
     const perHari = Math.ceil(g.gap / Math.max(1, D.sisa));
     const lines = [
       ['Status IO', g.gap ? `Akhir bulan diperkirakan ${g.ol} IO dari target ${g.tgt} — kurang ${g.gap}.` : `Akhir bulan diperkirakan ${g.ol} IO, sudah ≥ target ${g.tgt}.`],
-      ['Masalah utama', x.weak && PLAIN[x.weak.k] ? PLAIN[x.weak.k](x.weak) : 'Tidak ada faktor yang jauh di bawah acuan.'],
+      ['Masalah utama', (g.gap === 0 && g.potShare >= 70)
+        ? 'Tidak ada masalah besar — target IO tercapai & lokasi sudah tepat.' + (x.weak && PLAIN[x.weak.k] ? ' Yang masih bisa ditingkatkan: ' + PLAIN[x.weak.k](x.weak).charAt(0).toLowerCase() + PLAIN[x.weak.k](x.weak).slice(1) : '')
+        : (x.weak && PLAIN[x.weak.k] ? PLAIN[x.weak.k](x.weak) : 'Tidak ada faktor yang jauh di bawah acuan.')],
       ['Lokasi IO', `${g.potShare}% IO dari desa Prioritas/Strategis` + (g.potShare >= 70 ? ' — sudah sesuai acuan (≥70%).' : ' — masih di bawah acuan 70%.')],
       ['PS (hasil)', `${g.ps} sekarang, diperkirakan ${g.psOl} dari target ${g.psTgt}.`],
     ];
@@ -382,7 +388,7 @@ async function wlBizAnalysis(app, D, E) {
     if (g.gap) acts.push(`Cari ${g.gap} IO lagi sampai akhir bulan (±${perHari} per hari), utamakan desa Prioritas/Strategis.`);
     if (x.weak && x.weak.k === 'kunj') acts.push(`Tambah kunjungan SF ke ±${x.weak.ref.split(' ')[0]} per SF per bulan.`);
     if (x.weak && x.weak.k === 'sasaran') acts.push('Arahkan kunjungan ke desa Prioritas/Strategis (minimal 80%).');
-    if (x.weak && x.weak.k === 'ioHasil') acts.push('Coaching cara menawarkan ke pelanggan — kunjungan sudah ada, hasilnya yang rendah.');
+    if (x.weak && x.weak.k === 'ioHasil') acts.push(g.gap === 0 ? 'Pertahankan ritme; coaching ringan agar hasil per kunjungan naik.' : 'Coaching cara menawarkan ke pelanggan — kunjungan sudah ada, hasilnya yang rendah.');
     if (x.weak && x.weak.k === 'ioPot' || g.potShare < 70) {
       const sk = {}; (D.allRows || []).forEach(r => { if (!(r[C.VAL_IO] || '').toString().trim()) return; const n = ymdNum(r[C.DATE_IO]); if (n < D.W[0] || n > D.W[1]) return;
         if (!e.kabs.includes(String(r[C.VAL_KAB] || '').toUpperCase())) return; const d = katOf[wlK(r[C.KEC], r[C.DESA])]; if (d && (d.kat === 'skip' || d.kat === 'cadangan')) sk[tc(d.desa)] = (sk[tc(d.desa)] || 0) + 1; });
