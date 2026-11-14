@@ -1301,10 +1301,10 @@
               <div class="wla-diag">
                 <template x-for="d in wlAn.diag" :key="d.name">
                   <div class="card wla-dcard" :class="'st-' + d.status">
-                    <div class="card-title" x-text="d.name"></div>
-                    <p class="wla-dtext" x-text="d.diag"></p>
-                    <div class="wla-acts-h">Tindakan</div>
-                    <ul class="wla-acts"><template x-for="a in d.acts" :key="a"><li x-text="a"></li></template></ul>
+                    <div class="card-title"><span x-text="d.name"></span> <span x-text="{ok:'🟢',warn:'🟠',bad:'🔴'}[d.status]"></span></div>
+                    <dl class="wla-lines"><template x-for="l in d.lines" :key="l[0]"><div><dt x-text="l[0]"></dt><dd x-text="l[1]"></dd></div></template></dl>
+                    <div class="wla-acts-h">Yang harus dilakukan</div>
+                    <ol class="wla-acts"><template x-for="a in d.acts" :key="a"><li x-text="a"></li></template></ol>
                   </div>
                 </template>
               </div>

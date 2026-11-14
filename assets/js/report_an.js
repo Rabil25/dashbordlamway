@@ -597,7 +597,7 @@ async function anBuild(D, S, B) {
     });
     tx(s, '* RE→PS dipengaruhi faktor di luar kendali penuh sales; tidak dipilih sebagai faktor penahan.', { x: 0.4, y: 4.38, w: 12, h: 0.2, fontSize: 7, color: GREY, italic: true });
     const hdr = ['Entitas', 'Target IO', 'IO periode', 'Outlook IO', 'Gap IO', 'IO lokasi potensial', 'Butuh IO potensial', 'PS (hasil)', 'Diagnosis'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
-    s.addTable([hdr, ...B.gap.map((g, i) => [g.name, g.tgt, g.mtd, g.ol, g.gap, `${g.pot} (${g.potShare}%)`, g.potGap ? '+' + g.potGap : '–', `${g.ps}/${g.psTgt}`, (B.diag[i] || {}).diag || ''].map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 4 && g.gap > 0, color: j === 4 && g.gap > 0 ? RED : DARK } })))],
+    s.addTable([hdr, ...B.gap.map((g, i) => [g.name, g.tgt, g.mtd, g.ol, g.gap, `${g.pot} (${g.potShare}%)`, g.potGap ? '+' + g.potGap : '–', `${g.ps}/${g.psTgt}`, ((B.diag[i] || {}).lines || []).slice(1, 3).map(l => l[1]).join(' ')].map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 4 && g.gap > 0, color: j === 4 && g.gap > 0 ? RED : DARK } })))],
       { x: 0.4, y: 4.62, w: 12.53, colW: [1.3, 0.75, 0.75, 0.8, 0.65, 1.15, 1.0, 0.75, 5.38], rowH: 0.36, fontFace: F, fontSize: n > 3 ? 6.5 : 7.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
     foot(s);
   }

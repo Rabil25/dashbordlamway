@@ -359,28 +359,41 @@ async function wlBizAnalysis(app, D, E) {
     return { name: e.name, total: ds.length, kurang: kurang.length, grup: grup.slice(0, 4) };
   });
 
-  // 4) DIAGNOSIS → AKSI per kabupaten
+  // 4) DIAGNOSIS → AKSI per kabupaten — bahasa sederhana, satu poin per baris
+  const PLAIN = {
+    kunj: x => `SF jarang turun ke desa: ${x.val} kunjungan per SF per bulan (rata-rata cluster ${x.ref.split(' ')[0]}).`,
+    sasaran: x => `Kunjungan belum ke desa yang tepat: baru ${x.val} ke desa Prioritas/Strategis (acuan 80%).`,
+    ioHasil: x => `SF sudah datang, tapi jarang dapat order: ${x.val} IO per 100 kunjungan (rata-rata cluster ${x.ref.split(' ')[0]}).`,
+    ioPot: x => `Banyak IO dari desa yang kurang potensial: baru ${x.val} dari desa Prioritas/Strategis (acuan 70%).`,
+    ioRe: x => `Banyak IO tidak lolos registrasi: IO→RE ${x.val} (acuan 95%).`,
+  };
   const diag = E.map((e, i) => {
     const x = drv[i], g = gap[i], st2 = strat[i];
     const garapKab = Q.belum.filter(q => e.kabs.includes(q.kab)).slice(0, 3);
     const kurangKab = Q.kurangi.filter(q => e.kabs.includes(q.kab)).slice(0, 2);
+    const perHari = Math.ceil(g.gap / Math.max(1, D.sisa));
+    const lines = [
+      ['Status IO', g.gap ? `Akhir bulan diperkirakan ${g.ol} IO dari target ${g.tgt} — kurang ${g.gap}.` : `Akhir bulan diperkirakan ${g.ol} IO, sudah ≥ target ${g.tgt}.`],
+      ['Masalah utama', x.weak && PLAIN[x.weak.k] ? PLAIN[x.weak.k](x.weak) : 'Tidak ada faktor yang jauh di bawah acuan.'],
+      ['Lokasi IO', `${g.potShare}% IO dari desa Prioritas/Strategis` + (g.potShare >= 70 ? ' — sudah sesuai acuan (≥70%).' : ' — masih di bawah acuan 70%.')],
+      ['PS (hasil)', `${g.ps} sekarang, diperkirakan ${g.psOl} dari target ${g.psTgt}.`],
+    ];
     const acts = [];
-    if (g.gap) acts.push(`Kejar +${g.gap} IO sampai akhir bulan (±${Math.ceil(g.gap / Math.max(1, D.sisa))} IO/hari), minimal 70% di desa Prioritas/Strategis.`);
-    if (x.weak && x.weak.k === 'kunj') acts.push(`Naikkan kunjungan SF dari ${x.weak.val} ke ±${x.weak.ref.split(' ')[0]} per SF per bulan.`);
-    if (x.weak && x.weak.k === 'sasaran') acts.push(`Arahkan ≥80% kunjungan ke desa Prioritas + Strategis (sekarang ${x.weak.val}).`);
-    if (x.weak && x.weak.k === 'ioHasil') acts.push(`Kunjungan sudah ada tapi IO per kunjungan rendah (${x.weak.val}/100): coaching pitching & pindahkan dari desa jenuh.`);
-    if (x.weak && x.weak.k === 'ioPot') acts.push(`IO masih banyak di luar lokasi potensial (${x.weak.val}): batasi input di desa Cadangan/Skip.`);
-    if (x.weak && x.weak.k === 'ioRe') acts.push(`Perbaiki IO→RE (${x.weak.val}): validasi data & tagging sebelum input.`);
-    if (st2.grup.length) acts.push(`Jadwalkan hari khusus desa Strategis: ` + st2.grup.slice(0, 2).map(gp => `Kec. ${gp.kec} (${gp.desa.slice(0, 3).join(', ')}; ±${gp.jarak} km dari kantor)`).join(' · ') + '.');
-    if (garapKab.length) acts.push(`Fokus desa belum tergarap: ${garapKab.map(q => q.desa + (q.kat === 'strategis' ? ' ★' : '')).join(', ')}.`);
-    if (kurangKab.length) acts.push(`Kurangi kunjungan ke ${kurangKab.map(q => `${q.desa} (${q.vis} kunj.)`).join(', ')}.`);
-    if (e.planCur === 0) acts.push(`Publish plan DJP ${periodLabel(D.bulan)} (masih 0).`);
-    if ((e.psre || 0) < 80 && e.coh[2]) acts.push(`Pendukung (bukan kendali penuh sales): kawal ${e.coh[2]} order pending dengan TA/teknisi agar IO yang sudah didapat menjadi PS.`);
+    if (g.gap) acts.push(`Cari ${g.gap} IO lagi sampai akhir bulan (±${perHari} per hari), utamakan desa Prioritas/Strategis.`);
+    if (x.weak && x.weak.k === 'kunj') acts.push(`Tambah kunjungan SF ke ±${x.weak.ref.split(' ')[0]} per SF per bulan.`);
+    if (x.weak && x.weak.k === 'sasaran') acts.push('Arahkan kunjungan ke desa Prioritas/Strategis (minimal 80%).');
+    if (x.weak && x.weak.k === 'ioHasil') acts.push('Coaching cara menawarkan ke pelanggan — kunjungan sudah ada, hasilnya yang rendah.');
+    if (x.weak && x.weak.k === 'ioPot') acts.push('Kurangi input order di desa Cadangan/Skip, pindahkan ke desa Prioritas/Strategis.');
+    if (x.weak && x.weak.k === 'ioRe') acts.push('Cek kelengkapan data & tagging sebelum input order.');
+    if (st2.grup.length) acts.push(`Jadwalkan hari khusus ke desa Strategis: ` + st2.grup.slice(0, 2).map(gp => `Kec. ${gp.kec} (${gp.desa.slice(0, 3).join(', ')})`).join(', lalu ') + '.');
+    if (garapKab.length) acts.push(`Garap desa yang masih banyak sisa port: ${garapKab.map(q => q.desa + (q.kat === 'strategis' ? ' ★' : '')).join(', ')}.`);
+    if (kurangKab.length) acts.push(`Kurangi kunjungan ke ${kurangKab.map(q => q.desa).join(' dan ')} — sudah ${kurangKab.map(q => q.vis).join('–')} kali dikunjungi, PS-nya 0.`);
+    if (e.planCur === 0) acts.push(`Publish plan DJP ${periodLabel(D.bulan)} (masih kosong).`);
+    if ((e.psre || 0) < 80 && e.coh[2]) acts.push(`(Bantuan teknis) Kawal ${e.coh[2]} order pending bersama teknisi agar jadi PS.`);
     return {
-      name: e.name,
-      diag: (x.weak ? `Faktor penahan utama: ${x.weak.label} = ${x.weak.val} vs ${x.weak.ref}. ` : 'Semua faktor yang dikontrol sales di atas acuan. ') + g.txt +
-        ` Hasil PS: ${g.ps} (outlook ${g.psOl} dari target ${g.psTgt}).`,
-      acts, status: g.gap === 0 && g.potGap === 0 ? 'ok' : g.gap <= g.tgt * .1 ? 'warn' : 'bad',
+      name: e.name, lines, acts,
+      diag: lines.map(l => l[0] + ': ' + l[1]).join(' '),
+      status: g.gap === 0 && g.potShare >= 70 ? 'ok' : g.gap <= g.tgt * .1 ? 'warn' : 'bad',
     };
   });
   return { drv, gap, matrix, mx, diag, strat };

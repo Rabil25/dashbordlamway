@@ -546,3 +546,8 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 
 .wla-mx3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 900px) { .wla-mx3 { grid-template-columns: 1fr; } }
+
+.wla-lines { margin: 6px 0 10px; font-size: 13px; line-height: 1.45; }
+.wla-lines > div { display: grid; grid-template-columns: 110px 1fr; gap: 8px; padding: 4px 0; border-top: 1px dashed var(--surface-border); }
+.wla-lines dt { font-weight: 700; color: var(--text-2); }
+.wla-lines dd { margin: 0; }
