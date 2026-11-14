@@ -379,7 +379,7 @@ async function wlBizAnalysis(app, D, E) {
     const lines = [
       ['Status IO', g.gap ? `Akhir bulan diperkirakan ${g.ol} IO dari target ${g.tgt} — kurang ${g.gap}.` : `Akhir bulan diperkirakan ${g.ol} IO, sudah ≥ target ${g.tgt}.`],
       ['Masalah utama', (g.gap === 0 && g.potShare >= 70)
-        ? 'Tidak ada masalah besar — target IO tercapai & lokasi sudah tepat.' + (x.weak && PLAIN[x.weak.k] ? ' Yang masih bisa ditingkatkan: ' + PLAIN[x.weak.k](x.weak).charAt(0).toLowerCase() + PLAIN[x.weak.k](x.weak).slice(1) : '')
+        ? 'Tidak ada masalah besar — target IO tercapai & lokasi sudah tepat.' + (x.weak && PLAIN[x.weak.k] ? ' Yang masih bisa ditingkatkan — ' + PLAIN[x.weak.k](x.weak) : '')
         : (x.weak && PLAIN[x.weak.k] ? PLAIN[x.weak.k](x.weak) : 'Tidak ada faktor yang jauh di bawah acuan.')],
       ['Lokasi IO', `${g.potShare}% IO dari desa Prioritas/Strategis` + (g.potShare >= 70 ? ' — sudah sesuai acuan (≥70%).' : ' — masih di bawah acuan 70%.')],
       ['PS (hasil)', `${g.ps} sekarang, diperkirakan ${g.psOl} dari target ${g.psTgt}.`],
