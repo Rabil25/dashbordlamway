@@ -1735,6 +1735,12 @@ function app() {
         const so = ch.setOption.bind(ch);
         ch.setOption = (opt, ...rest) => so(isMedieval() ? mdRecolor(opt) : opt, ...rest);
         this._charts[id] = ch;
+        // Grafik yang dibuat saat tab-nya masih tersembunyi lebarnya 0 (tampak kosong).
+        // ResizeObserver menyesuaikan ukuran begitu wadahnya tampil/berubah ukuran.
+        if (window.ResizeObserver) {
+          let raf = 0;
+          new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { if (!ch.isDisposed() && el.offsetWidth) ch.resize(); }); }).observe(el);
+        }
       }
       return this._charts[id];
     },
