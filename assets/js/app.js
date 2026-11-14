@@ -1918,11 +1918,22 @@ function app() {
       }));
     },
 
+    // Peta setinggi sisa layar (tanpa perlu scroll); dipanggil saat render & resize
+    fitPetaMap() {
+      const el = document.getElementById('leaflet-map');
+      if (!el || !el.offsetParent) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const h = Math.max(320, Math.round(window.innerHeight - top - 14));
+      if (Math.abs(el.offsetHeight - h) > 4) { el.style.height = h + 'px'; if (this._leafletMap) this._leafletMap.invalidateSize(); }
+    },
+
     renderPeta() {
       // Use Leaflet.js + OpenStreetMap
       const rows = this.koordinatRows;
       const mapEl = document.getElementById('leaflet-map');
       if (!mapEl) return;
+      this.fitPetaMap();
+      if (!this._petaResize) { this._petaResize = true; window.addEventListener('resize', () => { if (this.page === 'peta') this.fitPetaMap(); }); }
       if (!window.L) { mapEl.innerHTML = '<p style="padding:20px;color:var(--text-3)">Leaflet belum tersedia</p>'; return; }
 
       // Destroy existing map instance to avoid "already initialized" error
