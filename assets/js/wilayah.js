@@ -328,22 +328,24 @@ async function wlBizAnalysis(app, D, E) {
   const med = a => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : 0; };
   const mA = med(pen.map(p => +p.avai)), rates = pen.map(p => +p.ps / +p.avai);
   let mP = med(rates); if (!mP) mP = rates.reduce((a, b) => a + b, 0) / Math.max(1, rates.length);
-  const Q = { garap: [], jaga: [], efisien: [], kurangi: [] };
+  // Hanya desa Prioritas + Strategis, diberi label sisa potensi (menggantikan matriks 4 kuadran)
   const tc = s2 => String(s2).toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  const Q = { belum: [], sudah: [], tinjau: [], kurangi: [] };
   pen.forEach(p => {
-    const hiA = +p.avai >= mA, hiP = (+p.ps / +p.avai) > mP, k = wlK(p.kec, p.desa), v = (V.by[k] || {}).n || 0, d = katOf[k] || {};
-    const o = { desa: tc(p.desa), kec: tc(p.kec), kab: String(p.kab).toUpperCase(), avai: +p.avai, ps: +p.ps, pen: Math.round(+p.ps / +p.avai * 100), vis: v, kat: d.kat || '-', jarak: d.nearestDist };
-    Q[hiA && !hiP ? 'garap' : hiA && hiP ? 'jaga' : !hiA && hiP ? 'efisien' : 'kurangi'].push(o);
+    const k = wlK(p.kec, p.desa), d = katOf[k] || {}, v = (V.by[k] || {}).n || 0, avai = +p.avai, ps = +p.ps, rate = ps / avai;
+    const o = { desa: tc(p.desa), kec: tc(p.kec), kab: String(p.kab).toUpperCase(), avai, ps, pen: Math.round(rate * 100), vis: v, kat: d.kat || '-', jarak: d.nearestDist };
+    if (d.kat === 'prioritas' || d.kat === 'strategis') {
+      if (avai < mA * 0.5 || (v >= 10 && ps === 0)) Q.tinjau.push(o);
+      else if (rate > mP) Q.sudah.push(o); else Q.belum.push(o);
+    } else if (v >= 3 && ps === 0) Q.kurangi.push(o);
   });
-  Q.garap.sort((a, b) => (b.avai - b.ps) - (a.avai - a.ps)); Q.jaga.sort((a, b) => b.ps - a.ps); Q.efisien.sort((a, b) => b.pen - a.pen); Q.kurangi.sort((a, b) => b.vis - a.vis);
-  const qVis = k => Q[k].reduce((a, x) => a + x.vis, 0), totVis = Math.max(1, ['garap', 'jaga', 'efisien', 'kurangi'].reduce((a, k) => a + qVis(k), 0));
+  Q.belum.sort((a, b) => (b.avai - b.ps) - (a.avai - a.ps)); Q.sudah.sort((a, b) => b.ps - a.ps); Q.tinjau.sort((a, b) => b.vis - a.vis); Q.kurangi.sort((a, b) => b.vis - a.vis);
+  const lbl = x => `${x.desa}${x.kat === 'strategis' ? ' ★' : ''} — sisa ${Math.max(0, x.avai - x.ps)} port, PS ${x.ps}, ${x.vis} kunj.`;
   const matrix = [
-    { k: 'garap', t: 'GARAP', s: 'Potensi tinggi · penetrasi rendah', c: '#a8231c', act: 'Kejar IO di sini: tambah kunjungan rutin, termasuk desa Strategis yang jauh (jadwal khusus).' },
-    { k: 'jaga', t: 'JAGA', s: 'Potensi tinggi · penetrasi tinggi', c: '#3f7d3a', act: 'Pertahankan frekuensi; dorong referral pelanggan.' },
-    { k: 'efisien', t: 'EFISIENKAN', s: 'Potensi rendah · penetrasi tinggi', c: '#2f5f8a', act: 'Kunjungan secukupnya; port hampir habis.' },
-    { k: 'kurangi', t: 'KURANGI', s: 'Potensi rendah · penetrasi rendah', c: '#8c8c8c', act: 'Alihkan kunjungan ke kuadran Garap.' },
-  ].map(q => ({ ...q, n: Q[q.k].length, visShare: Math.round(qVis(q.k) / totVis * 100),
-    top: Q[q.k].slice(0, 5).map(x => `${x.desa}${x.kat === 'strategis' ? ' ★' : ''} (avai ${x.avai}, PS ${x.ps}, ${x.vis} kunj.)`) }));
+    { k: 'belum', t: '🔴 Belum tergarap', s: 'Port masih banyak, PS sedikit', c: '#a8231c', act: 'Kejar IO di sini (desa ★ lewat jadwal khusus).' },
+    { k: 'sudah', t: '🟢 Sudah tergarap', s: 'Sebagian besar potensi sudah terambil', c: '#3f7d3a', act: 'Cukup dijaga; dorong referral pelanggan.' },
+    { k: 'tinjau', t: '⚠️ Perlu ditinjau', s: 'Port hampir habis, atau sering dikunjungi tapi PS 0', c: '#c0622a', act: 'Cek ulang kategori desa & ketersediaan ODP.' },
+  ].map(q => ({ ...q, n: Q[q.k].length, top: Q[q.k].slice(0, 6).map(lbl) }));
   const mx = { avai: mA, pen: d1(mP * 100) };
 
   // 3b) JADWAL DESA STRATEGIS: kurang dikunjungi → kelompok per kecamatan (satu hari kunjungan per kelompok)
@@ -360,8 +362,8 @@ async function wlBizAnalysis(app, D, E) {
   // 4) DIAGNOSIS → AKSI per kabupaten
   const diag = E.map((e, i) => {
     const x = drv[i], g = gap[i], st2 = strat[i];
-    const garapKab = Q.garap.filter(q => e.kabs.includes(q.kab)).slice(0, 3);
-    const kurangKab = Q.kurangi.filter(q => e.kabs.includes(q.kab) && q.vis >= 3).slice(0, 2);
+    const garapKab = Q.belum.filter(q => e.kabs.includes(q.kab)).slice(0, 3);
+    const kurangKab = Q.kurangi.filter(q => e.kabs.includes(q.kab)).slice(0, 2);
     const acts = [];
     if (g.gap) acts.push(`Kejar +${g.gap} IO sampai akhir bulan (±${Math.ceil(g.gap / Math.max(1, D.sisa))} IO/hari), minimal 70% di desa Prioritas/Strategis.`);
     if (x.weak && x.weak.k === 'kunj') acts.push(`Naikkan kunjungan SF dari ${x.weak.val} ke ±${x.weak.ref.split(' ')[0]} per SF per bulan.`);
@@ -370,7 +372,7 @@ async function wlBizAnalysis(app, D, E) {
     if (x.weak && x.weak.k === 'ioPot') acts.push(`IO masih banyak di luar lokasi potensial (${x.weak.val}): batasi input di desa Cadangan/Skip.`);
     if (x.weak && x.weak.k === 'ioRe') acts.push(`Perbaiki IO→RE (${x.weak.val}): validasi data & tagging sebelum input.`);
     if (st2.grup.length) acts.push(`Jadwalkan hari khusus desa Strategis: ` + st2.grup.slice(0, 2).map(gp => `Kec. ${gp.kec} (${gp.desa.slice(0, 3).join(', ')}; ±${gp.jarak} km dari kantor)`).join(' · ') + '.');
-    if (garapKab.length) acts.push(`Fokus desa Garap: ${garapKab.map(q => q.desa + (q.kat === 'strategis' ? ' ★' : '')).join(', ')}.`);
+    if (garapKab.length) acts.push(`Fokus desa belum tergarap: ${garapKab.map(q => q.desa + (q.kat === 'strategis' ? ' ★' : '')).join(', ')}.`);
     if (kurangKab.length) acts.push(`Kurangi kunjungan ke ${kurangKab.map(q => `${q.desa} (${q.vis} kunj.)`).join(', ')}.`);
     if (e.planCur === 0) acts.push(`Publish plan DJP ${periodLabel(D.bulan)} (masih 0).`);
     if ((e.psre || 0) < 80 && e.coh[2]) acts.push(`Pendukung (bukan kendali penuh sales): kawal ${e.coh[2]} order pending dengan TA/teknisi agar IO yang sudah didapat menjadi PS.`);

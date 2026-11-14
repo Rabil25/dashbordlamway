@@ -1325,12 +1325,12 @@
                 <tbody><template x-for="g in wlAn.gap" :key="g.name"><tr><td x-text="g.name"></td><td x-text="g.tgt"></td><td x-text="g.mtd"></td><td x-text="g.ol"></td><td x-text="g.gap" :style="g.gap?'color:var(--danger);font-weight:700':''"></td><td x-text="g.pot + ' (' + g.potShare + '%)'"></td><td x-text="g.potGap ? ('+' + g.potGap) : '–'"></td><td x-text="g.ps + ' / ' + g.psTgt"></td><td class="wla-txt" x-text="g.txt"></td></tr></template></tbody></table></div>
               </div>
 
-              <div class="card"><div class="card-title">③ Matriks Potensi × Penetrasi desa</div>
-                <div class="card-subtitle" x-text="'Garis tengah: port avai ' + wlAn.mx.avai + ' (median) · penetrasi ' + wlAn.mx.pen + '% (acuan cluster). % kunjungan = porsi kunjungan DJP 3 bulan ke kuadran itu.'"></div>
-                <div class="wla-mx">
+              <div class="card"><div class="card-title">③ Desa Prioritas &amp; Strategis — masih ada sisa atau tidak?</div>
+                <div class="card-subtitle">Sisa = port avai yang belum jadi PS. ★ = desa Strategis.</div>
+                <div class="wla-mx wla-mx3">
                   <template x-for="q in wlAn.matrix" :key="q.k">
                     <div class="wla-q" :style="'border-color:' + q.c">
-                      <div class="wla-qh" :style="'color:' + q.c"><span x-text="q.t"></span><small x-text="q.n + ' desa · ' + q.visShare + '% kunjungan'"></small></div>
+                      <div class="wla-qh" :style="'color:' + q.c"><span x-text="q.t"></span><small x-text="q.n + ' desa'"></small></div>
                       <div class="wla-qs" x-text="q.s"></div>
                       <ul><template x-for="t in q.top" :key="t"><li x-text="t"></li></template></ul>
                       <div class="wla-qa" x-text="'→ ' + q.act"></div>
@@ -1405,7 +1405,7 @@
                   <dt>Gap Analysis</dt><dd>Selisih target dan outlook, diurai ke sumbernya (kurang kunjungan, salah lokasi, kebocoran).</dd>
                   <dt>Port avai</dt><dd>Port ODP yang masih tersedia = potensi pelanggan baru.</dd>
                   <dt>Penetrasi</dt><dd>PS ÷ port avai — seberapa banyak potensi desa yang sudah terambil.</dd>
-                  <dt>Matriks Potensi × Penetrasi</dt><dd>Garap (potensi tinggi, penetrasi rendah) · Jaga (tinggi, tinggi) · Efisienkan (rendah, tinggi) · Kurangi (rendah, rendah).</dd>
+                  <dt>Sisa potensi</dt><dd>Untuk desa Prioritas/Strategis: 🔴 belum tergarap (port masih banyak, PS sedikit) · 🟢 sudah tergarap · ⚠️ perlu ditinjau (port hampir habis atau sering dikunjungi tapi PS 0).</dd>
                   <dt>Desa jenuh</dt><dd>Sering dikunjungi tetapi hasilnya ≤1 — kunjungan sebaiknya dialihkan.</dd>
                   <dt>Silogisme</dt><dd>Premis mayor (aturan umum) + premis minor (fakta data) → kesimpulan.</dd>
                   <dt>★</dt><dd>Penanda desa Strategis di daftar desa.</dd>

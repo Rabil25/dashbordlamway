@@ -604,14 +604,13 @@ async function anBuild(D, S, B) {
   // ── 8. MATRIKS DESA & JADWAL STRATEGIS ──
   if (B) {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'MATRIKS POTENSI × PENETRASI & JADWAL DESA STRATEGIS', `Garis tengah: port avai ${B.mx.avai} · penetrasi ${B.mx.pen}% · % = porsi kunjungan DJP ${S.djpLbl} ke kuadran · ★ = desa Strategis`);
+    head(s, 'DESA PRIORITAS & STRATEGIS: SISA POTENSI · JADWAL STRATEGIS', 'Sisa = port avai yang belum jadi PS · ★ = desa Strategis');
     B.matrix.forEach((q, i) => {
-      const xx = 0.4 + (i % 2) * 3.65, yy = 1.12 + Math.floor(i / 2) * 2.95, col = q.c.replace('#', '');
-      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: xx, y: yy, w: 3.55, h: 2.85, rectRadius: 0.06, fill: { color: 'FFFFFF' }, line: { color: col, width: 2 } });
-      tx(s, [{ text: q.t, options: { bold: true, color: col, fontSize: 13 } }, { text: `   ${q.n} desa · ${q.visShare}% kunjungan`, options: { color: GREY, fontSize: 8.5 } }], { x: xx + 0.15, y: yy + 0.1, w: 3.3, h: 0.32 });
-      tx(s, q.s, { x: xx + 0.15, y: yy + 0.42, w: 3.3, h: 0.2, fontSize: 8, italic: true, color: GREY });
-      tx(s, q.top.slice(0, 5).map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < Math.min(4, q.top.length - 1) } })), { x: xx + 0.15, y: yy + 0.66, w: 3.3, h: 1.55, fontSize: 7.5, color: DARK, valign: 'top', paraSpaceAfter: 2 });
-      tx(s, '→ ' + q.act, { x: xx + 0.15, y: yy + 2.2, w: 3.3, h: 0.55, fontSize: 8, bold: true, color: col, valign: 'top', fit: 'shrink' });
+      const xx = 0.4, yy = 1.12 + i * 1.95, col = q.c.replace('#', '');
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: xx, y: yy, w: 7.25, h: 1.85, rectRadius: 0.06, fill: { color: 'FFFFFF' }, line: { color: col, width: 2 } });
+      tx(s, [{ text: q.t.replace(/^\S+\s/, ''), options: { bold: true, color: col, fontSize: 12 } }, { text: `   ${q.n} desa · ${q.s}`, options: { color: GREY, fontSize: 8.5 } }], { x: xx + 0.15, y: yy + 0.08, w: 7, h: 0.3 });
+      tx(s, q.top.slice(0, 4).map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < Math.min(3, q.top.length - 1) } })), { x: xx + 0.15, y: yy + 0.4, w: 7, h: 1.05, fontSize: 7.5, color: DARK, valign: 'top', paraSpaceAfter: 2 });
+      tx(s, '→ ' + q.act, { x: xx + 0.15, y: yy + 1.48, w: 7, h: 0.3, fontSize: 8, bold: true, color: col, valign: 'top', fit: 'shrink' });
     });
     card(s, 7.82, 1.12, 5.11, 5.8, 'JADWAL DESA STRATEGIS (kurang dikunjungi)', RED);
     const lines = [];
@@ -646,7 +645,7 @@ async function anBuild(D, S, B) {
       ['Kunjungan DJP', '1 SF × 1 desa × 1 hari; dihitung 3 bulan sebelum bulan PS (M-1…M-3).'], ['DRR · Outlook', 'Rata-rata per hari · proyeksi akhir bulan = DRR × hari dalam bulan.'],
       ['Driver Tree', 'Pohon pemicu: IO dipecah ke faktor pembentuknya untuk menemukan faktor penahan.'], ['Faktor penahan', 'Faktor yang dikontrol sales dengan nilai paling jauh di bawah acuan.'],
       ['Gap Analysis', 'Selisih target & outlook, diurai ke sumbernya.'], ['Port avai · Penetrasi', 'Port ODP tersedia (potensi) · PS ÷ port avai (potensi yang sudah terambil).'],
-      ['Matriks', 'Garap (potensi tinggi, penetrasi rendah) · Jaga · Efisienkan · Kurangi.'], ['Desa jenuh', 'Sering dikunjungi tapi hasil ≤1 — kunjungan dialihkan.'], ['Silogisme', 'Premis mayor (aturan) + premis minor (fakta) → kesimpulan.']];
+      ['Sisa potensi', 'Belum tergarap (port banyak, PS sedikit) · Sudah tergarap · Perlu ditinjau.'], ['Desa jenuh', 'Sering dikunjungi tapi hasil ≤1 — kunjungan dialihkan.'], ['Silogisme', 'Premis mayor (aturan) + premis minor (fakta) → kesimpulan.']];
     const half = Math.ceil(K.length / 2);
     [K.slice(0, half), K.slice(half)].forEach((col, ci) => {
       s.addTable(col.map((r, i) => [{ text: r[0], options: { bold: true, fill: { color: i % 2 ? 'FFFFFF' : BG } } }, { text: r[1], options: { fill: { color: i % 2 ? 'FFFFFF' : BG } } }]),
