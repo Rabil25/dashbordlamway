@@ -1202,15 +1202,15 @@
         <!-- Filter checkbox Belum PS / Kendala / PS -->
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
           <span style="font-size:12px;font-weight:600;color:var(--text-2)">Tampilkan:</span>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#fbbf24;background:var(--card-bg);border:1.5px solid #fbbf24;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="petaFilter.io ? '' : 'opacity:.4'">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#fbbf24;background:var(--card-bg);border:1.5px solid #fbbf24;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="{ opacity: petaFilter.io ? 1 : .4 }">
             <input type="checkbox" x-model="petaFilter.io" @change="$nextTick(()=>renderPeta())" style="accent-color:#fbbf24;width:14px;height:14px">
             Belum PS
           </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#ef4444;background:var(--card-bg);border:1.5px solid #ef4444;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="petaFilter.re ? '' : 'opacity:.4'">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#ef4444;background:var(--card-bg);border:1.5px solid #ef4444;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="{ opacity: petaFilter.re ? 1 : .4 }">
             <input type="checkbox" x-model="petaFilter.re" @change="$nextTick(()=>renderPeta())" style="accent-color:#ef4444;width:14px;height:14px">
             Kendala
           </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#22c55e;background:var(--card-bg);border:1.5px solid #22c55e;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="petaFilter.ps ? '' : 'opacity:.4'">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#22c55e;background:var(--card-bg);border:1.5px solid #22c55e;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="{ opacity: petaFilter.ps ? 1 : .4 }">
             <input type="checkbox" x-model="petaFilter.ps" @change="$nextTick(()=>renderPeta())" style="accent-color:#22c55e;width:14px;height:14px">
             PS
           </label>
@@ -1227,7 +1227,7 @@
         </div>
         <!-- Baris ODP terpisah -->
         <div style="display:flex;align-items:center;gap:8px;padding:4px 0">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#a78bfa;background:var(--card-bg);border:1.5px solid #a78bfa;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="showODP ? '' : 'opacity:.4'">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:#a78bfa;background:var(--card-bg);border:1.5px solid #a78bfa;border-radius:20px;padding:4px 12px;transition:opacity .2s" :style="{ opacity: showODP ? 1 : .4 }">
             <input type="checkbox" x-model="showODP" @change="toggleODPLayer()" style="accent-color:#a78bfa;width:14px;height:14px">
             📡 Titik ODP
           </label>
