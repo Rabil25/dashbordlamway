@@ -274,4 +274,25 @@
 [data-theme="medieval"] .topbar .cluster-btn { padding: 5px 10px; }
 [data-theme="medieval"] .profile-role-badge { transform: none; font-size: 10px; padding: 0 5px; }
 @media (max-width: 1280px) { [data-theme="medieval"] .topbar-title { font-size: 14px; } }
-[data-theme="medieval"] .tier-badge { filter: brightness(.62) saturate(1.5); font-weight: 700; }
+[data-theme="medieval"] :is(table, .card) .tier-badge { filter: brightness(.62) saturate(1.5); font-weight: 700; }
+
+/* ── hasil QA menyeluruh (Nov 2026) ── */
+/* noda tinta di sudut kartu menimpa isi (angka tabel) → dihapus */
+[data-theme="medieval"] :is(.card, .te-ps-block)::after { display: none !important; }
+/* DJP Daily: kotak ringkasan (.te-card) belum punya gaya → kertas kecil */
+[data-theme="medieval"] .te-card {
+  --text-1: #3b2a1e; --text-2: #5e4836; --text-3: #6f5945; color: #3b2a1e;
+  background: linear-gradient(rgba(243,230,198,.42), rgba(243,230,198,.42)), #ecdcb6 var(--md-paper); background-size: auto, 420px;
+  border: 1px solid rgba(110,75,35,.45); border-radius: 4px; box-shadow: inset 0 0 18px rgba(120,72,22,.38), 0 3px 8px rgba(30,15,5,.4);
+  display: flex; flex-direction: column; justify-content: center; min-width: 110px !important;
+}
+[data-theme="medieval"] .te-card .te-label { font-family: var(--md-label); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #6b5440; }
+[data-theme="medieval"] .te-card .te-value { font-family: var(--md-head); font-weight: 900; font-size: 24px; line-height: 1.1; color: #3b2a1e; }
+/* kode ODP & ID order jangan patah ke baris baru */
+[data-theme="medieval"] table td.mono { white-space: nowrap; }
+[data-theme="medieval"] :is(.wz-rev-tbl, .wz-saved table, .djp-saved table) td:nth-child(2) { white-space: nowrap; }
+/* tabel lebar (Detail Order): huruf sedikit lebih rapat supaya kolom STATUS terlihat */
+[data-theme="medieval"] .tbl-wrap table tbody td { font-size: 13px; }
+[data-theme="medieval"] .tbl-wrap table :is(td, th) { padding-left: 6px; padding-right: 6px; }
+[data-theme="medieval"] .tbl-wrap table td.mono, [data-theme="medieval"] .tbl-wrap table td .mono { font-size: 12px; letter-spacing: -.01em; }
+[data-theme="medieval"] .tbl-wrap table :is(.badge, .te-pill, .tier-badge) { font-size: 10.5px; padding: 0 5px; transform: none; }

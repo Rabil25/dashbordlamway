@@ -421,3 +421,8 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 .ppt-pop b{font-size:13px;color:var(--text-1)}
 .ppt-pop small{font-size:11px;color:var(--text-2)}
 .ppt-sep{height:1px;background:var(--surface-border);margin:4px 6px}
+
+/* DJP Daily: kotak ringkasan (sebelumnya tanpa gaya di semua tema) */
+.te-card { background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--r); display: flex; flex-direction: column; }
+.te-card .te-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+.te-card .te-value { font-size: 20px; font-weight: 800; color: var(--text-1); }
