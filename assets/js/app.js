@@ -1988,7 +1988,11 @@ function app() {
       // Lapisan Peta Wilayah (batas desa/kecamatan, kategori, kunjungan DJP, plan, kantor)
       const wlGo = () => { if (typeof wlRender === 'function') wlRender(this, map); };
       wlGo();
-      if (!this.prioritasOdpRaw.length) this.loadPrioritas().then(wlGo).catch(() => {});
+      if (!this.prioritasOdpRaw.length) {
+        // data ODP/klasifikasi desa bisa masih dimuat di latar → tunggu, lalu gambar ulang lapisan wilayah
+        this.loadPrioritas().catch(() => {});
+        let n = 0; const t = setInterval(() => { if (this.prioritasOdpRaw.length) { clearInterval(t); if (this._leafletMap) wlRender(this, this._leafletMap); } else if (++n > 30) clearInterval(t); }, 1000);
+      }
 
       if (rows.length === 0) {
         map.setView([DEFAULT_LAT, DEFAULT_LNG], 9);
