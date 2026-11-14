@@ -392,7 +392,7 @@ async function wlBizAnalysis(app, D, E) {
     if (x.weak && x.weak.k === 'ioRe') acts.push('Cek kelengkapan data & tagging sebelum input order.');
     if (st2.grup.length) acts.push(`Jadwalkan hari khusus ke desa Strategis: ` + st2.grup.slice(0, 2).map(gp => `Kec. ${gp.kec} (${gp.desa.slice(0, 3).join(', ')})`).join(', lalu ') + '.');
     if (garapKab.length) acts.push(`Garap desa yang masih banyak sisa port: ${garapKab.map(q => q.desa + (q.kat === 'strategis' ? ' ★' : '')).join(', ')}.`);
-    if (kurangKab.length) acts.push(`Kurangi kunjungan ke ${kurangKab.map(q => q.desa).join(' dan ')} — sudah ${kurangKab.map(q => q.vis).join('–')} kali dikunjungi, PS-nya 0.`);
+    if (kurangKab.length) acts.push(`Kurangi kunjungan ke ${kurangKab.map(q => q.desa).join(' dan ')} — sudah ${kurangKab.length > 1 ? 'masing-masing ' + kurangKab.map(q => q.vis).join(' dan ') : kurangKab[0].vis} kali dikunjungi, PS-nya 0.`);
     if (e.planCur === 0) acts.push(`Publish plan DJP ${periodLabel(D.bulan)} (masih kosong).`);
     if ((e.psre || 0) < 80 && e.coh[2]) acts.push(`(Bantuan teknis) Kawal ${e.coh[2]} order pending bersama teknisi agar jadi PS.`);
     return {
