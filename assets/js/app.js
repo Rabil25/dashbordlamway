@@ -5,6 +5,10 @@
 // ============================================================
 //  ALPINE APP
 // ============================================================
+// Satu pemuatan data Prioritas yang sedang berjalan dipakai bersama
+// (prefetch latar belakang, menu Prioritas, Timeline, Plan DJP).
+let _prioInflight = null;
+
 function app() {
   return {
     // ── AUTH STATE ──────────────────────────────────────────
@@ -321,6 +325,11 @@ function app() {
         if (['djp_plan','djp_real','djp_daily','djp_odp_list','timeline'].includes(p)) {
           window.dispatchEvent(new CustomEvent('page-' + p));
         }
+        // Prioritas memuat sendiri saat dibuka (tanpa klik "Muat Data")
+        if (p === 'prioritas') {
+          if (!this.prioritasOdpRaw.length) this.loadPrioritas().catch(() => {});
+          else this.initPrioritasMap();
+        }
       });
     },
 
@@ -512,6 +521,7 @@ function app() {
         this.lastSync   = nowStr;
 
         this.$nextTick(() => this.renderCharts());
+        this.prefetchPrioritas();
 
         this.toast(
           allPayload.bulanIni.length + ' baris bln ' + bulanStr +
@@ -1133,8 +1143,19 @@ function app() {
     },
 
     // ── Prioritas Kunjungan ──────────────────────────────────────
-    async loadPrioritas() {
-      if (this.prioritasLoading) return;
+    loadPrioritas() {
+      if (_prioInflight) return _prioInflight;
+      _prioInflight = this._loadPrioritas().finally(() => { _prioInflight = null; });
+      return _prioInflight;
+    },
+    // Ambil di latar belakang setelah dashboard tampil, agar Prioritas/Timeline/Plan DJP langsung siap
+    prefetchPrioritas() {
+      if (this.prioritasOdpRaw.length || _prioInflight) return;
+      const go = () => { if (this.currentUser && !this.prioritasOdpRaw.length) this.loadPrioritas().catch(() => {}); };
+      if ('requestIdleCallback' in window) requestIdleCallback(go, { timeout: 3000 }); else setTimeout(go, 1500);
+    },
+
+    async _loadPrioritas() {
       this.prioritasLoading = true;
       this.prioritasError = '';
       try {
@@ -1186,7 +1207,7 @@ function app() {
         this.prioritasError = e.message;
       } finally {
         this.prioritasLoading = false;
-        this.$nextTick(() => this.initPrioritasMap());
+        if (this.page === 'prioritas') this.$nextTick(() => this.initPrioritasMap());
       }
     },
 
