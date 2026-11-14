@@ -1972,16 +1972,12 @@ function app() {
           attribution: '© <a href="https://www.esri.com/">Esri</a> World Imagery',
           maxZoom: 19,
         }).addTo(map);
-        // Label overlay agar nama jalan/desa tetap terbaca
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-          attribution: '',
-          maxZoom: 19,
-          opacity: 0.8,
-        }).addTo(map);
+        // tanpa overlay nama tempat (nama desa muncul saat kursor di atas wilayah)
       } else {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 18,
+        // Peta dasar TANPA label nama tempat (CARTO Voyager no-labels); nama desa muncul saat kursor di atas wilayah
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd', maxZoom: 19,
         }).addTo(map);
       }
 

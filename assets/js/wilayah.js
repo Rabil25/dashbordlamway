@@ -174,7 +174,7 @@ async function wlRender(app, map) {
     const cand = [];
     if (z < 10 || mm === 'kab') kabF.forEach(f => cand.push(place(L.geoJSON(f).getBounds().getCenter(), wlEsc(f.properties.kab), 'wl-lbl-kab', f.properties.kab.length * 11, 22, 3)));
     if (mm === 'kec' && z >= 9) kecF.forEach(f => { const s = kecSum[wlN(f.properties.kec)] || { ps: 0, desa: 0 }; cand.push(place(L.geoJSON(f).getBounds().getCenter(), `${wlEsc(f.properties.kec)}<small>${s.ps} PS · ${s.desa} desa</small>`, 'wl-lbl-kec', Math.max(f.properties.kec.length * 7.5, 80), 32, 2)); });
-    if (mm === 'desa' && (z >= 12 || st.labels)) desaF.forEach(f => {
+    if (mm === 'desa' && st.labels) desaF.forEach(f => {
       const k = wlK(f.properties.kec, f.properties.desa), d = desaInfo[k];
       const pr = (flag(k) ? 2 : 0) + (d && d.kat === 'prioritas' ? 1 : 0) + (ps[k] ? .5 : 0);
       cand.push(place(L.geoJSON(f).getBounds().getCenter(), wlEsc(f.properties.desa), 'wl-lbl-desa', f.properties.desa.length * 6.6, 16, pr));
