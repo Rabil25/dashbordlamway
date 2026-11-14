@@ -510,3 +510,28 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 @media (max-width: 900px) { .wla-grid { grid-template-columns: 1fr; } .wla { margin: 0 18px 24px; } }
 [data-theme="medieval"] .wla-p b { font-family: var(--md-label); color: #6b5440; }
 [data-theme="medieval"] .wla-c span { color: #8e1b14; }
+.wla-diag { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 12px 0; }
+.wla-dcard { border-left: 5px solid var(--success) !important; }
+.wla-dcard.st-warn { border-left-color: var(--warning) !important; }
+.wla-dcard.st-bad { border-left-color: var(--danger) !important; }
+.wla-dtext { font-size: 13.5px; line-height: 1.5; margin: 4px 0 8px; }
+.wla-acts-h { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); font-weight: 700; }
+.wla-acts { margin: 4px 0 0 18px; padding: 0; font-size: 13px; line-height: 1.5; }
+.wla-drv { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 8px; }
+.wla-drvh { font-weight: 700; margin-bottom: 4px; }
+.wla-drvrow { display: grid; grid-template-columns: 1fr auto; padding: 4px 8px; border-left: 4px solid var(--success); margin: 3px 0; background: rgba(0,0,0,.03); font-size: 12.5px; }
+.wla-drvrow b { text-align: right; }
+.wla-drvrow small { grid-column: 1 / -1; color: var(--text-3); font-size: 10.5px; }
+.wla-drvrow.st-warn { border-left-color: var(--warning); }
+.wla-drvrow.st-bad { border-left-color: var(--danger); background: rgba(168,35,28,.08); }
+.wla-mx { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.wla-q { border: 2px solid; border-radius: 6px; padding: 8px 10px; font-size: 12.5px; }
+.wla-qh { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; }
+.wla-qh small { font-weight: 600; color: var(--text-3); }
+.wla-qs { font-size: 11px; color: var(--text-3); font-style: italic; }
+.wla-q ul { margin: 4px 0 4px 16px; padding: 0; }
+.wla-qa { font-weight: 700; }
+.wla-sec { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-2); }
+@media (max-width: 700px) { .wla-mx { grid-template-columns: 1fr; } }
+[data-theme="medieval"] .wla-sec { color: #e3c48c; font-family: var(--md-label); }
+[data-theme="medieval"] .wla-drvrow { background: rgba(110,75,35,.07); }

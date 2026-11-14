@@ -1297,6 +1297,49 @@
                 <ol><template x-for="m in wlAn.main" :key="m"><li x-text="m"></li></template></ol>
               </div>
 
+              <!-- Diagnosis & aksi (inti) -->
+              <div class="wla-diag">
+                <template x-for="d in wlAn.diag" :key="d.name">
+                  <div class="card wla-dcard" :class="'st-' + d.status">
+                    <div class="card-title" x-text="d.name"></div>
+                    <p class="wla-dtext" x-text="d.diag"></p>
+                    <div class="wla-acts-h">Tindakan</div>
+                    <ul class="wla-acts"><template x-for="a in d.acts" :key="a"><li x-text="a"></li></template></ul>
+                  </div>
+                </template>
+              </div>
+
+              <div class="card"><div class="card-title">① Driver Tree — faktor pembentuk PS</div>
+                <div class="card-subtitle">PS = SF aktif × kunjungan/SF × % tepat sasaran × hasil per kunjungan → IO→RE → RE→PS. Merah = faktor penahan.</div>
+                <div class="wla-drv">
+                  <template x-for="x in wlAn.drv" :key="x.name">
+                    <div class="wla-drvcol"><div class="wla-drvh" x-text="x.name"></div>
+                      <template x-for="r in x.rows" :key="r.k"><div class="wla-drvrow" :class="'st-' + r.st"><span x-text="r.label"></span><b x-text="r.val"></b><small x-text="'acuan ' + r.ref"></small></div></template>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <div class="card"><div class="card-title">② Gap Analysis — dari mana kekurangan PS</div>
+                <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>Target</th><th>Outlook</th><th>Gap</th><th>Dari kebocoran RE→PS</th><th>Sisa → kunjungan</th><th>Penjelasan</th></tr></thead>
+                <tbody><template x-for="g in wlAn.gap" :key="g.name"><tr><td x-text="g.name"></td><td x-text="g.tgt"></td><td x-text="g.ol"></td><td x-text="g.gap" :style="g.gap?'color:var(--danger);font-weight:700':''"></td><td x-text="g.leak"></td><td x-text="g.rest ? (g.rest + ' PS ≈ ' + (g.visNeed ?? '?') + ' kunj.') : '–'"></td><td class="wla-txt" x-text="g.txt"></td></tr></template></tbody></table></div>
+              </div>
+
+              <div class="card"><div class="card-title">③ Matriks Potensi × Penetrasi desa</div>
+                <div class="card-subtitle" x-text="'Garis tengah: port avai ' + wlAn.mx.avai + ' · penetrasi ' + wlAn.mx.pen + '% (median cluster). % kunjungan = porsi kunjungan DJP 3 bulan ke kuadran itu.'"></div>
+                <div class="wla-mx">
+                  <template x-for="q in wlAn.matrix" :key="q.k">
+                    <div class="wla-q" :style="'border-color:' + q.c">
+                      <div class="wla-qh" :style="'color:' + q.c"><span x-text="q.t"></span><small x-text="q.n + ' desa · ' + q.visShare + '% kunjungan'"></small></div>
+                      <div class="wla-qs" x-text="q.s"></div>
+                      <ul><template x-for="t in q.top" :key="t"><li x-text="t"></li></template></ul>
+                      <div class="wla-qa" x-text="'→ ' + q.act"></div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <div class="wla-sec" style="margin-top:14px">Data pendukung</div>
               <div class="wla-grid">
                 <div class="card"><div class="card-title">Pencapaian & funnel per kabupaten</div>
                   <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>PS</th><th>Target</th><th>Outlook</th><th>DRR / butuh</th><th>PS/RE</th><th>Batal</th><th>Pending</th></tr></thead>

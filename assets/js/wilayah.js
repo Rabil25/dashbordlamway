@@ -246,7 +246,7 @@ async function wlAnalisa(app, force) {
     const d1 = v => v == null || !isFinite(v) ? '–' : (Math.round(v * 10) / 10).toLocaleString('id-ID');
     const tot = { ps: sum2(e => e.ps), tgt: sum2(e => e.tgtM), re: sum2(e => e.re), io: sum2(e => e.io), vis: sum2(e => e.vis), ol: sum2(e => e.ol),
       fromVis: sum2(e => e.psFromVis), prio: sum2(e => e.prio[0]), prioT: sum2(e => e.prio[1]), untouched: sum2(e => e.prioUntouched.length) };
-    app.wlAn = {
+    const obj = {
       key, label: D.label, djp: S.djpLbl, missing: S.missing, sisa: D.sisa,
       tiles: [
         ['PS ' + D.label, tot.ps, 'target ' + tot.tgt],
@@ -270,6 +270,93 @@ async function wlAnalisa(app, force) {
       syl: [['Pencapaian', S.pace], ['Funnel order', S.funnel], ['DJP 3 bulan → PS (wilayah desa)', S.djp], ['SF & teritori', S.sf], ['Kategori desa & plan', S.prio], ['Kesimpulan', S.final]],
       main: S.main.map(m => m.join('')), actions: S.actions,
     };
+    Object.assign(obj, await wlBizAnalysis(app, D, E));
+    app.wlAn = obj;
   } catch (e) { console.error('Analisa wilayah:', e); app.wlAn = { key, error: e.message }; }
   finally { app.wlAnBusy = false; }
+}
+
+
+// ── Analisa bisnis: Driver Tree → Gap → Matriks Potensi × Penetrasi → Diagnosis & Aksi ──
+async function wlBizAnalysis(app, D, E) {
+  const d1 = v => v == null || !isFinite(v) ? '–' : (Math.round(v * 10) / 10).toLocaleString('id-ID');
+  const nM = Math.max(1, D.availM.length);
+  // 1) DRIVER TREE: PS = SF DJP × kunj/SF/bln × % tepat sasaran × PS per 100 kunj (wilayah) ; funnel IO→RE→PS
+  const drv = E.map(e => ({
+    name: e.name,
+    f: {
+      sf: e.sfDJP,
+      kunj: e.visPerSfM,
+      sasaran: e.goodVisShare || 0,
+      hasil: e.vis ? e.psFromVis / (e.vis / nM) * 100 : 0,      // PS dari desa ber-DJP per 100 kunjungan/bulan
+      ioRe: e.io ? e.re / e.io * 100 : 0,
+      rePs: e.psre || 0,
+    },
+  }));
+  const FL = { sf: ['SF aktif DJP', ''], kunj: ['Kunjungan / SF / bulan', ''], sasaran: ['Kunjungan ke desa prioritas+strategis', '%'],
+    hasil: ['Hasil kunjungan (PS bln ini per 100 kunjungan/bln)', ''], ioRe: ['Konversi IO → RE', '%'], rePs: ['Konversi RE → PS', '%'] };
+  const avg = k => drv.reduce((a, x) => a + x.f[k], 0) / Math.max(1, drv.length);
+  const BENCH = { sasaran: 80, ioRe: 95, rePs: 80 };
+  drv.forEach(x => {
+    x.rows = Object.keys(FL).map(k => {
+      const ref = BENCH[k] != null ? BENCH[k] : avg(k), r = ref ? x.f[k] / ref : 1;
+      return { k, label: FL[k][0], val: d1(x.f[k]) + FL[k][1], ref: d1(ref) + FL[k][1] + (BENCH[k] != null ? ' (standar)' : ' (rata² cluster)'), r, st: r >= 1 ? 'ok' : r >= .85 ? 'warn' : 'bad' };
+    });
+    const worst = x.rows.filter(r => r.k !== 'sf').sort((a, b) => a.r - b.r)[0];
+    x.weak = worst && worst.r < 1 ? worst : null;
+  });
+
+  // 2) GAP: target – outlook, diurai ke sumbernya
+  const gap = E.map(e => {
+    const g = Math.max(0, e.tgtM - e.ol), leak = Math.max(0, Math.round(e.re * (BENCH.rePs - (e.psre || 0)) / 100 * (D.days / Math.max(1, D.refDay))));
+    const perVis = e.vis ? e.psFromVis / e.vis : 0;   // PS per kunjungan (3 bln)
+    const rest = Math.max(0, g - leak), visNeed = perVis > 0 ? Math.ceil(rest / perVis) : null;
+    return { name: e.name, tgt: e.tgtM, ol: e.ol, gap: g, leak: Math.min(leak, g), rest, visNeed, perVis: d1(perVis * 100),
+      txt: g === 0 ? `Outlook ${e.ol} sudah ≥ target ${e.tgtM}; jaga ritme.` :
+        `Kurang ${g} PS.` + (leak > 0 ? ` ±${Math.min(leak, g)} bisa ditutup dengan menaikkan RE→PS ke 80%.` : '') + (rest ? ` ${leak > 0 ? 'Sisanya' : 'Seluruhnya'} ${rest} PS butuh ±${visNeed != null ? visNeed : '?'} kunjungan tambahan tepat sasaran (rata-rata ${d1(perVis * 100)} PS per 100 kunjungan).` : '.') };
+  });
+
+  // 3) MATRIKS POTENSI (port avai) × PENETRASI (PS/avai)
+  let V = { by: {} }; try { V = await wlLoadVisits(app); } catch (e) {}
+  const kabs = E.flatMap(e => e.kabs);
+  const pen = (app.penetrasiData || []).filter(p => kabs.includes(String(p.kab).toUpperCase()) && +p.avai > 0);
+  const med = a => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : 0; };
+  const mA = med(pen.map(p => +p.avai)), mP = med(pen.map(p => +p.ps / +p.avai));
+  const Q = { garap: [], jaga: [], efisien: [], kurangi: [] };
+  pen.forEach(p => {
+    const hiA = +p.avai >= mA, hiP = (+p.ps / +p.avai) >= mP, v = (V.by[wlK(p.kec, p.desa)] || {}).n || 0;
+    const o = { desa: String(p.desa).toLowerCase().replace(/\b\w/g, c => c.toUpperCase()), kab: p.kab, avai: +p.avai, ps: +p.ps, pen: Math.round(+p.ps / +p.avai * 100), vis: v };
+    Q[hiA && !hiP ? 'garap' : hiA && hiP ? 'jaga' : !hiA && hiP ? 'efisien' : 'kurangi'].push(o);
+  });
+  Q.garap.sort((a, b) => (b.avai - b.ps) - (a.avai - a.ps)); Q.jaga.sort((a, b) => b.ps - a.ps); Q.efisien.sort((a, b) => b.pen - a.pen); Q.kurangi.sort((a, b) => b.vis - a.vis);
+  const qVis = k => Q[k].reduce((a, x) => a + x.vis, 0), totVis = Math.max(1, ['garap', 'jaga', 'efisien', 'kurangi'].reduce((a, k) => a + qVis(k), 0));
+  const matrix = [
+    { k: 'garap', t: 'GARAP', s: 'Potensi tinggi · penetrasi rendah', c: '#a8231c', act: 'Tambah kunjungan rutin; target utama bulan depan.' },
+    { k: 'jaga', t: 'JAGA', s: 'Potensi tinggi · penetrasi tinggi', c: '#3f7d3a', act: 'Pertahankan frekuensi; dorong referral pelanggan.' },
+    { k: 'efisien', t: 'EFISIENKAN', s: 'Potensi rendah · penetrasi tinggi', c: '#2f5f8a', act: 'Kunjungan secukupnya; port hampir habis.' },
+    { k: 'kurangi', t: 'KURANGI', s: 'Potensi rendah · penetrasi rendah', c: '#8c8c8c', act: 'Alihkan kunjungan ke kuadran Garap.' },
+  ].map(q => ({ ...q, n: Q[q.k].length, visShare: Math.round(qVis(q.k) / totVis * 100), top: Q[q.k].slice(0, 5).map(x => `${x.desa} (avai ${x.avai}, PS ${x.ps}, ${x.vis} kunj.)`) }));
+  const mx = { avai: mA, pen: d1(mP * 100) };
+
+  // 4) DIAGNOSIS → AKSI per kabupaten (narasi)
+  const diag = E.map((e, i) => {
+    const x = drv[i], g = gap[i], garapKab = Q.garap.filter(q => String(q.kab).toUpperCase() === e.kabs[0]).slice(0, 3);
+    const kurangKab = Q.kurangi.filter(q => String(q.kab).toUpperCase() === e.kabs[0] && q.vis > 0).slice(0, 2);
+    const acts = [];
+    if (x.weak && x.weak.k === 'rePs') acts.push(`Kawal ${e.coh[2]} order pending & ${e.coh[1]} batal agar RE→PS naik ke 80% (sekarang ${x.weak.val}).`);
+    if (x.weak && x.weak.k === 'kunj') acts.push(`Naikkan kunjungan SF dari ${x.weak.val} ke ±${x.weak.ref.split(' ')[0]} per SF per bulan.`);
+    if (x.weak && x.weak.k === 'sasaran') acts.push(`Arahkan ≥80% kunjungan ke desa prioritas/strategis (sekarang ${x.weak.val}).`);
+    if (x.weak && x.weak.k === 'hasil') acts.push(`Kunjungan sudah ada tapi hasilnya rendah (${x.weak.val} PS/100 kunj.): coaching kualitas pitching & pindahkan dari desa jenuh.`);
+    if (x.weak && x.weak.k === 'ioRe') acts.push(`Perbaiki IO→RE (${x.weak.val}): validasi data & tagging sebelum input.`);
+    if (garapKab.length) acts.push(`Fokus desa Garap: ${garapKab.map(q => q.desa).join(', ')}.`);
+    if (kurangKab.length) acts.push(`Kurangi kunjungan ke ${kurangKab.map(q => `${q.desa} (${q.vis} kunj.)`).join(', ')}.`);
+    if (e.planCur === 0) acts.push(`Publish plan DJP ${periodLabel(D.bulan)} (masih 0).`);
+    return {
+      name: e.name,
+      diag: (x.weak ? `Faktor penahan utama: ${x.weak.label} = ${x.weak.val} vs ${x.weak.ref}.` : 'Semua faktor di atas rata-rata/standar.') + ' ' + g.txt,
+      acts,
+      status: g.gap === 0 ? 'ok' : g.gap <= e.tgtM * .1 ? 'warn' : 'bad',
+    };
+  });
+  return { drv, gap, matrix, mx, diag };
 }
