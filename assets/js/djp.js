@@ -566,7 +566,7 @@ function djpPlanData() {
             username_sf: sf.username_sf,
             nama_sf: sf.nama_sf,
             odp: o.odp,
-            cluster: o.cluster||'',
+            cluster: clusterOfKab(o.kab) || o.cluster || '',
             kab: o.kab||'',
             kec: o.kec||'',
             desa: o.desa||'',

@@ -100,6 +100,14 @@ const CLUSTER = {
   'Way Kanan':     { kab: ['LAMPUNG UTARA','WAY KANAN'] },
 };
 
+// Cluster ditentukan oleh KABUPATEN lokasi ODP, bukan label STO/cluster di data ODP
+// (mis. ODP-BKM di Kab. Lampung Barat → cluster Lampung Barat). Hasil: 'LAMPUNG BARAT' / 'WAY KANAN' / ''.
+function clusterOfKab(kab) {
+  const k = (kab || '').toString().trim().toUpperCase();
+  const name = Object.keys(CLUSTER).find(c => CLUSTER[c].kab.includes(k));
+  return name ? name.toUpperCase() : '';
+}
+
 // ── Kantor referensi untuk hitung jarak prioritas ──
 const OFFICES = [
   { name: 'Tanggamus 1',    lat: -5.3664321, lng: 104.7803285, kab: 'TANGGAMUS' },
