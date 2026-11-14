@@ -669,3 +669,107 @@ function djpPlanHistory(params) {
     return { ok: false, error: 'djpPlanHistory: ' + e.message };
   }
 }
+
+// ================================================================
+//  IMPORT RIWAYAT KUNJUNGAN: Source WPI → DJP_Plan  (jalankan manual sekali dari editor)
+//  - Hanya SCHEDULE CATEGORY = DJP, ODP dikenal di ODPBot, kabupaten WOK LB–WK
+//  - 1 baris per SF + ODP + tanggal (check-in ganda dari WPI digabung)
+//  - Tidak mengubah/menghapus plan yang sudah ada; aman dijalankan ulang (tidak dobel)
+//  - Baris hasil import ditandai DIBUAT_OLEH = 'import Source WPI'
+//  - Batalkan dengan djpHapusImportWPI()
+// ================================================================
+const DJP_IMPORT_TAG = 'import Source WPI';
+const DJP_WOK_KAB = {
+  'LAMPUNG BARAT': 'LAMPUNG BARAT', 'TANGGAMUS': 'LAMPUNG BARAT', 'PESISIR BARAT': 'LAMPUNG BARAT',
+  'LAMPUNG UTARA': 'WAY KANAN', 'WAY KANAN': 'WAY KANAN',
+};   // kabupaten → cluster (aturan wilayah per kabupaten)
+
+function djpImportSourceWPI() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
+    const wsWPI = ss.getSheetByName('Source WPI');
+    const wsODP = ss.getSheetByName(DJP_CONFIG.SHEET_ODP);
+    const wsPlan = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
+    if (!wsWPI || !wsODP || !wsPlan) throw new Error('Tab Source WPI / ODPBot / DJP_Plan tidak ditemukan');
+    const U = s => (s === null || s === undefined ? '' : s.toString()).trim().toUpperCase();
+
+    // ODPBot → peta ODP (kolom dicari dari header)
+    const odpVals = wsODP.getDataRange().getValues();
+    const oh = odpVals[0].map(U), oi = n => oh.indexOf(n);
+    const iO = oi('ODP'), iLa = oi('LATITUDE'), iLn = oi('LONGITUDE'), iKab = oi('KAB'), iKec = oi('KEC'), iDes = oi('DESA');
+    if ([iO, iLa, iLn, iKab, iKec, iDes].some(i => i < 0)) throw new Error('Header ODPBot tidak lengkap');
+    const odp = {};
+    for (let i = 1; i < odpVals.length; i++) {
+      const k = U(odpVals[i][iO]); if (!k || odp[k]) continue;
+      odp[k] = { lat: odpVals[i][iLa], lng: odpVals[i][iLn], kab: (odpVals[i][iKab] || '').toString().trim(), kec: (odpVals[i][iKec] || '').toString().trim(), desa: (odpVals[i][iDes] || '').toString().trim() };
+    }
+
+    // Kunci plan yang sudah ada: tgl|sf|odp
+    const planVals = wsPlan.getDataRange().getValues();
+    const ada = {};
+    for (let i = 1; i < planVals.length; i++) {
+      ada[djpNormTgl(planVals[i][P.TGL]) + '|' + U(planVals[i][P.USERNAME_SF]) + '|' + U(planVals[i][P.ODP])] = true;
+    }
+
+    // Source WPI (kolom dicari dari header)
+    const w = wsWPI.getDataRange().getValues();
+    const wh = w[0].map(U), wi = n => wh.indexOf(n);
+    const jCat = wi('SCHEDULE CATEGORY'), jIn = wi('CHECKIN'), jCode = wi('USER CODE'), jName = wi('USER NAME'), jOdp = wi('ODP');
+    if ([jCat, jIn, jCode, jName, jOdp].some(i => i < 0)) throw new Error('Header Source WPI tidak lengkap');
+    const tglOf = v => {
+      if (v instanceof Date) return Utilities.formatDate(v, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+      const m = (v || '').toString().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : '';
+    };
+
+    const now = new Date(), out = [], stat = { djp: 0, tanpaTanggal: 0, odpTakDikenal: 0, luarWOK: 0, ganda: 0, sudahAda: 0, ditambah: 0 };
+    for (let i = 1; i < w.length; i++) {
+      const r = w[i];
+      if (U(r[jCat]) !== 'DJP') continue;
+      stat.djp++;
+      const tgl = tglOf(r[jIn]); if (!tgl) { stat.tanpaTanggal++; continue; }
+      const o = odp[U(r[jOdp])]; if (!o) { stat.odpTakDikenal++; continue; }
+      const cluster = DJP_WOK_KAB[U(o.kab)]; if (!cluster) { stat.luarWOK++; continue; }
+      const sf = (r[jCode] || '').toString().trim();
+      const key = tgl + '|' + sf.toUpperCase() + '|' + U(r[jOdp]);
+      if (ada[key]) { stat[ada[key] === 'baru' ? 'ganda' : 'sudahAda']++; continue; }
+      ada[key] = 'baru';
+      out.push([tgl, sf, (r[jName] || '').toString().trim(), (r[jOdp] || '').toString().trim(), cluster,
+        o.kab.toUpperCase(), o.kec, o.desa, o.lat, o.lng, '', DJP_IMPORT_TAG, now, tgl.slice(0, 4)]);
+    }
+
+    for (let i = 0; i < out.length; i += DJP_CONFIG.BATCH_SIZE) {
+      const batch = out.slice(i, i + DJP_CONFIG.BATCH_SIZE);
+      wsPlan.getRange(wsPlan.getLastRow() + 1, 1, batch.length, batch[0].length).setValues(batch);
+    }
+    stat.ditambah = out.length;
+    Logger.log(JSON.stringify(stat));
+    return stat;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Batalkan import: hapus hanya baris DJP_Plan bertanda 'import Source WPI'
+function djpHapusImportWPI() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ws = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN);
+    const v = ws.getDataRange().getValues(), hit = [];
+    for (let i = 1; i < v.length; i++) if ((v[i][P.DIBUAT_OLEH] || '').toString().trim() === DJP_IMPORT_TAG) hit.push(i + 1);
+    let end = hit.length - 1;
+    while (end >= 0) {
+      let start = end;
+      while (start > 0 && hit[start - 1] === hit[start] - 1) start--;
+      ws.deleteRows(hit[start], end - start + 1);
+      end = start - 1;
+    }
+    Logger.log('Dihapus: ' + hit.length + ' baris import');
+    return hit.length;
+  } finally {
+    lock.releaseLock();
+  }
+}
