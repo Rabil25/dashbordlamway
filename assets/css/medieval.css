@@ -318,3 +318,7 @@
 [data-theme="medieval"] .peta-page #leaflet-map.satellite-mode .leaflet-tile-pane { filter: sepia(.25) saturate(.9); }
 [data-theme="medieval"] .peta-page .leaflet-container { filter: none; }
 [data-theme="medieval"] .peta-page .wl-panel :is(.select, input[type="date"]) { background: #f6ead0; color: #3b2a1e; }
+[data-theme="medieval"] .wl-card-h { font-size: 14px; }
+[data-theme="medieval"] .wl-kv b { font-size: 14px; }
+[data-theme="medieval"] .wl-panel-t { font-size: 12.5px; }
+[data-theme="medieval"] :is(.wl-panel, .wl-card) { font-size: 11.5px; }
