@@ -487,3 +487,5 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 .wl-ly { margin: 2px 0; }
 .wl-ly small { font-size: 9.5px; }
 .wl-row .select { font-size: 10.5px; padding: 2px 4px; }
+.wl-seg { flex-wrap: wrap; }
+.wl-seg button { flex: 1 1 30%; }

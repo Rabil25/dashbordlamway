@@ -1239,7 +1239,7 @@
             <button type="button" class="wl-panel-t" @click="wl.open=!wl.open" :aria-expanded="wl.open">🗺 Lapisan Peta <span x-text="wl.open ? '▴' : '▾'"></span></button>
             <div x-show="wl.open">
               <div class="wl-seg" role="group" aria-label="Batas wilayah">
-                <template x-for="m in [['auto','Otomatis'],['desa','Desa'],['kec','Kecamatan'],['kab','Kabupaten']]" :key="m[0]">
+                <template x-for="m in [['none','Tanpa batas'],['auto','Otomatis'],['desa','Desa'],['kec','Kecamatan'],['kab','Kabupaten']]" :key="m[0]">
                   <button type="button" :class="{ on: wl.mode===m[0] }" @click="wl.mode=m[0]; wlRefresh()" x-text="m[1]"></button>
                 </template>
               </div>

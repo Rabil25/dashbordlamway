@@ -40,7 +40,7 @@ function app() {
     filterLoading: false,
     showConfig: false,
     // Peta Wilayah: mode batas auto/desa/kec/kab, layer, filter SF, tanggal plan
-    wl: { mode: 'auto', kat: true, visit: true, plan: true, kantor: true, hl: true, labels: false, sf: '', kab: '', planTgl: (typeof localYMD === 'function' ? localYMD(new Date()) : new Date().toISOString().slice(0, 10)), open: true },
+    wl: { mode: 'none', kat: true, visit: true, plan: true, kantor: true, hl: true, labels: false, sf: '', kab: '', planTgl: (typeof localYMD === 'function' ? localYMD(new Date()) : new Date().toISOString().slice(0, 10)), open: true },
     wlStats: null, wlPlanInfo: '',
     themeMode: localStorage.getItem('dashTheme2') || 'medieval',   // default tema Medieval (Nov 2026); light/dark tetap bisa dipilih
     allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)

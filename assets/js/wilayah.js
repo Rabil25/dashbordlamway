@@ -96,7 +96,7 @@ async function wlRender(app, map) {
   pane('wlArea', 350); pane('wlLine', 360); pane('wlLabel', 640);
 
   // mode batas: otomatis mengikuti zoom, atau manual
-  const mode = () => st.mode !== 'auto' ? st.mode : (map.getZoom() >= 11 ? 'desa' : 'kec');
+  const mode = () => st.mode === 'none' ? 'none' : st.mode !== 'auto' ? st.mode : (map.getZoom() >= 11 ? 'desa' : 'kec');
 
   const desaF = geo.desa.features.filter(f => f.geometry && inCl(f));
   const kecF = geo.kec.features.filter(f => f.geometry && inCl(f) && String(f.properties.kec).trim());
@@ -134,7 +134,9 @@ async function wlRender(app, map) {
   };
 
   const m = mode();
-  if (m === 'desa') {
+  if (m === 'none') {
+    // tanpa batas wilayah: hanya order, plan, kantor
+  } else if (m === 'desa') {
     add(L.geoJSON({ type: 'FeatureCollection', features: desaF }, {
       style: desaStyle,
       onEachFeature: (f, l) => {
@@ -159,7 +161,7 @@ async function wlRender(app, map) {
       },
     }));
   }
-  add(L.geoJSON({ type: 'FeatureCollection', features: kabF }, { style: { pane: 'wlLine', color: '#8a2a1c', weight: 3, fill: false, opacity: .8 }, interactive: false }));
+  if (m !== 'none') add(L.geoJSON({ type: 'FeatureCollection', features: kabF }, { style: { pane: 'wlLine', color: '#8a2a1c', weight: 3, fill: false, opacity: .8 }, interactive: false }));
 
   // ── label (anti-tabrakan) ──
   const lblLayer = add(L.layerGroup());
@@ -167,6 +169,7 @@ async function wlRender(app, map) {
   const drawLabels = () => {
     lblLayer.clearLayers();
     const z = map.getZoom(), mm = mode(), boxes = [], vb = map.getBounds().pad(0.05);
+    if (mm === 'none') return;
     const place = (ll, html, cls, w, h, prio) => ({ ll, html, cls, w, h, prio });
     const cand = [];
     if (z < 10 || mm === 'kab') kabF.forEach(f => cand.push(place(L.geoJSON(f).getBounds().getCenter(), wlEsc(f.properties.kab), 'wl-lbl-kab', f.properties.kab.length * 11, 22, 3)));
