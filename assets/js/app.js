@@ -74,6 +74,7 @@ function app() {
     // Prioritas Kunjungan state
     prioritasOdpRaw: [],
     prioritasLoading: false,
+    pptBusy: false,
     prioritasError: '',
     prioritasKabFilter: '',
     prioritasKategoriFilter: '',
@@ -1149,6 +1150,21 @@ function app() {
       return _prioInflight;
     },
     // Ambil di latar belakang setelah dashboard tampil, agar Prioritas/Timeline/Plan DJP langsung siap
+    // ── Export PPT review mingguan (assets/js/report.js) ──
+    async exportPPT() {
+      if (this.pptBusy) return;
+      this.pptBusy = true;
+      showToast('Menyiapkan PPT review mingguan…', 'info', 4000);
+      try {
+        const name = await exportWeeklyPPT(this);
+        showToast('PPT terunduh: ' + name, 'ok');
+      } catch (e) {
+        showToast('Gagal membuat PPT: ' + (e.message || e), 'err', 6000);
+      } finally {
+        this.pptBusy = false;
+      }
+    },
+
     prefetchPrioritas() {
       if (this.prioritasOdpRaw.length || _prioInflight) return;
       const go = () => { if (this.currentUser && !this.prioritasOdpRaw.length) this.loadPrioritas().catch(() => {}); };

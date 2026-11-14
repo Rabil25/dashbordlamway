@@ -392,6 +392,12 @@
         <span style="display:none" class="topbar-label">Glosarium</span>
         ?
       </button>
+      <!-- Export PPT (review mingguan) -->
+      <button class="btn" @click="exportPPT()" :disabled="pptBusy || loading || !allRows.length" aria-label="Buat PPT review mingguan"
+              :title="pptBusy ? 'Sedang membuat PPT…' : 'Unduh PPT review mingguan (cluster & bulan terpilih)'">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M8 13V9M12 13V7M16 13v-2"/></svg>
+        <span x-text="pptBusy ? 'Membuat…' : 'PPT'"></span>
+      </button>
       <!-- Export PDF -->
       <button class="btn" @click="window.print()" aria-label="Export halaman sebagai PDF">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -2758,5 +2764,6 @@
 <script src="assets/js/app.js"></script>
 <script src="assets/js/djp.js"></script>
 <script src="assets/js/timeline.js"></script>
+<script src="assets/js/report.js"></script>
 </body>
 </html>
