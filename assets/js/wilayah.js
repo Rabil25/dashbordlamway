@@ -329,7 +329,7 @@ async function wlBizAnalysis(app, D, E) {
     const ioPerVis = e.vis ? o.all / (e.vis / nM) : 0, visNeed = ioPerVis > 0 ? Math.ceil(g / ioPerVis) : null;
     return { name: e.name, tgt: o.tgt, mtd: o.all, ol: o.ol, gap: g, pot: o.pot, potShare: Math.round(o.potShare), potNeed, olPot: o.olPot, potGap, visNeed, ps: e.ps, psTgt: e.tgtM, psOl: e.ol,
       txt: (g === 0 ? `Outlook IO ${o.ol} sudah ≥ target ${o.tgt}.` : `Kurang ${g} IO (outlook ${o.ol} dari target ${o.tgt}); ±${visNeed != null ? visNeed : '?'} kunjungan tambahan per bulan pada hasil sekarang.`) +
-        ` IO di lokasi potensial ${Math.round(o.potShare)}%` + (potGap ? ` — butuh +${potGap} IO di desa Prioritas/Strategis agar ≥70%.` : ' — sudah tepat sasaran.') };
+        ` IO di lokasi potensial ${Math.round(o.potShare)}%` + (o.potShare >= 70 ? ' (sudah ≥70%)' : ' (di bawah acuan 70%)') + (potGap ? `; untuk target, butuh +${potGap} IO lagi dari desa Prioritas/Strategis.` : '.') };
   });
 
   // 3) MATRIKS POTENSI (port avai) × PENETRASI (PS/avai)
