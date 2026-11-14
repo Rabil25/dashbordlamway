@@ -185,7 +185,9 @@
 
 /* ── tabel: tinta di atas perkamen ── */
 [data-theme="medieval"] table thead th, [data-theme="medieval"] table.te-tbl thead th {
-  background: transparent !important; color: var(--md-ink2); font-family: var(--md-label); font-weight: 400; font-size: 12px; letter-spacing: .1em;
+  /* latar solid supaya header lengket (sticky) tidak tembus saat tabel di-scroll */
+  background: #e6d3aa !important; color: var(--md-ink2); font-family: var(--md-label); font-weight: 400; font-size: 12px; letter-spacing: .06em;
+  box-shadow: 0 2px 0 var(--md-ink);
   border-bottom: 2px solid var(--md-ink) !important;
 }
 [data-theme="medieval"] table tbody td { border-bottom: 1px dashed rgba(59,42,30,.35) !important; color: var(--md-ink); }
@@ -262,3 +264,14 @@
 }
 
 [data-theme="medieval"] :is(.te-meta, .te-mc-ach) { font-size: 15px; font-style: normal; }
+
+/* ── kerapian (umpan balik PJ): tabel muat tanpa geser, topbar tidak terpotong ── */
+[data-theme="medieval"] table :is(td, th) { padding-left: 8px; padding-right: 8px; }
+[data-theme="medieval"] table tbody td { font-size: 13.5px; }
+[data-theme="medieval"] table :is(.tier-badge, .badge, .te-pill) { padding: 0 7px; font-size: 11px; border-width: 1.5px !important; white-space: nowrap; }
+[data-theme="medieval"] .topbar { gap: 6px; }
+[data-theme="medieval"] .topbar :is(.btn, .btn-outline, .btn-ghost, .theme-toggle, .glossary-btn, .profile-btn, .topbar-bulan-select, .datepicker-btn) { padding: 5px 9px; font-size: 13px; min-height: 0; }
+[data-theme="medieval"] .topbar .cluster-btn { padding: 5px 10px; }
+[data-theme="medieval"] .profile-role-badge { transform: none; font-size: 10px; padding: 0 5px; }
+@media (max-width: 1280px) { [data-theme="medieval"] .topbar-title { font-size: 14px; } }
+[data-theme="medieval"] .tier-badge { filter: brightness(.62) saturate(1.5); font-weight: 700; }
