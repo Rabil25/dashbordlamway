@@ -161,7 +161,7 @@ function reportAnalyze(D) {
     const low = [...kabs].sort((a, b) => (a.momPS ?? 0) - (b.momPS ?? 0))[0];
     const top = [...D.kab].sort((a, b) => b.ps - a.ps)[0];
     const kabTot = sum(D.kab.map(x => x.ps));
-    if (top.kab === low.kab) A.trend.push(`${top.kab} penyumbang terbesar (${pct(top.ps, kabTot) ?? 0}% PS) tetapi ach-nya paling rendah (${fmtPct(low.momPS)}) karena targetnya terbesar.`);
+    if (top.kab === low.kab) A.trend.push(`${top.kab} penyumbang terbesar (${pct(top.ps, kabTot) ?? 0}% PS), tetapi ach-nya paling rendah (${fmtPct(low.momPS)}).`);
     else A.trend.push(`${top.kab} penyumbang terbesar (${pct(top.ps, kabTot) ?? 0}% PS); ${low.kab} paling tertinggal (ach ${fmtPct(low.momPS)}).`);
   }
   A.w = { w0, w1, dailyTgt };
