@@ -127,9 +127,9 @@ async function wlRender(app, map) {
     const kat = d.kat ? `<span class="wl-tag" style="color:${WL.KAT_C[d.kat]}">${d.kat[0].toUpperCase() + d.kat.slice(1)}</span>` : '<span class="wl-tag" style="color:#8a735c">Tanpa data ODP</span>';
     return `<div class="wl-card"><div class="wl-card-h">${wlEsc(p.desa)}</div><div class="wl-card-s">${wlEsc(p.kec)} · ${wlEsc(p.kab)}</div>
       ${kat}${FL ? `<span class="wl-tag" style="color:${FL[1]}">${FL[0]}</span>` : ''}
-      <div class="wl-kv"><div>Port avai<b>${d.totalAvail != null ? d.totalAvail : '–'}</b></div><div>PS ${periodLabel(app.cfg.bulan)}<b>${ps[k] || 0}</b></div>
-      <div>Kunjungan 3 bln<b>${v ? v.n : 0}</b></div><div>Terakhir dikunjungi<b class="sm">${v && v.last ? fmtTglId(v.last) : '–'}</b></div></div>
-      ${top.length ? `<table class="wl-mini"><tr><th colspan="3">SF paling sering datang</th></tr>${top.map(([c, s]) => `<tr><td>${wlEsc(String(s.nama).replace(/\[.*?\]\s*/g, ''))}</td><td class="n">${s.n} kunj.</td><td class="n">${sfPS[c] || 0} PS</td></tr>`).join('')}</table>` : '<div class="wl-none">Belum pernah dikunjungi DJP 3 bulan terakhir.</div>'}
+      <div class="wl-kv"><div>Avai<b>${d.totalAvail != null ? d.totalAvail : '–'}</b></div><div>PS bln ini<b>${ps[k] || 0}</b></div>
+      <div>Kunj. 3 bln<b>${v ? v.n : 0}</b></div><div>Terakhir<b class="sm">${v && v.last ? fmtTglId(v.last) : '–'}</b></div></div>
+      ${top.length ? `<table class="wl-mini"><tr><th colspan="3">SF paling sering</th></tr>${top.map(([c, s]) => `<tr><td>${wlEsc(String(s.nama).replace(/\[.*?\]\s*/g, ''))}</td><td class="n">${s.n} kunj.</td><td class="n">${sfPS[c] || 0} PS</td></tr>`).join('')}</table>` : '<div class="wl-none">Belum pernah dikunjungi DJP 3 bulan terakhir.</div>'}
       <div class="wl-note">DJP: ${V.avail.length ? V.avail.map(m => periodLabel(m)).join(', ') : 'data belum tersedia'}</div></div>`;
   };
 
@@ -139,7 +139,7 @@ async function wlRender(app, map) {
       style: desaStyle,
       onEachFeature: (f, l) => {
         l.bindTooltip(wlEsc(f.properties.desa), { sticky: true, className: 'wl-tip', direction: 'top' });
-        l.bindPopup(() => card(f), { maxWidth: 320, className: 'wl-pop' });
+        l.bindPopup(() => card(f), { maxWidth: 240, className: 'wl-pop', autoPanPadding: [20, 20] });
         l.on('mouseover', () => l.setStyle({ weight: 2.6 })).on('mouseout', () => l.setStyle(desaStyle(f)));
       },
     }));
