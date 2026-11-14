@@ -364,7 +364,7 @@ async function wlBizAnalysis(app, D, E) {
     kunj: x => `SF jarang turun ke desa: ${x.val} kunjungan per SF per bulan (rata-rata cluster ${x.ref.split(' ')[0]}).`,
     sasaran: x => `Kunjungan belum ke desa yang tepat: baru ${x.val} ke desa Prioritas/Strategis (acuan 80%).`,
     ioHasil: x => `SF sudah datang, tapi jarang dapat order: tiap 10 kunjungan dapat ${x.val} IO (rata-rata cluster ${x.ref.split(' ')[0]}).`,
-    ioPot: x => `Banyak IO dari desa yang kurang potensial: baru ${x.val} dari desa Prioritas/Strategis (acuan 70%).`,
+    ioPot: x => `Banyak IO datang dari desa Cadangan/Skip: baru ${x.val} dari desa Prioritas/Strategis (acuan 70%).`,
     ioRe: x => `Banyak IO tidak lolos registrasi: IO→RE ${x.val} (acuan 95%).`,
   };
   const diag = E.map((e, i) => {
@@ -383,7 +383,12 @@ async function wlBizAnalysis(app, D, E) {
     if (x.weak && x.weak.k === 'kunj') acts.push(`Tambah kunjungan SF ke ±${x.weak.ref.split(' ')[0]} per SF per bulan.`);
     if (x.weak && x.weak.k === 'sasaran') acts.push('Arahkan kunjungan ke desa Prioritas/Strategis (minimal 80%).');
     if (x.weak && x.weak.k === 'ioHasil') acts.push('Coaching cara menawarkan ke pelanggan — kunjungan sudah ada, hasilnya yang rendah.');
-    if (x.weak && x.weak.k === 'ioPot') acts.push('Kurangi input order di desa Cadangan/Skip, pindahkan ke desa Prioritas/Strategis.');
+    if (x.weak && x.weak.k === 'ioPot' || g.potShare < 70) {
+      const sk = {}; (D.allRows || []).forEach(r => { if (!(r[C.VAL_IO] || '').toString().trim()) return; const n = ymdNum(r[C.DATE_IO]); if (n < D.W[0] || n > D.W[1]) return;
+        if (!e.kabs.includes(String(r[C.VAL_KAB] || '').toUpperCase())) return; const d = katOf[wlK(r[C.KEC], r[C.DESA])]; if (d && (d.kat === 'skip' || d.kat === 'cadangan')) sk[tc(d.desa)] = (sk[tc(d.desa)] || 0) + 1; });
+      const topSk = Object.entries(sk).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      acts.push('Tambah IO dari desa Prioritas/Strategis sampai ≥70%' + (topSk.length ? `. IO dari desa Cadangan/Skip tetap boleh — ${topSk.map(([n2, c]) => n2 + ' (' + c + ' IO)').join(', ')} ternyata produktif, jadi tinjau ulang kategorinya, jangan ditinggalkan.` : '.'));
+    }
     if (x.weak && x.weak.k === 'ioRe') acts.push('Cek kelengkapan data & tagging sebelum input order.');
     if (st2.grup.length) acts.push(`Jadwalkan hari khusus ke desa Strategis: ` + st2.grup.slice(0, 2).map(gp => `Kec. ${gp.kec} (${gp.desa.slice(0, 3).join(', ')})`).join(', lalu ') + '.');
     if (garapKab.length) acts.push(`Garap desa yang masih banyak sisa port: ${garapKab.map(q => q.desa + (q.kat === 'strategis' ? ' ★' : '')).join(', ')}.`);

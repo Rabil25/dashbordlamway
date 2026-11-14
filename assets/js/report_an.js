@@ -246,6 +246,8 @@ function anEntity(app, D, e, idx, all, visits, visCur, desaAll, katMap) {
 //  2. ANALISA (silogisme) — teks dari angka, bisa ditelusuri
 // ================================================================
 function anAnalyze(D) {
+  const per = (f) => D.ents.map(e => `${e.short} ${f(e)}`).join(', ');
+  const nv = v => (v == null || !isFinite(v)) ? 'tidak ada SF' : anD(v);
   const E = D.ents, nm = e => e.short;
   const by = (f, dir = -1) => [...E].filter(e => f(e) != null && isFinite(f(e))).sort((a, b) => dir * (f(a) - f(b)));
   const best = (f) => by(f)[0], worst = (f) => by(f, 1)[0];
@@ -276,8 +278,8 @@ function anAnalyze(D) {
   const wf = worst(e => e.psre), bf = best(e => e.psre);
   const gap = wf && bf && wf !== bf ? Math.round(wf.re * (bf.psre - wf.psre) / 100) : 0;
   S.funnel = [
-    'Order yang sudah RE tetapi tidak menjadi PS adalah kebocoran yang masih bisa diselamatkan.',
-    E.map(e => `${nm(e)}: PS/RE ${anPs(Math.round(e.psre || 0))}, batal ${e.coh[1]} (${anD(e.cancelPer100)}%), pending ${e.coh[2]}`).join('; ') + `. Tsel One ${anJoin(E.map(e => anPs(e.tselOne)))}, IH Reguler ${anJoin(E.map(e => anPs(e.ihReg)))}.`,
+    'Order yang sudah registrasi (RE) tapi belum jadi PS masih bisa diselamatkan bersama teknisi; sebagian penyebabnya di luar kendali sales (tarikan ODP, teknisi, cuaca).',
+    E.map(e => `${nm(e)}: PS/RE ${anPs(Math.round(e.psre || 0))}, batal ${e.coh[1]} (${anD(e.cancelPer100)}%), pending ${e.coh[2]}`).join('; ') + `. Porsi produk — Tsel One: ${per(e => anPs(e.tselOne))}; IndiHome Reguler: ${per(e => anPs(e.ihReg))}.`,
     gap >= 3 ? `Gap konversi ${nm(wf)} setara ±${gap} PS bila PS/RE sama dengan ${nm(bf)}. Prioritas: tuntaskan ${wf.coh[2]} order pending ${nm(wf)} dan tekan batal; dorong IndiHome Reguler untuk ARPU.`
       : `Konversi antar entitas relatif setara. Fokus pada ${sum(E.map(e => e.coh[2]))} order pending agar menjadi PS, dan jaga porsi IndiHome Reguler.`,
   ];
@@ -291,16 +293,17 @@ function anAnalyze(D) {
   const totVis = sum(E.map(e => e.vis)), totPS = sum(E.map(e => e.ps));
   S.djp = [
     `Bila DJP efektif, desa yang lebih sering dikunjungi SF dalam 3 bulan sebelumnya (${djpLbl}) menghasilkan PS lebih tinggi — sampai titik jenuh.`,
-    E.map(e => `${nm(e)}: PS/desa ${e.bucket.map(b => anD(b.avg)).join(' → ')}`).join('; ') + ` (kelompok ${D.ents[0].bucketL.join(', ')} kunjungan/bulan).` + (satList.length ? ` Contoh jenuh: ${satList.join(', ')}.` : ''),
+    `Rata-rata PS per desa, dari desa yang tidak dikunjungi sampai yang paling sering (${D.ents[0].bucketL.join(', ')} kunjungan/bulan) — ` + E.map(e => `${nm(e)}: ${e.bucket.map(b => b.avg == null ? 'tidak ada desa' : anD(b.avg)).join(' → ')}`).join('; ') + '.' + (satList.length ? ` Contoh jenuh: ${satList.join(', ')}.` : ''),
     `${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS berasal dari desa yang dikunjungi DJP` +
-      (satur.length ? `; ${satur.map(x => nm(x.e)).join(', ')} PS per desa memuncak di kelompok ${D.ents[0].bucketL[satur[0].pk]} kunjungan/bulan lalu turun (jenuh) — alihkan kelebihan kunjungan ke desa prioritas yang belum tersentuh.` : '; makin sering desa dikunjungi, makin tinggi PS — pertahankan frekuensi di desa produktif.'),
+      (satur.length ? `; ${satur.map(x => nm(x.e)).join(', ')} PS per desa memuncak di kelompok ${D.ents[0].bucketL[satur[0].pk]} kunjungan/bulan lalu turun (jenuh) — alihkan kelebihan kunjungan ke desa prioritas yang belum tersentuh.` : '; makin sering desa dikunjungi, makin tinggi PS — pertahankan frekuensi di desa produktif.') +
+      ' Catatan: desa yang sering dikunjungi biasanya memang desa besar, jadi angka ini menunjukkan hubungan, belum tentu sebab-akibat.',
   ];
   // SF
   const hi = E.map(e => e.sfB[3].avg), lo = E.map(e => e.sfB[1].avg);
   const lowN = E.map(e => e.sfB[1].n);
   S.sf = [
     'SF yang konsisten hadir di desa teritorinya (kunjungan DJP rutin) akan menghasilkan PS lebih banyak.',
-    `SF >25 kunjungan/bulan: ${anJoin(hi.map(v => anD(v)))} PS/SF; SF 1–10 kunjungan/bulan: ${anJoin(lo.map(v => anD(v)))}. Korelasi kunjungan–PS ${anJoin(E.map(e => anD(e.corr, 2)))}. Rata-rata ${anJoin(E.map(e => anD(e.desaPerSf)))} desa per SF, ${anJoin(E.map(e => anD(e.visPerPair)))} kunjungan per desa.`,
+    `Rata-rata PS per SF — SF >25 kunjungan/bln: ${per(e => nv(e.sfB[3].avg))}; SF 1–10 kunjungan/bln: ${per(e => nv(e.sfB[1].avg))}. Keeratan hubungan kunjungan–PS (0 = tidak ada, 1 = sangat erat): ${per(e => anD(e.corr, 2))}. Satu SF rata-rata menggarap ${per(e => anD(e.desaPerSf) + ' desa')}.`,
     `${E.map(e => `${nm(e)} ${e.sfB[1].n} SF`).join(', ')} masih di kelompok 1–10 kunjungan/bulan — naikkan frekuensi ke desa teritori yang sama.` +
       (sum(E.map(e => e.watch.length)) ? ` ${sum(E.map(e => e.watch.length))} SF rajin DJP tanpa PS perlu coaching kualitas kunjungan.` : ''),
   ];
@@ -308,21 +311,21 @@ function anAnalyze(D) {
   const skipNames = E.flatMap(e => e.skipProd.map(s => `${s.desa} ${s.ps} PS`)).slice(0, 2);
   const noPlan = E.filter(e => e.planCur === 0);
   S.prio = [
-    'Desa prioritas (potensi tertinggi) seharusnya menjadi sumber PS terbesar, dan desa skip yang terkecil.',
-    `PS dari desa prioritas ${anJoin(E.map(e => anPs(anP(e.psKat[0], e.ps))))}, dari desa skip ${anJoin(E.map(e => anPs(anP(e.psKat[3], e.ps))))}` + (skipNames.length ? ` (mis. ${skipNames.join(', ')})` : '') +
-      `. Prioritas belum tersentuh DJP: ${anJoin(E.map(e => e.prioUntouched.length))} desa. Plan DJP ${periodLabel(D.bulan)}: ${anJoin(E.map(e => e.planCur))} kunjungan.`,
-    (skipNames.length ? 'Kalibrasi klasifikasi desa dengan PS aktual (skip produktif → strategis). ' : '') + `Pindahkan kunjungan dari desa jenuh ke ${sum(E.map(e => e.prioUntouched.length))} desa prioritas belum tersentuh` + (noPlan.length ? `, dan ${noPlan.map(nm).join(', ')} segera publish plan DJP ${periodLabel(D.bulan)}.` : '.'),
+    'Desa Prioritas & Strategis (potensi tertinggi) seharusnya menjadi sumber IO & PS terbesar, dan desa Skip yang terkecil.',
+    `PS dari desa Prioritas+Strategis: ${per(e => anPs(anP(e.psKat[0] + e.psKat[1], e.ps)))}; dari desa Skip: ${per(e => anPs(anP(e.psKat[3], e.ps)))}` + (skipNames.length ? ` (mis. ${skipNames.join(', ')})` : '') +
+      `. Desa Prioritas yang belum pernah dikunjungi DJP: ${per(e => e.prioUntouched.length + ' desa')}. Plan DJP ${periodLabel(D.bulan)}: ${per(e => e.planCur + ' kunjungan')}.`,
+    (skipNames.length ? 'Desa Skip yang ternyata produktif jangan ditinggalkan — tinjau ulang kategorinya. ' : '') + `Pindahkan kunjungan dari desa jenuh ke ${sum(E.map(e => e.prioUntouched.length))} desa prioritas belum tersentuh` + (noPlan.length ? `, dan ${noPlan.map(nm).join(', ')} segera publish plan DJP ${periodLabel(D.bulan)}.` : '.'),
   ];
   // kesimpulan utama
   const wo = worst(e => mg ? e.drr - e.need : e.olAch);
   S.main = [];
-  S.main.push([`IO (kendali sales): ${E.map(e => `${nm(e)} outlook ${anPs(Math.round(e.ioOlAch || 0))}, lokasi potensial ${anPs(Math.round(e.ioPotShare || 0))}`).join('; ')}.`, ` Terlemah ${nm(worst(e => e.ioOlAch))}: butuh ${anD(worst(e => e.ioOlAch).ioNeed)} IO/hari.`]);
+  S.main.push([`IO (dikontrol sales) — perkiraan akhir bulan vs target: ${per(e => anPs(Math.round(e.ioOlAch || 0)))}.`, ` IO dari desa Prioritas/Strategis: ${per(e => anPs(Math.round(e.ioPotShare || 0)))} (acuan ≥70%). Paling perlu dorongan: ${nm(worst(e => e.ioOlAch))}, butuh ${anD(worst(e => e.ioOlAch).ioNeed)} IO/hari.`]);
   if (mg) S.main.push([`Momentum minggu ini: ${E.map(e => `${nm(e)} ${anSg(anP(e.ps - e.ps0, e.ps0))}`).join(', ')}.`, ` Paling perlu dorongan: ${nm(wo)} (butuh ${anD(wo.need)} PS/hari).`]);
-  else S.main.push([`${D.sisa ? 'Outlook' : 'Capaian'}: ${E.map(e => `${nm(e)} ${anPs(Math.round(e.olAch))}`).join(', ')}.`, D.sisa ? ` Terlemah ${nm(wo)}, butuh ${anD(wo.need)} PS/hari (kini ${anD(wo.drrM)}).` : ` Terlemah ${nm(wo)}.`]);
-  S.main.push([gap >= 3 ? `Kebocoran setelah RE di ${nm(wf)}.` : 'Konversi relatif setara.', ` PS/RE ${E.map(e => `${nm(e)} ${anPs(Math.round(e.psre || 0))}`).join(', ')}; pending ${sum(E.map(e => e.coh[2]))} order.`]);
-  S.main.push([`DJP ${djpLbl} menggerakkan PS:`, ` ${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS dari desa yang dikunjungi${satur.length ? ', tetapi sebagian desa sudah jenuh' : ''}.`]);
-  S.main.push(['SF yang rutin hadir di desa lebih produktif:', ` >25 kunjungan/bln = ${anJoin(hi.map(v => anD(v)))} PS/SF vs 1–10 = ${anJoin(lo.map(v => anD(v)))}.`]);
-  S.main.push([noPlan.length ? `Plan DJP ${anMonthShort(D.bulan)} ${noPlan.map(nm).join(', ')} masih 0.` : `Plan DJP ${anMonthShort(D.bulan)} berjalan (${sum(E.map(e => e.planCur))} kunjungan).`, ` Desa skip menyumbang ${anJoin(E.map(e => anPs(anP(e.psKat[3], e.ps))))} PS — klasifikasi perlu dikalibrasi.`]);
+  else S.main.push([`PS (hasil) — perkiraan akhir bulan vs target: ${per(e => anPs(Math.round(e.olAch)))}.`, D.sisa ? ` Terendah ${nm(wo)}.` : '']);
+  S.main.push([gap >= 3 ? `Order banyak tertahan setelah registrasi di ${nm(wf)}.` : 'Order yang sudah registrasi umumnya jadi PS.', ` Persentase RE yang jadi PS: ${per(e => anPs(Math.round(e.psre || 0)))}; ${sum(E.map(e => e.coh[2]))} order masih pending (perlu bantuan teknisi).`]);
+  S.main.push([`Kunjungan DJP ${djpLbl}:`, ` ${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS bulan ini berasal dari desa yang pernah dikunjungi${satur.length ? '; beberapa desa sudah sering dikunjungi tapi hasilnya kecil (jenuh)' : ''}.`]);
+  S.main.push(['Rata-rata PS per SF menurut seringnya kunjungan:', ` SF >25 kunjungan/bln: ${per(e => nv(e.sfB[3].avg))}; SF 1–10 kunjungan/bln: ${per(e => nv(e.sfB[1].avg))}.`]);
+  S.main.push([noPlan.length ? `Plan DJP ${anMonthShort(D.bulan)} ${noPlan.map(nm).join(', ')} masih 0.` : `Plan DJP ${anMonthShort(D.bulan)} berjalan (${sum(E.map(e => e.planCur))} kunjungan).`, ` PS dari desa kategori Skip: ${per(e => anPs(anP(e.psKat[3], e.ps)))} — bila besar, desa itu sebenarnya produktif dan kategorinya perlu ditinjau.`]);
   if (missing.length) S.main.push([`Data DJP ${missing.join(', ')} belum tersedia.`, ' Analisa DJP memakai bulan yang ada.']);
   S.final = [
     'IO tepat sasaran = SF hadir rutin di desa Prioritas & Strategis (termasuk yang jauh, lewat jadwal khusus) × kualitas kunjungan. PS mengikuti IO, dengan faktor teknis (tarikan ODP ≤250 m, teknisi, cuaca) di luar kendali penuh sales.',
