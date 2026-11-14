@@ -270,7 +270,7 @@ function cmpAnalyze(D) {
   })();
   const key = [];
   key.push(lead);
-  gaps.slice(0, 2).forEach(g => key.push(`Jika ${g.lo} menyamai ${g.hi} di ${g.label}, tambahan ±${g.pot} PS dari order yang sudah ada.`));
+  gaps.filter(g => g.pot >= 3).slice(0, 2).forEach(g => key.push(`Jika ${g.lo} menyamai ${g.hi} di ${g.label}, tambahan ±${g.pot} PS dari order yang sudah ada.`));
   if (a && b) {
     const [hi, lo] = a.cur.psPerSF >= b.cur.psPerSF ? [a, b] : [b, a];
     if (lo.cur.psPerSF > 0 && hi.cur.psPerSF / lo.cur.psPerSF >= 1.15) key.push(`SF ${hi.name} ${fmt1(hi.cur.psPerSF / lo.cur.psPerSF)}× lebih produktif (${fmt1(hi.cur.psPerSF)} vs ${fmt1(lo.cur.psPerSF)} PS per SF); ${lo.name} punya ${lo.cur.sf0.length} SF belum PS.`);
@@ -417,7 +417,7 @@ function cmpBuild(D, A) {
   if (a.cur.cohCancel && b.cur.cohCancel) leak.push(ta === tb
     ? `Penyebab terbesar sama di kedua cluster: ${cgl(ta)} (${fmt1(per100(a, ta))} dan ${fmt1(per100(b, tb))} per 100 IO), jadi bisa ditangani bersama.`
     : `Penyebab terbesar berbeda: ${a.name} ${cgl(ta)}, ${b.name} ${cgl(tb)}.`);
-  A.gaps.filter(g => /batal/.test(g.label)).slice(0, 1).forEach(g => leak.push(`Menutup selisih terbesar = ±${g.pot} PS tambahan untuk ${g.lo}.`));
+  A.gaps.filter(g => /batal/.test(g.label) && g.pot >= 3).slice(0, 1).forEach(g => leak.push(`Menutup selisih terbesar = ±${g.pot} PS tambahan untuk ${g.lo}.`));
   insight(s, leak, 6.3, 1.2, 3.2, 3.9);
 
   // ── 5. Channel & produk ──
