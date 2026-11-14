@@ -420,3 +420,4 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 .ppt-pop button:hover,.ppt-pop button:focus-visible{background:var(--surface-hover)}
 .ppt-pop b{font-size:13px;color:var(--text-1)}
 .ppt-pop small{font-size:11px;color:var(--text-2)}
+.ppt-sep{height:1px;background:var(--surface-border);margin:4px 6px}

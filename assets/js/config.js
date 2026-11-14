@@ -48,6 +48,8 @@ const C = {
   VAL_KAB:     38,   // DQ ← cluster filter
   KOORDINAT:   39,   // DR
   SPEED:       41,   // DT
+  KEC:         42,   // DU (VALIDASI KEC) — hanya dari jalur Vercel
+  DESA:        43,   // DV (VALIDASI DESA)
 };
 
 // ── odp.json dimuat SEKALI, dipakai bersama semua halaman (sebelumnya 5 kali fetch) ──

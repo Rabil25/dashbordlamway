@@ -50,7 +50,7 @@ module.exports = async function handler(req, res) {
         data = await getAllData(bulan.toString());
         break;
       case 'bulan_ini':
-        data = await getRawSheetCached('Bulan_Ini', 'CE2:DT', normPeriod(bulan));
+        data = await getRawSheetCached('Bulan_Ini', 'CE2:DV', normPeriod(bulan));
         break;
       case 'update_sf':
         data = await getRawSheetCached('Update SF', 'A2:AG', '');
