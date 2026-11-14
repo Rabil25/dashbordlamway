@@ -293,13 +293,13 @@ async function wlBizAnalysis(app, D, E) {
     name: e.name,
     f: {
       sf: e.sfDJP, kunj: e.visPerSfM, sasaran: e.goodVisShare || 0,
-      ioHasil: e.vis ? io[i].mtd / D.refDay * D.days / (e.vis / nM) * 100 : 0,
+      ioHasil: e.vis ? io[i].mtd / D.refDay * D.days / (e.vis / nM) * 10 : 0,
       ioPot: io[i].potShare,
       ioRe: e.io ? e.re / e.io * 100 : 0, rePs: e.psre || 0,
     },
   }));
   const FL = { sf: ['SF aktif DJP', '', 1], kunj: ['Kunjungan / SF / bulan', '', 1], sasaran: ['Kunjungan ke desa Prioritas + Strategis', '%', 1],
-    ioHasil: ['IO per 100 kunjungan / bulan', '', 1], ioPot: ['IO di lokasi potensial (Prioritas + Strategis)', '%', 1],
+    ioHasil: ['IO per 10 kunjungan', '', 1], ioPot: ['IO di lokasi potensial (Prioritas + Strategis)', '%', 1],
     ioRe: ['Konversi IO → RE', '%', 1], rePs: ['Konversi RE → PS (di luar kendali penuh sales)', '%', 0] };
   const avg = k => drv.reduce((a, x) => a + x.f[k], 0) / Math.max(1, drv.length);
   const BENCH = { sasaran: 80, ioPot: 70, ioRe: 95, rePs: 80 };
@@ -363,7 +363,7 @@ async function wlBizAnalysis(app, D, E) {
   const PLAIN = {
     kunj: x => `SF jarang turun ke desa: ${x.val} kunjungan per SF per bulan (rata-rata cluster ${x.ref.split(' ')[0]}).`,
     sasaran: x => `Kunjungan belum ke desa yang tepat: baru ${x.val} ke desa Prioritas/Strategis (acuan 80%).`,
-    ioHasil: x => `SF sudah datang, tapi jarang dapat order: ${x.val} IO per 100 kunjungan (rata-rata cluster ${x.ref.split(' ')[0]}).`,
+    ioHasil: x => `SF sudah datang, tapi jarang dapat order: tiap 10 kunjungan dapat ${x.val} IO (rata-rata cluster ${x.ref.split(' ')[0]}).`,
     ioPot: x => `Banyak IO dari desa yang kurang potensial: baru ${x.val} dari desa Prioritas/Strategis (acuan 70%).`,
     ioRe: x => `Banyak IO tidak lolos registrasi: IO→RE ${x.val} (acuan 95%).`,
   };
