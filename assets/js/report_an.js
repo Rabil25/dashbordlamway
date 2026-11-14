@@ -290,7 +290,7 @@ function anAnalyze(D) {
     `Bila DJP efektif, desa yang lebih sering dikunjungi SF dalam 3 bulan sebelumnya (${djpLbl}) menghasilkan PS lebih tinggi — sampai titik jenuh.`,
     E.map(e => `${nm(e)}: PS/desa ${e.bucket.map(b => anD(b.avg)).join(' → ')}`).join('; ') + ` (kelompok ${D.ents[0].bucketL.join(', ')} kunjungan/bulan).` + (satList.length ? ` Contoh jenuh: ${satList.join(', ')}.` : ''),
     `${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS berasal dari desa yang dikunjungi DJP` +
-      (satur.length ? `; ${satur.map(x => nm(x.e)).join(', ')} jenuh di atas ${D.ents[0].bucketL[satur[0].pk]} kunjungan/bulan per desa — alihkan kelebihan kunjungan ke desa prioritas yang belum tersentuh.` : '; makin sering desa dikunjungi, makin tinggi PS — pertahankan frekuensi di desa produktif.'),
+      (satur.length ? `; ${satur.map(x => nm(x.e)).join(', ')} PS per desa memuncak di kelompok ${D.ents[0].bucketL[satur[0].pk]} kunjungan/bulan lalu turun (jenuh) — alihkan kelebihan kunjungan ke desa prioritas yang belum tersentuh.` : '; makin sering desa dikunjungi, makin tinggi PS — pertahankan frekuensi di desa produktif.'),
   ];
   // SF
   const hi = E.map(e => e.sfB[3].avg), lo = E.map(e => e.sfB[1].avg);
