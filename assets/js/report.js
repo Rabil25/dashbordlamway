@@ -642,17 +642,21 @@ function reportCompare(items) {
 // mode: 'cluster' = cluster aktif · 'all' = semua cluster + perbandingan
 async function reportItems(app, mode = 'cluster') {
   if (mode !== 'all') { const D = await reportCollect(app); return [{ D, A: reportAnalyze(D) }]; }
-  const asal = app.cluster, items = [];
-  try {
-    let planAll = null;
-    for (const c of Object.keys(CLUSTER)) {
-      app.cluster = c;                      // getter dashboard dihitung untuk cluster ini
-      const D = await reportCollect(app, { planAll });
-      planAll = D.planAll;
-      items.push({ D, A: reportAnalyze(D) });
-    }
-  } finally {
-    app.cluster = asal;
+  // Data desa dimuat sekali di objek asli, lalu tiap cluster dihitung pada "salinan bayangan"
+  // (Object.create) dengan cluster sendiri — tampilan dashboard tidak ikut berganti/di-render ulang.
+  if (!app.prioritasOdpRaw.length) { try { await app.loadPrioritas(); } catch (e) {} }
+  // Objek data mentah komponen dashboard (bukan proxy gabungan Alpine, yang meneruskan tulis ke aslinya)
+  const stack = document.body._x_dataStack;
+  const base = stack && stack[0] && window.Alpine && Alpine.raw ? Alpine.raw(stack[0]) : null;
+  if (!base || !('cluster' in base)) throw new Error('Data dashboard belum siap, coba lagi');
+  const items = [];
+  let planAll = null;
+  for (const c of Object.keys(CLUSTER)) {
+    const view = Object.create(base);
+    Object.defineProperty(view, 'cluster', { value: c, writable: true, enumerable: true });
+    const D = await reportCollect(view, { planAll });
+    planAll = D.planAll;
+    items.push({ D, A: reportAnalyze(D) });
   }
   return items;
 }
