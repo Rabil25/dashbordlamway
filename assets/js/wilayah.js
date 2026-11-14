@@ -225,3 +225,51 @@ function fmtTglId(t) {
   const d = new Date(String(t).slice(0, 10) + 'T00:00:00'); if (isNaN(d)) return t;
   return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()];
 }
+
+// ================================================================
+//  ANALISA WILAYAH (di bawah peta) — cluster aktif, per kabupaten.
+//  Memakai mesin analisa PPT (report_an.js: anCollect mode 'cluster' + anAnalyze):
+//  PS bulan aktif vs DJP 3 bulan sebelumnya (kunjungan = SF × desa × hari),
+//  kategori desa, SF, funnel; setiap bagian ditutup silogisme.
+// ================================================================
+async function wlAnalisa(app, force) {
+  if (typeof anCollect !== 'function') return;
+  const key = app.cluster + '|' + app.cfg.bulan;
+  if (!force && app.wlAn && app.wlAn.key === key) return;
+  if (app.wlAnBusy) return;
+  app.wlAnBusy = true;
+  try {
+    const D = await anCollect(app, 'cluster');
+    const S = anAnalyze(D);
+    const E = D.ents, sum2 = f => E.reduce((a, e) => a + (f(e) || 0), 0);
+    const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+    const d1 = v => v == null || !isFinite(v) ? '–' : (Math.round(v * 10) / 10).toLocaleString('id-ID');
+    const tot = { ps: sum2(e => e.ps), tgt: sum2(e => e.tgtM), re: sum2(e => e.re), io: sum2(e => e.io), vis: sum2(e => e.vis), ol: sum2(e => e.ol),
+      fromVis: sum2(e => e.psFromVis), prio: sum2(e => e.prio[0]), prioT: sum2(e => e.prio[1]), untouched: sum2(e => e.prioUntouched.length) };
+    app.wlAn = {
+      key, label: D.label, djp: S.djpLbl, missing: S.missing, sisa: D.sisa,
+      tiles: [
+        ['PS ' + D.label, tot.ps, 'target ' + tot.tgt],
+        ['Outlook akhir bulan', tot.ol + ' (' + pct(tot.ol, tot.tgt) + ')', D.sisa + ' hari tersisa'],
+        ['PS / RE', pct(tot.ps, tot.re), 'IO ' + tot.io + ' · RE ' + tot.re],
+        ['Kunjungan DJP ' + S.djpLbl, tot.vis.toLocaleString('id-ID'), 'SF × desa × hari'],
+        ['PS dari desa ber-DJP', pct(tot.fromVis, tot.ps), tot.fromVis + ' dari ' + tot.ps + ' PS'],
+        ['Desa prioritas tersentuh', tot.prioT + ' / ' + tot.prio, tot.untouched + ' belum disentuh'],
+      ],
+      kab: E.map(e => ({
+        name: e.name, ps: e.ps, tgt: e.tgtM, ol: e.ol, olp: Math.round(e.olAch || 0), drr: d1(e.drrM), need: d1(e.need), psre: Math.round(e.psre || 0),
+        batal: e.coh[1], pend: e.coh[2], vis: e.vis, visM: e.visByM, sfDJP: e.sfDJP, visSf: d1(e.visPerSfM), desaSf: d1(e.desaPerSf), visDesa: d1(e.visPerPair),
+        prioVis: e.prioVisShare, fromVis: pct(e.psFromVis, e.ps), samePair: pct(e.psSamePair, e.ps), rutin: e.psRutin,
+        bucket: e.bucket.map(b => b.avg == null ? '–' : d1(b.avg)), bucketN: e.bucket.map(b => b.n),
+        sfB: e.sfB.map(b => b.avg == null ? '–' : d1(b.avg)), sfBN: e.sfB.map(b => b.n), corr: e.corr == null ? '–' : (Math.round(e.corr * 100) / 100).toLocaleString('id-ID'),
+        psKat: e.psKat.map(v => pct(v, e.ps)), prio: e.prio, untouched: e.prioUntouched.slice(0, 4).join(', '), untouchedN: e.prioUntouched.length,
+        jenuh: e.saturated.map(s => `${s.desa} (${s.v} kunj., ${s.ps} PS)`).join(', '), skipPS: e.skipProd.map(s => `${s.desa} (${s.ps} PS)`).join(', '),
+        watch: e.watch.map(w => `${w.n} (${w.v} kunj.)`).join(', '), plan: e.planCur,
+      })),
+      bucketL: (E[0] || {}).bucketL || [], sfBL: (E[0] || {}).sfBL || [], months: D.djpM.map(m => periodLabel(m) + (D.availM.includes(m) ? '' : ' (n/a)')),
+      syl: [['Pencapaian', S.pace], ['Funnel order', S.funnel], ['DJP 3 bulan → PS (wilayah desa)', S.djp], ['SF & teritori', S.sf], ['Kategori desa & plan', S.prio], ['Kesimpulan', S.final]],
+      main: S.main.map(m => m.join('')), actions: S.actions,
+    };
+  } catch (e) { console.error('Analisa wilayah:', e); app.wlAn = { key, error: e.message }; }
+  finally { app.wlAnBusy = false; }
+}

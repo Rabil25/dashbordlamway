@@ -1274,6 +1274,69 @@
             <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-right:4px"></span>Kendala / Batal</span>
           </div>
         </div>
+
+        <!-- ══ Analisa Wilayah (cluster aktif) ══ -->
+        <div class="wla">
+          <div class="section-hdr" style="margin-top:6px">
+            <div>
+              <div class="section-title" x-text="'Analisa Wilayah · ' + cluster"></div>
+              <div class="section-sub" x-text="wlAn && !wlAn.error ? ('PS ' + wlAn.label + ' vs kunjungan DJP ' + wlAn.djp + ' · per kabupaten · silogisme') : 'PS bulan aktif vs DJP 3 bulan sebelumnya'"></div>
+            </div>
+            <button type="button" class="btn btn-outline" @click="wlAnalisa($data, true)" :disabled="wlAnBusy" x-text="wlAnBusy ? 'Menghitung…' : '↻ Hitung ulang'"></button>
+          </div>
+          <div class="card wla-empty" x-show="wlAnBusy && !wlAn">Menghitung analisa wilayah…</div>
+          <div class="card wla-empty" x-show="wlAn && wlAn.error" x-text="'Analisa gagal: ' + (wlAn && wlAn.error)"></div>
+          <template x-if="wlAn && !wlAn.error">
+            <div>
+              <div class="wla-note" x-show="wlAn.missing.length" x-text="'Data DJP ' + wlAn.missing.join(', ') + ' belum tersedia — analisa memakai bulan yang ada.'"></div>
+              <div class="wla-tiles">
+                <template x-for="t in wlAn.tiles" :key="t[0]"><div class="stat-card wla-tile"><div class="stat-card__lbl" x-text="t[0]"></div><div class="stat-card__val" x-text="t[1]"></div><div class="stat-card__sub" x-text="t[2]"></div></div></template>
+              </div>
+              <div class="card wla-main">
+                <div class="card-title">Kesimpulan utama</div>
+                <ol><template x-for="m in wlAn.main" :key="m"><li x-text="m"></li></template></ol>
+              </div>
+
+              <div class="wla-grid">
+                <div class="card"><div class="card-title">Pencapaian & funnel per kabupaten</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>PS</th><th>Target</th><th>Outlook</th><th>DRR / butuh</th><th>PS/RE</th><th>Batal</th><th>Pending</th></tr></thead>
+                  <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><td x-text="k.ps"></td><td x-text="k.tgt"></td><td x-text="k.ol + ' (' + k.olp + '%)'" :style="k.olp>=100?'color:var(--success)':'color:var(--danger)'"></td><td x-text="k.drr + ' / ' + k.need"></td><td x-text="k.psre + '%'"></td><td x-text="k.batal"></td><td x-text="k.pend"></td></tr></template></tbody></table></div>
+                </div>
+                <div class="card"><div class="card-title">Kunjungan DJP (SF × desa × hari)</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="m in wlAn.months" :key="m"><th x-text="m"></th></template><th>SF</th><th>Kunj/SF/bln</th><th>Desa/SF</th><th>Ke prioritas</th></tr></thead>
+                  <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><template x-for="(v,i) in k.visM" :key="i"><td x-text="v"></td></template><td x-text="k.sfDJP"></td><td x-text="k.visSf"></td><td x-text="k.desaSf"></td><td x-text="(k.prioVis ?? '–') + '%'"></td></tr></template></tbody></table></div>
+                </div>
+                <div class="card"><div class="card-title">Rata-rata PS per desa menurut frekuensi kunjungan / bulan</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="b in wlAn.bucketL" :key="b"><th x-text="b"></th></template><th>PS dari desa ber-DJP</th><th>PS oleh SF di desa garapannya</th></tr></thead>
+                  <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><template x-for="(v,i) in k.bucket" :key="i"><td><span x-text="v"></span><small class="wla-n" x-text="'(' + k.bucketN[i] + ' desa)'"></small></td></template><td x-text="k.fromVis"></td><td x-text="k.samePair"></td></tr></template></tbody></table></div>
+                </div>
+                <div class="card"><div class="card-title">SF: rata-rata PS menurut kunjungan / bulan</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="b in wlAn.sfBL" :key="b"><th x-text="b"></th></template><th>Korelasi</th></tr></thead>
+                  <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><template x-for="(v,i) in k.sfB" :key="i"><td><span x-text="v"></span><small class="wla-n" x-text="'(' + k.sfBN[i] + ' SF)'"></small></td></template><td x-text="k.corr"></td></tr></template></tbody></table></div>
+                </div>
+                <div class="card wla-wide"><div class="card-title">Kategori desa: sumbangan PS & cakupan</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>PS Prioritas</th><th>Strategis</th><th>Cadangan</th><th>Skip</th><th>Prioritas tersentuh</th><th>Belum disentuh</th><th>Desa jenuh</th><th>Skip tapi ada PS</th><th>Plan bln ini</th></tr></thead>
+                  <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><template x-for="(v,i) in k.psKat" :key="i"><td x-text="v"></td></template><td x-text="k.prio[1] + ' / ' + k.prio[0]"></td><td class="wla-txt" x-text="k.untouchedN ? (k.untouchedN + ': ' + k.untouched) : '–'"></td><td class="wla-txt" x-text="k.jenuh || '–'"></td><td class="wla-txt" x-text="k.skipPS || '–'"></td><td x-text="k.plan"></td></tr></template></tbody></table></div>
+                </div>
+              </div>
+
+              <div class="wla-syl">
+                <template x-for="s in wlAn.syl" :key="s[0]">
+                  <div class="card wla-sylcard"><div class="card-title" x-text="s[0]"></div>
+                    <div class="wla-p"><b>Premis mayor</b><span x-text="s[1][0]"></span></div>
+                    <div class="wla-p"><b>Premis minor</b><span x-text="s[1][1]"></span></div>
+                    <div class="wla-p wla-c"><b>Kesimpulan</b><span x-text="s[1][2]"></span></div>
+                  </div>
+                </template>
+              </div>
+
+              <div class="card"><div class="card-title">Rencana aksi</div>
+                <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>#</th><th>Aksi</th><th>Untuk</th><th>PIC</th><th>Ukuran keberhasilan</th><th>Waktu</th></tr></thead>
+                <tbody><template x-for="(a,i) in wlAn.actions" :key="i"><tr><td x-text="i+1"></td><td class="wla-txt" x-text="a[0]"></td><td x-text="a[1]"></td><td x-text="a[2]"></td><td class="wla-txt" x-text="a[3]"></td><td x-text="a[4]"></td></tr></template></tbody></table></div>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
 
       <!-- ══ PAGE: D2D SALES ══ -->

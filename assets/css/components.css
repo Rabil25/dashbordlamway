@@ -489,3 +489,24 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 .wl-row .select { font-size: 10.5px; padding: 2px 4px; }
 .wl-seg { flex-wrap: wrap; }
 .wl-seg button { flex: 1 1 30%; }
+/* klik wilayah tidak memunculkan kotak fokus browser */
+#leaflet-map .leaflet-interactive:focus, #leaflet-map path:focus { outline: none; }
+/* Analisa Wilayah */
+.wla { margin: 0 36px 30px; }
+.wla-empty { padding: 18px; text-align: center; color: var(--text-3); }
+.wla-note { font-size: 12.5px; color: var(--warning); margin-bottom: 8px; }
+.wla-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.wla-tile .stat-card__val { font-size: 22px; }
+.wla-main ol { margin: 6px 0 0 18px; padding: 0; font-size: 13.5px; line-height: 1.55; }
+.wla-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 12px 0; }
+.wla-grid .wla-wide { grid-column: 1 / -1; }
+.wla-grid table { width: 100%; font-size: 12.5px; }
+.wla-n { display: block; font-size: 10px; color: var(--text-3); }
+.wla-txt { white-space: normal; min-width: 140px; font-size: 12px; }
+.wla-syl { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.wla-p { display: grid; grid-template-columns: 96px 1fr; gap: 8px; font-size: 13px; line-height: 1.45; padding: 5px 0; border-top: 1px dashed var(--surface-border); }
+.wla-p b { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); padding-top: 2px; }
+.wla-c span { font-weight: 700; color: var(--brand); }
+@media (max-width: 900px) { .wla-grid { grid-template-columns: 1fr; } .wla { margin: 0 18px 24px; } }
+[data-theme="medieval"] .wla-p b { font-family: var(--md-label); color: #6b5440; }
+[data-theme="medieval"] .wla-c span { color: #8e1b14; }

@@ -41,7 +41,7 @@ function app() {
     showConfig: false,
     // Peta Wilayah: mode batas auto/desa/kec/kab, layer, filter SF, tanggal plan
     wl: { mode: 'none', kat: true, visit: true, plan: true, kantor: true, hl: true, labels: false, sf: '', kab: '', planTgl: (typeof localYMD === 'function' ? localYMD(new Date()) : new Date().toISOString().slice(0, 10)), open: true },
-    wlStats: null, wlPlanInfo: '',
+    wlStats: null, wlPlanInfo: '', wlAn: null, wlAnBusy: false,
     themeMode: localStorage.getItem('dashTheme2') || 'medieval',   // default tema Medieval (Nov 2026); light/dark tetap bisa dipilih
     allRows: [],      // baris untuk bulan aktif (GAS filter per bulan di server)
     _availBulanList: null,  // daftar bulan tersedia dari GAS list_bulan
@@ -1971,18 +1971,20 @@ function app() {
           attribution: '© <a href="https://www.esri.com/">Esri</a> World Imagery',
           maxZoom: 19,
         }).addTo(map);
-        // tanpa overlay nama tempat (nama desa muncul saat kursor di atas wilayah)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+          attribution: '', maxZoom: 19, opacity: 0.8,
+        }).addTo(map);
       } else {
-        // Peta dasar TANPA label nama tempat (Esri Light Gray Base); nama desa muncul saat kursor di atas wilayah
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-          attribution: '© <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, © OpenStreetMap',
-          maxZoom: 19, maxNativeZoom: 16,
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 18,
         }).addTo(map);
       }
 
       // Lapisan Peta Wilayah (batas desa/kecamatan, kategori, kunjungan DJP, plan, kantor)
       const wlGo = () => { if (typeof wlRender === 'function') wlRender(this, map); };
       wlGo();
+      if (typeof wlAnalisa === 'function') wlAnalisa(this);
       if (!this.prioritasOdpRaw.length) {
         // data ODP/klasifikasi desa bisa masih dimuat di latar → tunggu, lalu gambar ulang lapisan wilayah
         this.loadPrioritas().catch(() => {});
