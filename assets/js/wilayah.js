@@ -321,10 +321,11 @@ async function wlBizAnalysis(app, D, E) {
   const kabs = E.flatMap(e => e.kabs);
   const pen = (app.penetrasiData || []).filter(p => kabs.includes(String(p.kab).toUpperCase()) && +p.avai > 0);
   const med = a => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : 0; };
-  const mA = med(pen.map(p => +p.avai)), mP = med(pen.map(p => +p.ps / +p.avai));
+  const mA = med(pen.map(p => +p.avai)), rates = pen.map(p => +p.ps / +p.avai);
+  let mP = med(rates); if (!mP) mP = rates.reduce((a, b) => a + b, 0) / Math.max(1, rates.length);   // banyak desa PS 0 → pakai rata-rata
   const Q = { garap: [], jaga: [], efisien: [], kurangi: [] };
   pen.forEach(p => {
-    const hiA = +p.avai >= mA, hiP = (+p.ps / +p.avai) >= mP, v = (V.by[wlK(p.kec, p.desa)] || {}).n || 0;
+    const hiA = +p.avai >= mA, hiP = (+p.ps / +p.avai) > mP, v = (V.by[wlK(p.kec, p.desa)] || {}).n || 0;
     const o = { desa: String(p.desa).toLowerCase().replace(/\b\w/g, c => c.toUpperCase()), kab: p.kab, avai: +p.avai, ps: +p.ps, pen: Math.round(+p.ps / +p.avai * 100), vis: v };
     Q[hiA && !hiP ? 'garap' : hiA && hiP ? 'jaga' : !hiA && hiP ? 'efisien' : 'kurangi'].push(o);
   });
@@ -337,6 +338,7 @@ async function wlBizAnalysis(app, D, E) {
     { k: 'kurangi', t: 'KURANGI', s: 'Potensi rendah · penetrasi rendah', c: '#8c8c8c', act: 'Alihkan kunjungan ke kuadran Garap.' },
   ].map(q => ({ ...q, n: Q[q.k].length, visShare: Math.round(qVis(q.k) / totVis * 100), top: Q[q.k].slice(0, 5).map(x => `${x.desa} (avai ${x.avai}, PS ${x.ps}, ${x.vis} kunj.)`) }));
   const mx = { avai: mA, pen: d1(mP * 100) };
+  Q.efisien = Q.efisien;
 
   // 4) DIAGNOSIS → AKSI per kabupaten (narasi)
   const diag = E.map((e, i) => {
