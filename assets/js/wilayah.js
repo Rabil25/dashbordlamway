@@ -187,7 +187,8 @@ async function wlRender(app, map) {
   drawLabels();
   if (app._wlZoomFn) map.off('zoomend moveend', app._wlZoomFn);
   let lastMode = m;
-  app._wlZoomFn = () => { if (mode() !== lastMode) { lastMode = mode(); wlRender(app, map); } else drawLabels(); };
+  app._wlZoomFn = () => { (app._wlLayers || []).forEach(l => { if (l instanceof L.Marker) l.update(); });
+    if (mode() !== lastMode) { lastMode = mode(); wlRender(app, map); } else drawLabels(); };
   map.on('zoomend moveend', app._wlZoomFn);
 
   // ── kantor ──
