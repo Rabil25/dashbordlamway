@@ -129,7 +129,7 @@ async function anCollect(app, mode) {
   }
 
   const D = { mode, bulan, prev, days, refDay, sisa: Math.max(days - refDay, 0), W, W0, label, label0, trendM, djpM, availM, hasDesa,
-    wDays: Math.round((dateOfYmd(W[1]) - dateOfYmd(W[0])) / 864e5) + 1, ents: [] };
+    wDays: Math.round((dateOfYmd(W[1]) - dateOfYmd(W[0])) / 864e5) + 1, ents: [], katMap, allRows: all };
   ents.forEach((e, i) => D.ents.push(anEntity(app, D, e, i, all, visits, visCur, desaAll, katMap)));
   return D;
 }
@@ -157,6 +157,14 @@ function anEntity(app, D, e, idx, all, visits, visCur, desaAll, katMap) {
     o.drr = o.ps / D.refDay; o.mtd = o.ps; o.drrM = o.drr;
   }
   o.ol = Math.round(o.drrM * D.days); o.olAch = o.tgtM ? o.ol / o.tgtM * 100 : null;
+  // IO (tuas yang dikontrol sales): target, MTD, outlook, IO di lokasi potensial (Prioritas+Strategis)
+  o.ioTgt = sum(e.kabs.map(k => (app.cfg.targets[k] || {}).io || 0));
+  const bp = D.bulan.replace('-', ''), ioM = rows.filter(r => val(r, C.VAL_IO) && String(ymdNum(r[C.DATE_IO])).slice(0, 6) === bp && ymdNum(r[C.DATE_IO]) <= +(bp + String(D.refDay).padStart(2, '0')));
+  o.ioMtd = ioM.length; o.ioOl = Math.round(o.ioMtd / D.refDay * D.days); o.ioOlAch = o.ioTgt ? o.ioOl / o.ioTgt * 100 : null;
+  o.ioDrr = o.ioMtd / D.refDay; o.ioNeed = D.sisa > 0 ? Math.max(0, (o.ioTgt - o.ioMtd) / D.sisa) : 0;
+  const ioWin = rows.filter(r => val(r, C.VAL_IO) && inW(r[C.DATE_IO], D.W));
+  o.ioW = ioWin.length; o.ioPotW = ioWin.filter(r => ['prioritas', 'strategis'].includes((katMap[anK(r[C.KEC], r[C.DESA])] || {}).kat)).length;
+  o.ioPotShare = o.ioW ? o.ioPotW / o.ioW * 100 : null;
   o.need = D.sisa > 0 ? Math.max(0, (o.tgtM - o.mtd) / D.sisa) : 0;
   o.tgtToDate = o.tgtM * D.refDay / D.days; o.achToDate = o.tgtToDate ? o.mtd / o.tgtToDate * 100 : null;
   // harian
@@ -249,24 +257,19 @@ function anAnalyze(D) {
 
   // pace / momentum
   if (mg) {
-    const up = E.filter(e => e.ps >= e.ps0), down = E.filter(e => e.ps < e.ps0);
+    const down = E.filter(e => e.io < (e.io0 || 0));
     S.pace = [
-      'Momentum terjaga bila PS minggu ini ≥ minggu lalu dan laju harian ≥ kebutuhan untuk target bulan.',
-      E.map(e => `${nm(e)}: ${e.ps0} → ${e.ps} PS (${anSg(anP(e.ps - e.ps0, e.ps0))}), ${anD(e.drr)}/hari vs butuh ${anD(e.need)}`).join('; ') + '.',
-      (down.length ? `Momentum turun di ${down.map(nm).join(', ')}. ` : 'Semua entitas naik dibanding minggu lalu. ') +
-        (E.filter(e => e.drr < e.need).length ? `Laju harian masih di bawah kebutuhan: ${E.filter(e => e.drr < e.need).map(e => `${nm(e)} (kurang ${anD(e.need - e.drr)}/hari)`).join(', ')}.` : 'Laju harian semua entitas sudah memenuhi kebutuhan target.'),
+      'Target tercapai bila sales menghasilkan IO cukup dan tepat sasaran (≥70% di desa Prioritas + Strategis); IO adalah satu-satunya hasil yang dikontrol penuh oleh sales.',
+      E.map(e => `${nm(e)}: IO minggu ini ${e.io}, ${anD(e.ioDrr)}/hari vs butuh ${anD(e.ioNeed)}; lokasi potensial ${anPs(Math.round(e.ioPotShare || 0))}`).join('; ') + '.',
+      (E.filter(e => e.ioDrr < e.ioNeed).length ? `Laju IO di bawah kebutuhan: ${E.filter(e => e.ioDrr < e.ioNeed).map(e => `${nm(e)} (kurang ${anD(e.ioNeed - e.ioDrr)} IO/hari)`).join(', ')}. ` : 'Laju IO semua entitas memenuhi kebutuhan. ') +
+        (E.filter(e => (e.ioPotShare || 0) < 70).length ? `IO belum tepat sasaran di ${E.filter(e => (e.ioPotShare || 0) < 70).map(nm).join(', ')}.` : 'IO sudah tepat sasaran.'),
     ];
   } else {
-    const ok = E.filter(e => e.olAch >= 100), no = E.filter(e => e.olAch < 100);
-    const w = worst(e => e.olAch);
-    if (D.sisa === 0) S.pace = [
-      'Target tercapai bila PS akhir bulan ≥ target PS.',
-      E.map(e => `${nm(e)}: ${e.ps} dari ${e.tgtM} (${anPs(anP(e.ps, e.tgtM))})`).join('; ') + '.',
-      (ok.length ? `${ok.map(nm).join(', ')} mencapai target. ` : '') + (no.length ? `${no.map(nm).join(', ')} belum; gap terbesar ${nm(w)} (${w.tgtM - w.ps} PS).` : ''),
-    ]; else S.pace = [
-      'Target tercapai bila laju harian (DRR) × jumlah hari dalam bulan ≥ target PS.',
-      E.map(e => `${nm(e)}: DRR ${anD(e.drrM)} → outlook ${e.ol} (${anPs(Math.round(e.olAch))})`).join('; ') + '.',
-      (ok.length ? `${ok.map(nm).join(', ')} on track. ` : '') + (no.length ? `${no.map(nm).join(', ')} belum; ${nm(w)} butuh ${anD(w.need)} PS/hari di sisa ${D.sisa} hari (kini ${anD(w.drrM)}).` : 'Semua entitas on track.'),
+    const wi = worst(e => e.ioOlAch);
+    S.pace = [
+      'Target tercapai bila sales menghasilkan IO cukup dan tepat sasaran (≥70% di desa Prioritas + Strategis); IO adalah satu-satunya hasil yang dikontrol penuh oleh sales, PS mengikutinya.',
+      E.map(e => `${nm(e)}: IO ${e.ioMtd} → outlook ${e.ioOl} dari target ${e.ioTgt} (${anPs(Math.round(e.ioOlAch || 0))}), lokasi potensial ${anPs(Math.round(e.ioPotShare || 0))}`).join('; ') + '.',
+      D.sisa === 0 ? `Capaian IO terendah: ${nm(wi)}.` : `${nm(wi)} paling perlu dorongan: butuh ${anD(wi.ioNeed)} IO/hari (kini ${anD(wi.ioDrr)}), utamakan desa Prioritas & Strategis.`,
     ];
   }
   // funnel
@@ -313,6 +316,7 @@ function anAnalyze(D) {
   // kesimpulan utama
   const wo = worst(e => mg ? e.drr - e.need : e.olAch);
   S.main = [];
+  S.main.push([`IO (kendali sales): ${E.map(e => `${nm(e)} outlook ${anPs(Math.round(e.ioOlAch || 0))}, lokasi potensial ${anPs(Math.round(e.ioPotShare || 0))}`).join('; ')}.`, ` Terlemah ${nm(worst(e => e.ioOlAch))}: butuh ${anD(worst(e => e.ioOlAch).ioNeed)} IO/hari.`]);
   if (mg) S.main.push([`Momentum minggu ini: ${E.map(e => `${nm(e)} ${anSg(anP(e.ps - e.ps0, e.ps0))}`).join(', ')}.`, ` Paling perlu dorongan: ${nm(wo)} (butuh ${anD(wo.need)} PS/hari).`]);
   else S.main.push([`${D.sisa ? 'Outlook' : 'Capaian'}: ${E.map(e => `${nm(e)} ${anPs(Math.round(e.olAch))}`).join(', ')}.`, D.sisa ? ` Terlemah ${nm(wo)}, butuh ${anD(wo.need)} PS/hari (kini ${anD(wo.drrM)}).` : ` Terlemah ${nm(wo)}.`]);
   S.main.push([gap >= 3 ? `Kebocoran setelah RE di ${nm(wf)}.` : 'Konversi relatif setara.', ` PS/RE ${E.map(e => `${nm(e)} ${anPs(Math.round(e.psre || 0))}`).join(', ')}; pending ${sum(E.map(e => e.coh[2]))} order.`]);
@@ -321,12 +325,14 @@ function anAnalyze(D) {
   S.main.push([noPlan.length ? `Plan DJP ${anMonthShort(D.bulan)} ${noPlan.map(nm).join(', ')} masih 0.` : `Plan DJP ${anMonthShort(D.bulan)} berjalan (${sum(E.map(e => e.planCur))} kunjungan).`, ` Desa skip menyumbang ${anJoin(E.map(e => anPs(anP(e.psKat[3], e.ps))))} PS — klasifikasi perlu dikalibrasi.`]);
   if (missing.length) S.main.push([`Data DJP ${missing.join(', ')} belum tersedia.`, ' Analisa DJP memakai bulan yang ada.']);
   S.final = [
-    'PS = kehadiran SF yang tepat sasaran di desa teritori (3 bulan sebelumnya) × konversi order hingga PS. Entitas yang menjaga keduanya akan mencapai target.',
-    E.map(e => `${nm(e)}: ${anD(e.visPerSfM, 0)} kunjungan/SF/bln, PS/RE ${anPs(Math.round(e.psre || 0))}, ${mg ? 'PS minggu ' + anSg(anP(e.ps - e.ps0, e.ps0)) : 'outlook ' + anPs(Math.round(e.olAch))}`).join('; ') + '.',
-    D.sisa === 0 ? `Bulan berikutnya: ${nm(wo)} jadi fokus — perbaiki konversi order dan kunjungan rutin SF ke desa prioritas sejak awal bulan.` : `Fokus sisa periode: ${nm(wo)} menaikkan laju ke ±${anD(wo.need, 0)} PS/hari lewat penyelamatan order pending dan kunjungan rutin SF ke desa prioritas; entitas lain menjaga ritme.`,
+    'IO tepat sasaran = SF hadir rutin di desa Prioritas & Strategis (termasuk yang jauh, lewat jadwal khusus) × kualitas kunjungan. PS mengikuti IO, dengan faktor teknis (tarikan ODP ≤250 m, teknisi, cuaca) di luar kendali penuh sales.',
+    E.map(e => `${nm(e)}: IO outlook ${anPs(Math.round(e.ioOlAch || 0))}, lokasi potensial ${anPs(Math.round(e.ioPotShare || 0))}, ${anD(e.visPerSfM, 0)} kunjungan/SF/bln, PS/RE ${anPs(Math.round(e.psre || 0))}, ${mg ? 'PS minggu ' + anSg(anP(e.ps - e.ps0, e.ps0)) : 'outlook ' + anPs(Math.round(e.olAch))}`).join('; ') + '.',
+    (() => { const wi = worst(e => e.ioOlAch); return D.sisa === 0 ? `Bulan berikutnya: ${nm(wi)} jadi fokus — kunjungan rutin ke desa Prioritas & Strategis sejak awal bulan.` : `Fokus sisa periode: ${nm(wi)} menaikkan IO ke ±${anD(wi.ioNeed, 0)}/hari di desa Prioritas & Strategis (desa Strategis lewat jadwal khusus per kecamatan); order pending dikawal bersama teknisi.`; })(),
   ];
   // aksi
   const A = [];
+  { const ioE = E.filter(e => e.ioNeed > e.ioDrr + 0.05 || (e.ioPotShare || 0) < 70);
+    if (ioE.length) A.push(['Kejar IO di lokasi potensial (≥70% di desa Prioritas + Strategis); desa Strategis dijadwalkan per kecamatan', ioE.map(nm).join(', '), 'TL', ioE.map(e => `${nm(e)} ≥${anD(e.ioNeed, 0)} IO/hari`).join('; '), 'Mulai besok']); }
   const pendE = E.filter(e => e.coh[2] >= 5 || (e.psre || 100) < 80);
   if (pendE.length) A.push(['Kawal order pending & batal: daftar order >3 hari belum PS, eskalasi ke TA/HCOT', pendE.map(nm).join(', '), 'TL + PJ', `Pending ${pendE.map(e => `${nm(e)} ${e.coh[2]}`).join(', ')} turun ≥60%; PS/RE ≥80%`, 'Minggu ini']);
   const lowE = E.filter(e => e.sfB[1].n > 0);
@@ -346,7 +352,7 @@ function anAnalyze(D) {
 // ================================================================
 //  3. BANGUN PPT (7 slide)
 // ================================================================
-async function anBuild(D, S) {
+async function anBuild(D, S, B) {
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_WIDE';
   pres.author = 'Dashboard WOK LamWay'; pres.title = 'Analisa PS ' + D.label;
@@ -574,17 +580,78 @@ async function anBuild(D, S) {
     foot(s, L2 + 'tile: ' + names.join(' / '));
   }
 
-  // ── 7. KESIMPULAN & AKSI ──
+  // ── 7. DRIVER TREE & GAP IO ──
+  if (B) {
+    const s = pres.addSlide({ masterName: 'AN' });
+    head(s, 'DRIVER TREE & GAP IO', 'IO = tuas yang dikontrol sales · faktor merah = penahan utama · RE→PS sebagai hasil (tarikan ODP, teknisi, cuaca)');
+    const n = B.drv.length, cw = Math.min(4.1, (12.53 - (n - 1) * 0.12) / n);
+    B.drv.slice(0, 6).forEach((x, i) => {
+      const xx = 0.4 + i * (cw + 0.12); card(s, xx, 1.12, cw, 3.25, x.name.toUpperCase(), E[i] ? E[i].color : RED);
+      x.rows.forEach((r, j) => {
+        const yy = 1.55 + j * 0.39, c = r.st === 'ok' ? GRN : r.st === 'warn' ? AMB : RED;
+        s.addShape(pres.shapes.RECTANGLE, { x: xx + 0.15, y: yy, w: 0.06, h: 0.32, fill: { color: c }, line: { color: c } });
+        tx(s, r.label.replace(' (di luar kendali penuh sales)', '*'), { x: xx + 0.27, y: yy - 0.02, w: cw - 1.2, h: 0.22, fontSize: n > 3 ? 6.5 : 8, color: DARK });
+        tx(s, 'acuan ' + r.ref, { x: xx + 0.27, y: yy + 0.17, w: cw - 1.2, h: 0.17, fontSize: 6.5, color: GREY });
+        tx(s, r.val, { x: xx + cw - 0.95, y: yy, w: 0.8, h: 0.32, fontSize: n > 3 ? 9 : 11, bold: true, color: c, align: 'right', valign: 'middle' });
+      });
+    });
+    tx(s, '* RE→PS dipengaruhi faktor di luar kendali penuh sales; tidak dipilih sebagai faktor penahan.', { x: 0.4, y: 4.38, w: 12, h: 0.2, fontSize: 7, color: GREY, italic: true });
+    const hdr = ['Entitas', 'Target IO', 'IO periode', 'Outlook IO', 'Gap IO', 'IO lokasi potensial', 'Butuh IO potensial', 'PS (hasil)', 'Diagnosis'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
+    s.addTable([hdr, ...B.gap.map((g, i) => [g.name, g.tgt, g.mtd, g.ol, g.gap, `${g.pot} (${g.potShare}%)`, g.potGap ? '+' + g.potGap : '–', `${g.ps}/${g.psTgt}`, (B.diag[i] || {}).diag || ''].map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 4 && g.gap > 0, color: j === 4 && g.gap > 0 ? RED : DARK } })))],
+      { x: 0.4, y: 4.62, w: 12.53, colW: [1.3, 0.75, 0.75, 0.8, 0.65, 1.15, 1.0, 0.75, 5.38], rowH: 0.36, fontFace: F, fontSize: n > 3 ? 6.5 : 7.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
+    foot(s);
+  }
+  // ── 8. MATRIKS DESA & JADWAL STRATEGIS ──
+  if (B) {
+    const s = pres.addSlide({ masterName: 'AN' });
+    head(s, 'MATRIKS POTENSI × PENETRASI & JADWAL DESA STRATEGIS', `Garis tengah: port avai ${B.mx.avai} · penetrasi ${B.mx.pen}% · % = porsi kunjungan DJP ${S.djpLbl} ke kuadran · ★ = desa Strategis`);
+    B.matrix.forEach((q, i) => {
+      const xx = 0.4 + (i % 2) * 3.65, yy = 1.12 + Math.floor(i / 2) * 2.95, col = q.c.replace('#', '');
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: xx, y: yy, w: 3.55, h: 2.85, rectRadius: 0.06, fill: { color: 'FFFFFF' }, line: { color: col, width: 2 } });
+      tx(s, [{ text: q.t, options: { bold: true, color: col, fontSize: 13 } }, { text: `   ${q.n} desa · ${q.visShare}% kunjungan`, options: { color: GREY, fontSize: 8.5 } }], { x: xx + 0.15, y: yy + 0.1, w: 3.3, h: 0.32 });
+      tx(s, q.s, { x: xx + 0.15, y: yy + 0.42, w: 3.3, h: 0.2, fontSize: 8, italic: true, color: GREY });
+      tx(s, q.top.slice(0, 5).map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < Math.min(4, q.top.length - 1) } })), { x: xx + 0.15, y: yy + 0.66, w: 3.3, h: 1.55, fontSize: 7.5, color: DARK, valign: 'top', paraSpaceAfter: 2 });
+      tx(s, '→ ' + q.act, { x: xx + 0.15, y: yy + 2.2, w: 3.3, h: 0.55, fontSize: 8, bold: true, color: col, valign: 'top', fit: 'shrink' });
+    });
+    card(s, 7.82, 1.12, 5.11, 5.8, 'JADWAL DESA STRATEGIS (kurang dikunjungi)', RED);
+    const lines = [];
+    B.strat.forEach(t => {
+      lines.push({ text: `${t.name}: ${t.kurang} dari ${t.total} desa strategis < 2 kunjungan/bln`, options: { bold: true, color: DARK, breakLine: true, fontSize: 9 } });
+      t.grup.slice(0, 3).forEach(gp => lines.push({ text: `Kec. ${gp.kec} (±${gp.jarak} km): ${gp.desa.slice(0, 4).join(', ')}`, options: { bullet: true, breakLine: true, fontSize: 8, color: '404040' } }));
+    });
+    if (!lines.length) lines.push({ text: 'Semua desa strategis sudah dikunjungi rutin.', options: { fontSize: 9 } });
+    tx(s, lines, { x: 8.0, y: 1.55, w: 4.8, h: 5.2, valign: 'top', paraSpaceAfter: 3, fit: 'shrink' });
+    foot(s);
+  }
+  // ── 9. KESIMPULAN & AKSI ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
     head(s, 'KESIMPULAN & RENCANA AKSI', `Rangkaian silogisme → keputusan untuk sisa ${mg ? 'minggu & ' : ''}bulan (${D.sisa} hari)`);
     card(s, 0.4, 1.12, 4.1, 2.95);
-    bar(s, names, [{ name: 'DRR saat ini', values: E.map(e => Math.round(e.drrM * 10) / 10) }, { name: 'Butuh PS/hari', values: E.map(e => Math.round(e.need * 10) / 10) }],
-      { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: `DRR vs Kebutuhan PS/hari (sisa ${D.sisa} hari)`, chartColors: ['8C8C8C', RED], dataLabelFormatCode: '0.0', dataLabelFontSize: k > 3 ? 6 : 8 });
+    bar(s, names, [{ name: 'IO/hari saat ini', values: E.map(e => Math.round(e.ioDrr * 10) / 10) }, { name: 'Butuh IO/hari', values: E.map(e => Math.round(e.ioNeed * 10) / 10) }],
+      { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: `IO per hari vs kebutuhan (sisa ${D.sisa} hari)`, chartColors: ['8C8C8C', RED], dataLabelFormatCode: '0.0', dataLabelFontSize: k > 3 ? 6 : 8 });
     syl(s, 4.62, 1.12, 8.31, 2.95, S.final);
     const hdr = ['#', 'Aksi', 'Untuk', 'PIC', 'Ukuran keberhasilan', 'Waktu'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
     s.addTable([hdr, ...S.actions.map((r, i) => [String(i + 1), ...r].map((v, j) => ({ text: v, options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j === 0 ? 'center' : 'left' } })))],
       { x: 0.4, y: 4.22, w: 12.53, colW: [0.4, 5.13, 1.6, 1.1, 2.9, 1.4], rowH: 0.4, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.05 });
+    foot(s);
+  }
+  // ── 10. KAMUS ISTILAH ──
+  {
+    const s = pres.addSlide({ masterName: 'AN' });
+    head(s, 'KAMUS ISTILAH', 'Agar analisa mudah dibaca');
+    const K = [['IO (Input Order)', 'Order yang diinput sales — satu-satunya hasil yang dikontrol penuh sales, jadi tuas utama.'], ['RE (Register)', 'IO yang lolos registrasi/validasi.'],
+      ['PS (Put In Service)', 'Layanan aktif. Dipengaruhi faktor di luar sales: tarikan rumah ke ODP maks. 250 m, jumlah teknisi, cuaca.'], ['Lokasi potensial', 'Desa Prioritas + Strategis; acuan ≥70% IO dari sini.'],
+      ['Prioritas', 'Potensi tinggi & dekat kantor — digarap rutin.'], ['Strategis', 'Potensi tinggi tapi jauh — wajib digarap lewat jadwal khusus per kecamatan.'], ['Cadangan / Skip', 'Potensi lebih rendah — kunjungan secukupnya.'],
+      ['Kunjungan DJP', '1 SF × 1 desa × 1 hari; dihitung 3 bulan sebelum bulan PS (M-1…M-3).'], ['DRR · Outlook', 'Rata-rata per hari · proyeksi akhir bulan = DRR × hari dalam bulan.'],
+      ['Driver Tree', 'Pohon pemicu: IO dipecah ke faktor pembentuknya untuk menemukan faktor penahan.'], ['Faktor penahan', 'Faktor yang dikontrol sales dengan nilai paling jauh di bawah acuan.'],
+      ['Gap Analysis', 'Selisih target & outlook, diurai ke sumbernya.'], ['Port avai · Penetrasi', 'Port ODP tersedia (potensi) · PS ÷ port avai (potensi yang sudah terambil).'],
+      ['Matriks', 'Garap (potensi tinggi, penetrasi rendah) · Jaga · Efisienkan · Kurangi.'], ['Desa jenuh', 'Sering dikunjungi tapi hasil ≤1 — kunjungan dialihkan.'], ['Silogisme', 'Premis mayor (aturan) + premis minor (fakta) → kesimpulan.']];
+    const half = Math.ceil(K.length / 2);
+    [K.slice(0, half), K.slice(half)].forEach((col, ci) => {
+      s.addTable(col.map((r, i) => [{ text: r[0], options: { bold: true, fill: { color: i % 2 ? 'FFFFFF' : BG } } }, { text: r[1], options: { fill: { color: i % 2 ? 'FFFFFF' : BG } } }]),
+        { x: 0.4 + ci * 6.33, y: 1.15, w: 6.2, colW: [1.7, 4.5], rowH: 0.62, fontFace: F, fontSize: 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.06 });
+    });
     foot(s);
   }
   return pres;
@@ -595,7 +662,8 @@ async function exportAnalisaPPT(app, mode) {
   const D = await anCollect(app, mode);
   if (!D.ents.length) throw new Error('Tidak ada data cluster');
   const S = anAnalyze(D);
-  const pres = await anBuild(D, S);
+  let B = null; try { if (typeof wlBizAnalysis === 'function') B = await wlBizAnalysis(app, D, D.ents); } catch (e) { console.error(e); }
+  const pres = await anBuild(D, S, B);
   const tgl = typeof localYMD === 'function' ? localYMD(new Date()) : new Date().toISOString().slice(0, 10);
   const tag = { mingguan: 'Mingguan-LB-vs-WK', bulanan: 'Bulanan-LB-vs-WK', cluster: 'Cluster-' + app.cluster.replace(/\s+/g, ''), all: 'Semua-Kabupaten' }[mode] || mode;
   const name = `Analisa-PS-${tag}-${tgl}.pptx`;

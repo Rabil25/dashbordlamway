@@ -261,3 +261,9 @@ order bulan berjalan, plan DJP per tanggal (rute bernomor per SF), kantor, filte
 (prioritas belum disentuh, jenuh, skip tapi ada PS). Mode batas **Otomatis**: zoom < 11 = kecamatan, ≥ 11 = desa.
 Label anti-tabrakan; nama desa muncul mulai zoom 12 (atau tombol "Tampilkan semua nama desa"). Klik desa = kartu ringkas.
 Kode: `assets/js/wilayah.js` (`wlRender`), dipanggil dari `renderPeta()`. Pencocokan nama: kecamatan+desa dinormalisasi (huruf/angka saja).
+
+### Analisa IO-sentris (Nov 2026)
+Prinsip PJ: **IO adalah tuas yang dikontrol penuh sales**, dan harus di **lokasi potensial (desa Prioritas + Strategis, acuan ≥70%)**.
+PS adalah hasil (dipengaruhi tarikan ODP ≤250 m, teknisi, cuaca). Desa **Strategis** (potensi tinggi, jauh) dijadwalkan per kecamatan.
+Analisa Wilayah & PPT memakai alur: Driver Tree (IO) → Gap IO → Matriks Potensi × Penetrasi → Jadwal Strategis → Silogisme → Aksi, plus Kamus.
+PPT kini 10 slide (tambahan: Driver Tree & Gap IO, Matriks & Jadwal Strategis, Kamus). Mesin bersama: `anCollect/anAnalyze` (report_an.js) + `wlBizAnalysis` (wilayah.js).

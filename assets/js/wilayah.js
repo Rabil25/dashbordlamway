@@ -284,27 +284,16 @@ async function wlAnalisa(app, force) {
 async function wlBizAnalysis(app, D, E) {
   const d1 = v => v == null || !isFinite(v) ? '–' : (Math.round(v * 10) / 10).toLocaleString('id-ID');
   const nM = Math.max(1, D.availM.length), scale = D.days / Math.max(1, D.refDay);
-  const katOf = {}; (app.prioritasOdpRaw.length ? app.klasifikasiDesa('', '') : []).forEach(d => { katOf[wlK(d.kec, d.desa)] = d; });
-  const inW = v => { const n = ymdNum(v); return n >= D.W[0] && n <= D.W[1]; };
-  // IO periode ini per kabupaten & lokasi
-  const ioK = {};
-  app.filteredRows.forEach(r => {
-    if (!(r[C.VAL_IO] || '').toString().trim() || !inW(r[C.DATE_IO])) return;
-    const kab = String(r[C.VAL_KAB] || '').toUpperCase(), d = katOf[wlK(r[C.KEC], r[C.DESA])], kat = d ? d.kat : 'lain';
-    const o = ioK[kab] = ioK[kab] || { all: 0, prioritas: 0, strategis: 0, cadangan: 0, skip: 0, lain: 0 };
-    o.all++; o[kat] = (o[kat] || 0) + 1;
-  });
-  const io = E.map(e => {
-    const o = ioK[e.kabs[0]] || { all: 0, prioritas: 0, strategis: 0, cadangan: 0, skip: 0, lain: 0 };
-    const tgt = (app.cfg.targets[e.kabs[0]] || {}).io || 0, pot = o.prioritas + o.strategis;
-    return { ...o, tgt, pot, potShare: o.all ? pot / o.all * 100 : 0, ol: Math.round(o.all * scale), olPot: Math.round(pot * scale) };
-  });
+  const katOf = {}; (D.katMap ? Object.values(D.katMap) : (app.prioritasOdpRaw.length ? app.klasifikasiDesa('', '') : [])).forEach(d => { katOf[wlK(d.kec, d.desa)] = d; });
+  // IO periode ini per entitas (dari anEntity): total & di lokasi potensial
+  const io = E.map(e => ({ all: e.ioW, pot: e.ioPotW, potShare: e.ioPotShare || 0, tgt: e.ioTgt, mtd: e.ioMtd, ol: e.ioOl,
+    olPot: Math.round(e.ioPotW * (e.ioOl / Math.max(1, e.ioW || e.ioMtd || 1))) }));
   // 1) DRIVER TREE (IO-sentris)
   const drv = E.map((e, i) => ({
     name: e.name,
     f: {
       sf: e.sfDJP, kunj: e.visPerSfM, sasaran: e.goodVisShare || 0,
-      ioHasil: e.vis ? io[i].all / (e.vis / nM) * 100 : 0,
+      ioHasil: e.vis ? io[i].mtd / D.refDay * D.days / (e.vis / nM) * 100 : 0,
       ioPot: io[i].potShare,
       ioRe: e.io ? e.re / e.io * 100 : 0, rePs: e.psre || 0,
     },
@@ -326,8 +315,8 @@ async function wlBizAnalysis(app, D, E) {
   // 2) GAP IO: target IO – outlook IO, dan berapa yang di lokasi potensial
   const gap = E.map((e, i) => {
     const o = io[i], g = Math.max(0, o.tgt - o.ol), potNeed = Math.round(o.tgt * BENCH.ioPot / 100), potGap = Math.max(0, potNeed - o.olPot);
-    const ioPerVis = e.vis ? o.all / (e.vis / nM) : 0, visNeed = ioPerVis > 0 ? Math.ceil(g / ioPerVis) : null;
-    return { name: e.name, tgt: o.tgt, mtd: o.all, ol: o.ol, gap: g, pot: o.pot, potShare: Math.round(o.potShare), potNeed, olPot: o.olPot, potGap, visNeed, ps: e.ps, psTgt: e.tgtM, psOl: e.ol,
+    const ioPerVis = e.vis ? o.ol / (e.vis / nM) : 0, visNeed = ioPerVis > 0 ? Math.ceil(g / ioPerVis) : null;
+    return { name: e.name, tgt: o.tgt, mtd: o.mtd, ol: o.ol, gap: g, pot: o.pot, potShare: Math.round(o.potShare), potNeed, olPot: o.olPot, potGap, visNeed, ps: e.ps, psTgt: e.tgtM, psOl: e.ol,
       txt: (g === 0 ? `Outlook IO ${o.ol} sudah ≥ target ${o.tgt}.` : `Kurang ${g} IO (outlook ${o.ol} dari target ${o.tgt}); ±${visNeed != null ? visNeed : '?'} kunjungan tambahan per bulan pada hasil sekarang.`) +
         ` IO di lokasi potensial ${Math.round(o.potShare)}%` + (o.potShare >= 70 ? ' (sudah ≥70%)' : ' (di bawah acuan 70%)') + (potGap ? `; untuk target, butuh +${potGap} IO lagi dari desa Prioritas/Strategis.` : '.') };
   });
@@ -359,7 +348,7 @@ async function wlBizAnalysis(app, D, E) {
 
   // 3b) JADWAL DESA STRATEGIS: kurang dikunjungi → kelompok per kecamatan (satu hari kunjungan per kelompok)
   const strat = E.map(e => {
-    const ds = Object.values(katOf).filter(d => String(d.kab).toUpperCase() === e.kabs[0] && d.kat === 'strategis')
+    const ds = Object.values(katOf).filter(d => e.kabs.includes(String(d.kab).toUpperCase()) && d.kat === 'strategis')
       .map(d => ({ desa: d.desa, kec: d.kec, avai: d.totalAvail, jarak: d.nearestDist, vis: ((V.by[wlK(d.kec, d.desa)] || {}).n || 0) / nM }));
     const kurang = ds.filter(d => d.vis < 2);
     const byKec = {}; kurang.forEach(d => (byKec[d.kec] = byKec[d.kec] || []).push(d));
@@ -371,8 +360,8 @@ async function wlBizAnalysis(app, D, E) {
   // 4) DIAGNOSIS → AKSI per kabupaten
   const diag = E.map((e, i) => {
     const x = drv[i], g = gap[i], st2 = strat[i];
-    const garapKab = Q.garap.filter(q => q.kab === e.kabs[0]).slice(0, 3);
-    const kurangKab = Q.kurangi.filter(q => q.kab === e.kabs[0] && q.vis >= 3).slice(0, 2);
+    const garapKab = Q.garap.filter(q => e.kabs.includes(q.kab)).slice(0, 3);
+    const kurangKab = Q.kurangi.filter(q => e.kabs.includes(q.kab) && q.vis >= 3).slice(0, 2);
     const acts = [];
     if (g.gap) acts.push(`Kejar +${g.gap} IO sampai akhir bulan (±${Math.ceil(g.gap / Math.max(1, D.sisa))} IO/hari), minimal 70% di desa Prioritas/Strategis.`);
     if (x.weak && x.weak.k === 'kunj') acts.push(`Naikkan kunjungan SF dari ${x.weak.val} ke ±${x.weak.ref.split(' ')[0]} per SF per bulan.`);
