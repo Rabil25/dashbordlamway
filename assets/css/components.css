@@ -535,3 +535,11 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 @media (max-width: 700px) { .wla-mx { grid-template-columns: 1fr; } }
 [data-theme="medieval"] .wla-sec { color: #e3c48c; font-family: var(--md-label); }
 [data-theme="medieval"] .wla-drvrow { background: rgba(110,75,35,.07); }
+.wla-strat { font-size: 13px; padding: 6px 2px; }
+.wla-strat small { color: var(--text-3); }
+.wla-strat ul { margin: 4px 0 0 16px; padding: 0; line-height: 1.5; }
+.wla-kamus summary { cursor: pointer; }
+.wla-kamus dl { display: grid; grid-template-columns: 210px 1fr; gap: 6px 14px; margin: 10px 0 0; font-size: 13px; line-height: 1.45; }
+.wla-kamus dt { font-weight: 700; }
+.wla-kamus dd { margin: 0; }
+@media (max-width: 640px) { .wla-kamus dl { grid-template-columns: 1fr; } .wla-kamus dd { margin-bottom: 6px; } }

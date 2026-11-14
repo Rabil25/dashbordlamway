@@ -1310,7 +1310,7 @@
               </div>
 
               <div class="card"><div class="card-title">① Driver Tree — faktor pembentuk PS</div>
-                <div class="card-subtitle">PS = SF aktif × kunjungan/SF × % tepat sasaran × hasil per kunjungan → IO→RE → RE→PS. Merah = faktor penahan.</div>
+                <div class="card-subtitle">IO tepat sasaran = SF aktif × kunjungan/SF × % kunjungan ke Prioritas+Strategis × IO per kunjungan. RE→PS ditampilkan sebagai hasil (dipengaruhi tarikan ODP, teknisi, cuaca). Merah = penahan.</div>
                 <div class="wla-drv">
                   <template x-for="x in wlAn.drv" :key="x.name">
                     <div class="wla-drvcol"><div class="wla-drvh" x-text="x.name"></div>
@@ -1320,9 +1320,9 @@
                 </div>
               </div>
 
-              <div class="card"><div class="card-title">② Gap Analysis — dari mana kekurangan PS</div>
-                <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>Target</th><th>Outlook</th><th>Gap</th><th>Dari kebocoran RE→PS</th><th>Sisa → kunjungan</th><th>Penjelasan</th></tr></thead>
-                <tbody><template x-for="g in wlAn.gap" :key="g.name"><tr><td x-text="g.name"></td><td x-text="g.tgt"></td><td x-text="g.ol"></td><td x-text="g.gap" :style="g.gap?'color:var(--danger);font-weight:700':''"></td><td x-text="g.leak"></td><td x-text="g.rest ? (g.rest + ' PS ≈ ' + (g.visNeed ?? '?') + ' kunj.') : '–'"></td><td class="wla-txt" x-text="g.txt"></td></tr></template></tbody></table></div>
+              <div class="card"><div class="card-title">② Gap Analysis IO — kekurangan IO & ketepatan lokasi</div>
+                <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>Target IO</th><th>IO periode ini</th><th>Outlook IO</th><th>Gap IO</th><th>IO lokasi potensial</th><th>Butuh IO potensial</th><th>PS (hasil)</th><th>Penjelasan</th></tr></thead>
+                <tbody><template x-for="g in wlAn.gap" :key="g.name"><tr><td x-text="g.name"></td><td x-text="g.tgt"></td><td x-text="g.mtd"></td><td x-text="g.ol"></td><td x-text="g.gap" :style="g.gap?'color:var(--danger);font-weight:700':''"></td><td x-text="g.pot + ' (' + g.potShare + '%)'"></td><td x-text="g.potGap ? ('+' + g.potGap) : '–'"></td><td x-text="g.ps + ' / ' + g.psTgt"></td><td class="wla-txt" x-text="g.txt"></td></tr></template></tbody></table></div>
               </div>
 
               <div class="card"><div class="card-title">③ Matriks Potensi × Penetrasi desa</div>
@@ -1334,6 +1334,17 @@
                       <div class="wla-qs" x-text="q.s"></div>
                       <ul><template x-for="t in q.top" :key="t"><li x-text="t"></li></template></ul>
                       <div class="wla-qa" x-text="'→ ' + q.act"></div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <div class="card"><div class="card-title">④ Jadwal desa Strategis (potensi tinggi, jauh)</div>
+                <div class="card-subtitle">Desa Strategis yang dikunjungi &lt; 2 kali/bulan, dikelompokkan per kecamatan → satu hari kunjungan per kelompok.</div>
+                <div class="wla-diag">
+                  <template x-for="t in wlAn.strat" :key="t.name">
+                    <div class="wla-strat"><b x-text="t.name"></b> <small x-text="t.kurang + ' dari ' + t.total + ' desa strategis kurang dikunjungi'"></small>
+                      <ul><template x-for="gp in t.grup" :key="gp.kec"><li><b x-text="'Kec. ' + gp.kec"></b> <span x-text="'(±' + gp.jarak + ' km, avai ' + gp.avai + '): ' + gp.desa.join(', ')"></span></li></template></ul>
                     </div>
                   </template>
                 </div>
@@ -1377,6 +1388,29 @@
                 <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>#</th><th>Aksi</th><th>Untuk</th><th>PIC</th><th>Ukuran keberhasilan</th><th>Waktu</th></tr></thead>
                 <tbody><template x-for="(a,i) in wlAn.actions" :key="i"><tr><td x-text="i+1"></td><td class="wla-txt" x-text="a[0]"></td><td x-text="a[1]"></td><td x-text="a[2]"></td><td class="wla-txt" x-text="a[3]"></td><td x-text="a[4]"></td></tr></template></tbody></table></div>
               </div>
+              <details class="card wla-kamus"><summary class="card-title">📖 Kamus istilah analisa</summary>
+                <dl>
+                  <dt>IO (Input Order)</dt><dd>Order yang diinput sales. Satu-satunya hasil yang dikontrol penuh oleh sales, jadi menjadi tuas utama.</dd>
+                  <dt>RE (Register)</dt><dd>IO yang lolos registrasi/validasi.</dd>
+                  <dt>PS (Put In Service)</dt><dd>Layanan aktif terpasang. Dipengaruhi faktor di luar sales: jarak rumah ke ODP (tarikan maks. 250 m), jumlah teknisi, cuaca, dll.</dd>
+                  <dt>Lokasi potensial</dt><dd>Desa kategori Prioritas + Strategis. Acuan: ≥70% IO berasal dari desa ini.</dd>
+                  <dt>Prioritas</dt><dd>Desa potensi tinggi dan dekat kantor — digarap rutin.</dd>
+                  <dt>Strategis</dt><dd>Desa potensi tinggi tapi jauh — tetap wajib digarap dengan jadwal khusus per kecamatan.</dd>
+                  <dt>Cadangan / Skip</dt><dd>Desa potensi lebih rendah — kunjungan secukupnya / tidak diprioritaskan.</dd>
+                  <dt>Kunjungan DJP</dt><dd>1 SF × 1 desa × 1 hari (ODP hanya alat check-in). Dihitung dari 3 bulan sebelum bulan PS (M-1…M-3), karena keputusan berlangganan butuh waktu.</dd>
+                  <dt>DRR</dt><dd>Daily Run Rate: rata-rata per hari bulan berjalan.</dd>
+                  <dt>Outlook</dt><dd>Proyeksi akhir bulan = DRR × jumlah hari dalam bulan.</dd>
+                  <dt>Driver Tree</dt><dd>Pohon pemicu: memecah hasil (IO) menjadi faktor-faktor pembentuknya untuk menemukan faktor penahan.</dd>
+                  <dt>Faktor penahan</dt><dd>Faktor yang dikontrol sales dengan nilai paling jauh di bawah acuan (standar atau rata-rata cluster).</dd>
+                  <dt>Gap Analysis</dt><dd>Selisih target dan outlook, diurai ke sumbernya (kurang kunjungan, salah lokasi, kebocoran).</dd>
+                  <dt>Port avai</dt><dd>Port ODP yang masih tersedia = potensi pelanggan baru.</dd>
+                  <dt>Penetrasi</dt><dd>PS ÷ port avai — seberapa banyak potensi desa yang sudah terambil.</dd>
+                  <dt>Matriks Potensi × Penetrasi</dt><dd>Garap (potensi tinggi, penetrasi rendah) · Jaga (tinggi, tinggi) · Efisienkan (rendah, tinggi) · Kurangi (rendah, rendah).</dd>
+                  <dt>Desa jenuh</dt><dd>Sering dikunjungi tetapi hasilnya ≤1 — kunjungan sebaiknya dialihkan.</dd>
+                  <dt>Silogisme</dt><dd>Premis mayor (aturan umum) + premis minor (fakta data) → kesimpulan.</dd>
+                  <dt>★</dt><dd>Penanda desa Strategis di daftar desa.</dd>
+                </dl>
+              </details>
             </div>
           </template>
         </div>
