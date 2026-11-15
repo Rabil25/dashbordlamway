@@ -267,3 +267,7 @@ Prinsip PJ: **IO adalah tuas yang dikontrol penuh sales**, dan harus di **lokasi
 PS adalah hasil (dipengaruhi tarikan ODP ≤250 m, teknisi, cuaca). Desa **Strategis** (potensi tinggi, jauh) dijadwalkan per kecamatan.
 Analisa Wilayah & PPT memakai alur: Driver Tree (IO) → Gap IO → Matriks Potensi × Penetrasi → Jadwal Strategis → Silogisme → Aksi, plus Kamus.
 PPT kini 10 slide (tambahan: Driver Tree & Gap IO, Matriks & Jadwal Strategis, Kamus). Mesin bersama: `anCollect/anAnalyze` (report_an.js) + `wlBizAnalysis` (wilayah.js).
+
+### Siklus mingguan — tahap 1 (Nov 2026)
+- **Target IO minggu ini per SF** (kartu di atas wizard Plan DJP): sisa target IO kabupaten dibagi ke hari tersisa, lalu ke SF (½ rata, ½ menurut kontribusi IO bulan ini); minimal 70% dari desa Prioritas/Strategis; progres sejak Senin.
+- **Saran desa di wizard**: ⭐ garap (Prioritas/Strategis, avai ≥20, kunjungan <2/bln), ⭐📅 Strategis (gabung per kecamatan), ⛔ kurangi (≥5 kunjungan/bln, PS ≤1). Tombol **✨ Isi saran** memilih desa ⭐ dikelompokkan per kecamatan; TL tetap memeriksa sebelum publish.

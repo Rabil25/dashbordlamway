@@ -551,3 +551,15 @@ table .num, table td.num, table th.num { text-align: right; font-variant-numeric
 .wla-lines > div { display: grid; grid-template-columns: 110px 1fr; gap: 8px; padding: 4px 0; border-top: 1px dashed var(--surface-border); }
 .wla-lines dt { font-weight: 700; color: var(--text-2); }
 .wla-lines dd { margin: 0; }
+
+/* Saran desa & target IO per SF (Plan DJP) */
+.wz-saran { font-size: 12px; margin-left: 4px; cursor: help; }
+.wz-saran-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--text-3); margin: 4px 0; }
+.tgt-card { margin-bottom: 12px; }
+.tgt-h { all: unset; cursor: pointer; display: flex; gap: 10px; align-items: baseline; width: 100%; font-weight: 700; }
+.tgt-h small { font-weight: 400; color: var(--text-3); flex: 1; }
+.tgt-kab { margin-top: 10px; }
+.tgt-kab-h { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; font-size: 13px; margin-bottom: 4px; }
+.tgt-kab-h span { color: var(--text-3); }
+.tgt-kab table { width: 100%; font-size: 12.5px; }
+.tgt-note { font-size: 11px; color: var(--text-3); margin-top: 6px; font-style: italic; }

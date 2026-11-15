@@ -66,6 +66,10 @@ function djpPlanData() {
     revView:     'peta', // tab di HP: 'peta' | 'tabel'
     savedOk:     false,
     savedInfo:   null,
+    // ── Saran analisa (siklus mingguan) ──
+    djpVis:      null,   // kunjungan DJP 3 bln: { by: {kec|desa: {n}}, avail: [...] }
+    saranOnly:   false,  // tampilkan hanya desa yang disarankan digarap
+    tgtOpen:     false,
 
     // init() sengaja kosong: data DJP baru dimuat saat menu Plan DJP dibuka (event page-djp_plan).
     // Sebelumnya djp_users (~14 dtk) + odp.json 1,2 MB ikut dimuat di halaman dashboard.
@@ -73,6 +77,8 @@ function djpPlanData() {
 
     async initPlan() {
       this._initCluster();
+      // kunjungan DJP 3 bulan (untuk saran desa) — latar belakang
+      if (!this.djpVis && typeof wlLoadVisits === 'function') wlLoadVisits(this).then(v => { this.djpVis = v; }).catch(() => {});
       // Kategori desa (rumus menu Prioritas) dimuat di latar belakang — daftar desa tidak menunggu
       try { if (!this.prioritasOdpRaw.length && !this.prioritasLoading) this.loadPrioritas(); } catch(e) {}
       try {
@@ -252,6 +258,72 @@ function djpPlanData() {
       const c = { prioritas: 0, strategis: 0, cadangan: 0, skip: 0 };
       all.forEach(d => { const k = km[d]?.kat; if (k) c[k]++; });
       return c;
+    },
+
+    // ── Saran per desa dari analisa (IO-sentris) ──
+    // ⭐ Garap: Prioritas/Strategis, port avai ≥20, kunjungan < 2/bln · ⛔ Kurangi: ≥5 kunjungan/bln tapi PS ≤1
+    // 📅 Strategis: potensi tinggi tapi jauh → gabungkan per kecamatan dalam satu hari
+    get desaSaranMap() {
+      const kab = this.form.kab, V = this.djpVis, raw = this.prioritasOdpRaw || [];
+      return memo('saran', this.cluster + '|' + kab + '|' + raw.length + '|' + (V ? 1 : 0), () => {
+        const out = {}; if (!kab || !raw.length) return out;
+        const nM = Math.max(1, (V && V.avail.length) || 1);
+        this.klasifikasiDesa('', '').forEach(d => {
+          if ((d.kab || '').toUpperCase() !== kab) return;
+          const vis = V ? (((V.by[wlK(d.kec, d.desa)] || {}).n || 0) / nM) : null, avai = d.totalAvail || 0, ps = d.psAktif || 0;
+          let k = '', txt = '';
+          if (vis != null && vis >= 5 && ps <= 1) { k = 'kurangi'; txt = `Sudah ${Math.round(vis)}× kunjungan/bln, PS ${ps} — kurangi`; }
+          else if ((d.kat === 'prioritas' || d.kat === 'strategis') && avai >= 20 && (vis == null || vis < 2)) {
+            k = 'garap'; txt = `${avai} port tersisa, ${vis == null ? '?' : vis.toFixed(1).replace('.', ',')}× kunjungan/bln — garap` + (d.kat === 'strategis' ? `; desa Strategis: gabung dengan desa lain di Kec. ${d.kec} dalam satu hari` : '');
+          }
+          const prev = out[d.desa];
+          if (!prev || (k === 'garap' && prev.k !== 'garap')) out[d.desa] = { k, txt, kat: d.kat, kec: d.kec, avai, vis };
+        });
+        return out;
+      });
+    },
+    get saranCounts() { const c = { garap: 0, kurangi: 0 }; Object.values(this.desaSaranMap).forEach(x => { if (x.k) c[x.k]++; }); return c; },
+    // Isi draf: desa ⭐ Garap, diutamakan satu kecamatan yang paling banyak sisa port (efisien jarak)
+    isiSaran() {
+      const m = this.desaSaranMap, all = this.desaAllKab;
+      const g = all.filter(d => m[d] && m[d].k === 'garap');
+      if (!g.length) { djpToast('Belum ada desa yang disarankan untuk kabupaten ini', 'info'); return; }
+      const byKec = {}; g.forEach(d => { (byKec[m[d].kec] = byKec[m[d].kec] || []).push(d); });
+      const kecs = Object.entries(byKec).sort((a, b) => b[1].reduce((s, d) => s + m[d].avai, 0) - a[1].reduce((s, d) => s + m[d].avai, 0));
+      const n = Math.max(3, Math.min(8, (this.sfSelected.length || 2) * 2)), pick = [];
+      for (const [, ds] of kecs) { for (const d of ds.sort((a, b) => m[b].avai - m[a].avai)) { if (pick.length < n) pick.push(d); } if (pick.length >= n) break; }
+      this.desaSelected = pick; this.desaSort = 'dekat';
+      djpToast(`${pick.length} desa saran dipilih (dikelompokkan per kecamatan). Silakan cek & ubah bila perlu.`, 'success', 3500);
+    },
+
+    // ── Target IO minggu ini per SF (dari target IO kabupaten) ──
+    get targetIoSF() {
+      const app = this, bulan = app.cfg.bulan, days = daysInPeriod(bulan), ref = Math.min(app.hariBerjalan || days, days);
+      const sisaHari = Math.max(1, days - ref + 1), mingguHari = Math.min(7, sisaHari);
+      const today = new Date(); const dow = (today.getDay() + 6) % 7; const mon = new Date(today); mon.setDate(today.getDate() - dow);
+      const monN = +localYMD(mon).replace(/-/g, '');
+      const katOf = {}; (app.prioritasOdpRaw.length ? app.klasifikasiDesa('', '') : []).forEach(d => { katOf[wlK(d.kec, d.desa)] = d.kat; });
+      const ioMtd = {}, ioWk = {}, ioWkPot = {};
+      (app.filteredRows || []).forEach(r => {
+        if (!(r[C.VAL_IO] || '').toString().trim()) return;
+        const n = ymdNum(r[C.DATE_IO]); if (String(n).slice(0, 6) !== bulan.replace('-', '')) return;
+        const kab = String(r[C.VAL_KAB] || '').toUpperCase(), sf = String(r[C.CODE_SF] || '').toUpperCase();
+        ioMtd[kab] = (ioMtd[kab] || 0) + 1;
+        if (n >= monN) { ioWk[sf] = (ioWk[sf] || 0) + 1; if (['prioritas', 'strategis'].includes(katOf[wlK(r[C.KEC], r[C.DESA])])) ioWkPot[sf] = (ioWkPot[sf] || 0) + 1; }
+      });
+      const kabs = (CLUSTER[app.cluster] || { kab: [] }).kab.map(k => k.toUpperCase()).filter(k => !this.form.kab || k === this.form.kab);
+      return kabs.map(kab => {
+        const tgt = (app.cfg.targets[kab] || {}).io || 0, sisa = Math.max(0, tgt - (ioMtd[kab] || 0));
+        const wk = Math.ceil(sisa * mingguHari / sisaHari);
+        const sfs = (app.sfTable || []).filter(s => String(s.kab || '').toUpperCase() === kab);
+        const totIo = sfs.reduce((a, s) => a + (s.io || 0), 0);
+        const rows = sfs.map(s => {
+          const w = sfs.length ? 0.5 / sfs.length + 0.5 * ((s.io || 0) / Math.max(1, totIo)) : 0;
+          const t = sisa ? Math.max(1, Math.round(wk * w)) : 0, code = String(s.code || '').toUpperCase();
+          return { code, nama: String(s.nama || '').replace(/\[.*?\]\s*/g, ''), t, pot: Math.ceil(t * 0.7), done: ioWk[code] || 0, donePot: ioWkPot[code] || 0 };
+        }).sort((a, b) => b.t - a.t);
+        return { kab, tgt, mtd: ioMtd[kab] || 0, sisa, wk, mingguHari, rows };
+      });
     },
 
     // Titik tengah ODP per desa (kab terpilih)
