@@ -283,14 +283,16 @@ function djpPlanData() {
       });
     },
     get saranCounts() { const c = { garap: 0, kurangi: 0 }; Object.values(this.desaSaranMap).forEach(x => { if (x.k) c[x.k]++; }); return c; },
-    // Isi draf: desa ⭐ Garap, diutamakan satu kecamatan yang paling banyak sisa port (efisien jarak)
+    // Isi draf: 2 desa ⭐ Garap, diutamakan satu kecamatan yang paling banyak sisa port (efisien jarak)
     isiSaran() {
       const m = this.desaSaranMap, all = this.desaAllKab;
       const g = all.filter(d => m[d] && m[d].k === 'garap');
       if (!g.length) { djpToast('Belum ada desa yang disarankan untuk kabupaten ini', 'info'); return; }
       const byKec = {}; g.forEach(d => { (byKec[m[d].kec] = byKec[m[d].kec] || []).push(d); });
       const kecs = Object.entries(byKec).sort((a, b) => b[1].reduce((s, d) => s + m[d].avai, 0) - a[1].reduce((s, d) => s + m[d].avai, 0));
-      const n = Math.max(3, Math.min(8, (this.sfSelected.length || 2) * 2)), pick = [];
+      // Cukup 2 desa; utamakan kecamatan yang punya ≥2 desa ⭐ agar keduanya satu kecamatan
+      kecs.sort((a, b) => (b[1].length >= 2) - (a[1].length >= 2));
+      const n = 2, pick = [];
       for (const [, ds] of kecs) { for (const d of ds.sort((a, b) => m[b].avai - m[a].avai)) { if (pick.length < n) pick.push(d); } if (pick.length >= n) break; }
       this.desaSelected = pick; this.desaSort = 'dekat';
       djpToast(`${pick.length} desa saran dipilih (dikelompokkan per kecamatan). Silakan cek & ubah bila perlu.`, 'success', 3500);
