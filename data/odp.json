@@ -1,6 +1,6 @@
 {
-  "updated": "2026-11-15T06:52:48.997Z",
-  "total": 4064,
+  "updated": "2026-11-15T07:06:36.212Z",
+  "total": 4074,
   "data": [
     {
       "odp": "ODP-BDU-FA/01",
@@ -10279,6 +10279,20 @@
       "bulan_odp": 11
     },
     {
+      "odp": "ODP-BKM-FE/050",
+      "lat": -5.069643117,
+      "lng": 104.4116648,
+      "avai": 4,
+      "used": 4,
+      "occ": "YELLOW",
+      "cluster": "WAY KANAN",
+      "kab": "Lampung Barat",
+      "kec": "Air Hitam",
+      "desa": "Semarang Jaya",
+      "tahun_odp": 2024,
+      "bulan_odp": 5
+    },
+    {
       "odp": "ODP-BKM-FE/059",
       "lat": -5.042622254,
       "lng": 104.4077008,
@@ -15039,6 +15053,20 @@
       "bulan_odp": 4
     },
     {
+      "odp": "ODP-KBI-FA/10",
+      "lat": -4.859510382,
+      "lng": 104.9355225,
+      "avai": 1,
+      "used": 7,
+      "occ": "RED",
+      "cluster": "WAY KANAN",
+      "kab": "Lampung Utara",
+      "kec": "Abung Selatan",
+      "desa": "Bumi Raya",
+      "tahun_odp": 2021,
+      "bulan_odp": 4
+    },
+    {
       "odp": "ODP-KBI-FA/100",
       "lat": -4.846362697,
       "lng": 104.9118336,
@@ -16417,6 +16445,20 @@
       "avai": 0,
       "used": 8,
       "occ": "RED",
+      "cluster": "WAY KANAN",
+      "kab": "Lampung Utara",
+      "kec": "Kotabumi Selatan",
+      "desa": "Tanjung Aman",
+      "tahun_odp": 2021,
+      "bulan_odp": 4
+    },
+    {
+      "odp": "ODP-KBI-FB/088",
+      "lat": -4.826527036,
+      "lng": 104.884168,
+      "avai": 2,
+      "used": 6,
+      "occ": "YELLOW",
       "cluster": "WAY KANAN",
       "kab": "Lampung Utara",
       "kec": "Kotabumi Selatan",
@@ -18413,6 +18455,20 @@
       "bulan_odp": 3
     },
     {
+      "odp": "ODP-KBI-FD/045",
+      "lat": -4.854306124,
+      "lng": 104.9208253,
+      "avai": 5,
+      "used": 3,
+      "occ": "GREEN",
+      "cluster": "WAY KANAN",
+      "kab": "Lampung Utara",
+      "kec": "Abung Selatan",
+      "desa": "Candimas",
+      "tahun_odp": 2018,
+      "bulan_odp": 4
+    },
+    {
       "odp": "ODP-KBI-FD/046",
       "lat": -4.851639052,
       "lng": 104.8923879,
@@ -20147,6 +20203,20 @@
       "desa": "Kotabumi Tengah",
       "tahun_odp": 2021,
       "bulan_odp": 3
+    },
+    {
+      "odp": "ODP-KBI-FE/028",
+      "lat": -4.822791888,
+      "lng": 104.8892866,
+      "avai": 6,
+      "used": 2,
+      "occ": "GREEN",
+      "cluster": "WAY KANAN",
+      "kab": "Lampung Utara",
+      "kec": "Kotabumi",
+      "desa": "Sribasuki",
+      "tahun_odp": 2024,
+      "bulan_odp": 7
     },
     {
       "odp": "ODP-KBI-FE/03",
@@ -24569,6 +24639,20 @@
       "kab": "Lampung Utara",
       "kec": "Kotabumi Selatan",
       "desa": "Kota Alam",
+      "tahun_odp": 2021,
+      "bulan_odp": 4
+    },
+    {
+      "odp": "ODP-KBI-FJ/041",
+      "lat": -4.822069218,
+      "lng": 104.8746312,
+      "avai": 3,
+      "used": 5,
+      "occ": "YELLOW",
+      "cluster": "WAY KANAN",
+      "kab": "Lampung Utara",
+      "kec": "Kotabumi",
+      "desa": "Kotabumi Udik",
       "tahun_odp": 2021,
       "bulan_odp": 4
     },
@@ -32847,6 +32931,20 @@
       "bulan_odp": 6
     },
     {
+      "odp": "ODP-KOT-FB/046",
+      "lat": -5.490827107,
+      "lng": 104.6237545,
+      "avai": 3,
+      "used": 5,
+      "occ": "YELLOW",
+      "cluster": "LAMPUNG BARAT",
+      "kab": "Tanggamus",
+      "kec": "Kota Agung",
+      "desa": "Kuripan",
+      "tahun_odp": 2019,
+      "bulan_odp": 6
+    },
+    {
       "odp": "ODP-KOT-FB/047",
       "lat": -5.491985754,
       "lng": 104.6235419,
@@ -33183,6 +33281,20 @@
       "bulan_odp": 7
     },
     {
+      "odp": "ODP-KOT-FB/069",
+      "lat": -5.488432334,
+      "lng": 104.6243549,
+      "avai": 2,
+      "used": 6,
+      "occ": "YELLOW",
+      "cluster": "LAMPUNG BARAT",
+      "kab": "Tanggamus",
+      "kec": "Kota Agung",
+      "desa": "Kuripan",
+      "tahun_odp": 2019,
+      "bulan_odp": 6
+    },
+    {
       "odp": "ODP-KOT-FB/070",
       "lat": -5.501837326,
       "lng": 104.6324857,
@@ -33447,6 +33559,20 @@
       "desa": "Kuripan",
       "tahun_odp": 2021,
       "bulan_odp": 9
+    },
+    {
+      "odp": "ODP-KOT-FB/090",
+      "lat": -5.504230363,
+      "lng": 104.6829454,
+      "avai": 3,
+      "used": 5,
+      "occ": "YELLOW",
+      "cluster": "LAMPUNG BARAT",
+      "kab": "Tanggamus",
+      "kec": "Kota Agung Timur",
+      "desa": "Kagungan",
+      "tahun_odp": 2020,
+      "bulan_odp": 7
     },
     {
       "odp": "ODP-KOT-FB/091",
@@ -45711,6 +45837,20 @@
       "desa": "Sebarus",
       "tahun_odp": 2018,
       "bulan_odp": 3
+    },
+    {
+      "odp": "ODP-LIW-FG/018",
+      "lat": -5.040300394,
+      "lng": 104.0871743,
+      "avai": 3,
+      "used": 5,
+      "occ": "YELLOW",
+      "cluster": "LAMPUNG BARAT",
+      "kab": "Lampung Barat",
+      "kec": "Balik Bukit",
+      "desa": "Sebarus",
+      "tahun_odp": 2019,
+      "bulan_odp": 11
     },
     {
       "odp": "ODP-LIW-FG/020",
