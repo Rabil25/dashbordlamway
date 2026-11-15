@@ -633,9 +633,9 @@ async function anBuild(D, S, B) {
     bar(s, names, [{ name: 'IO/hari saat ini', values: E.map(e => Math.round(e.ioDrr * 10) / 10) }, { name: 'Butuh IO/hari', values: E.map(e => Math.round(e.ioNeed * 10) / 10) }],
       { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: `IO per hari vs kebutuhan (sisa ${D.sisa} hari)`, chartColors: ['8C8C8C', RED], dataLabelFormatCode: '0.0', dataLabelFontSize: k > 3 ? 6 : 8 });
     syl(s, 4.62, 1.12, 8.31, 2.95, S.final);
-    const hdr = ['#', 'Aksi', 'Untuk', 'PIC', 'Ukuran keberhasilan', 'Waktu'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
-    s.addTable([hdr, ...S.actions.map((r, i) => [String(i + 1), ...r].map((v, j) => ({ text: v, options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j === 0 ? 'center' : 'left' } })))],
-      { x: 0.4, y: 4.22, w: 12.53, colW: [0.4, 5.13, 1.6, 1.1, 2.9, 1.4], rowH: 0.4, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.05 });
+    const hdr = ['#', 'Aksi', 'Untuk', 'Ukuran keberhasilan', 'Waktu'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
+    s.addTable([hdr, ...S.actions.map((r, i) => [String(i + 1), r[0], r[1], r[3], r[4]].map((v, j) => ({ text: v, options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j === 0 ? 'center' : 'left' } })))],
+      { x: 0.4, y: 4.22, w: 12.53, colW: [0.4, 5.83, 1.8, 3.1, 1.4], rowH: 0.4, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.05 });
     foot(s);
   }
   // ── 10. KAMUS ISTILAH ──
