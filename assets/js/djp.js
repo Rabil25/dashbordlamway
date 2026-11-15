@@ -299,30 +299,32 @@ function djpPlanData() {
     // ── Target IO minggu ini per SF (dari target IO kabupaten) ──
     get targetIoSF() {
       const app = this, bulan = app.cfg.bulan, days = daysInPeriod(bulan), ref = Math.min(app.hariBerjalan || days, days);
-      const sisaHari = Math.max(1, days - ref + 1), mingguHari = Math.min(7, sisaHari);
+      // Minggu berjalan = Senin–Minggu (dipotong ke bulan aktif). Target minggu dihitung dari sisa target per awal minggu.
       const today = new Date(); const dow = (today.getDay() + 6) % 7; const mon = new Date(today); mon.setDate(today.getDate() - dow);
-      const monN = +localYMD(mon).replace(/-/g, '');
+      const bp = +bulan.replace('-', '') * 100, monN = Math.max(+localYMD(mon).replace(/-/g, ''), bp + 1), sunN = Math.min(monN + 6 - (monN - (+localYMD(mon).replace(/-/g, ''))), bp + days);
+      const monDay = monN % 100, sisaHari = Math.max(1, days - monDay + 1), mingguHari = Math.max(1, (sunN % 100) - monDay + 1);
       const katOf = {}; (app.prioritasOdpRaw.length ? app.klasifikasiDesa('', '') : []).forEach(d => { katOf[wlK(d.kec, d.desa)] = d.kat; });
-      const ioMtd = {}, ioWk = {}, ioWkPot = {};
+      const ioMtd = {}, ioPre = {}, ioWk = {}, ioWkPot = {};
       (app.filteredRows || []).forEach(r => {
         if (!(r[C.VAL_IO] || '').toString().trim()) return;
         const n = ymdNum(r[C.DATE_IO]); if (String(n).slice(0, 6) !== bulan.replace('-', '')) return;
         const kab = String(r[C.VAL_KAB] || '').toUpperCase(), sf = String(r[C.CODE_SF] || '').toUpperCase();
         ioMtd[kab] = (ioMtd[kab] || 0) + 1;
-        if (n >= monN) { ioWk[sf] = (ioWk[sf] || 0) + 1; if (['prioritas', 'strategis'].includes(katOf[wlK(r[C.KEC], r[C.DESA])])) ioWkPot[sf] = (ioWkPot[sf] || 0) + 1; }
+        if (n < monN) ioPre[kab] = (ioPre[kab] || 0) + 1;
+        if (n >= monN && n <= sunN) { ioWk[sf] = (ioWk[sf] || 0) + 1; if (['prioritas', 'strategis'].includes(katOf[wlK(r[C.KEC], r[C.DESA])])) ioWkPot[sf] = (ioWkPot[sf] || 0) + 1; }
       });
       const kabs = (CLUSTER[app.cluster] || { kab: [] }).kab.map(k => k.toUpperCase()).filter(k => !this.form.kab || k === this.form.kab);
       return kabs.map(kab => {
-        const tgt = (app.cfg.targets[kab] || {}).io || 0, sisa = Math.max(0, tgt - (ioMtd[kab] || 0));
-        const wk = Math.ceil(sisa * mingguHari / sisaHari);
+        const tgt = (app.cfg.targets[kab] || {}).io || 0, sisa = Math.max(0, tgt - (ioMtd[kab] || 0)), sisaAwal = Math.max(0, tgt - (ioPre[kab] || 0));
+        const wk = Math.ceil(sisaAwal * mingguHari / sisaHari);
         const sfs = (app.sfTable || []).filter(s => String(s.kab || '').toUpperCase() === kab);
         const totIo = sfs.reduce((a, s) => a + (s.io || 0), 0);
         const rows = sfs.map(s => {
           const w = sfs.length ? 0.5 / sfs.length + 0.5 * ((s.io || 0) / Math.max(1, totIo)) : 0;
-          const t = sisa ? Math.max(1, Math.round(wk * w)) : 0, code = String(s.code || '').toUpperCase();
+          const t = wk ? Math.max(1, Math.round(wk * w)) : 0, code = String(s.code || '').toUpperCase();
           return { code, nama: String(s.nama || '').replace(/\[.*?\]\s*/g, ''), t, pot: Math.ceil(t * 0.7), done: ioWk[code] || 0, donePot: ioWkPot[code] || 0 };
         }).sort((a, b) => b.t - a.t);
-        return { kab, tgt, mtd: ioMtd[kab] || 0, sisa, wk, mingguHari, rows };
+        return { kab, tgt, mtd: ioMtd[kab] || 0, sisa, wk, mingguHari, wkDone: Object.values(ioWk).length ? rows.reduce((a2, r) => a2 + r.done, 0) : 0, rows };
       });
     },
 

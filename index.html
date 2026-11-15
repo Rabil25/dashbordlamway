@@ -2417,7 +2417,7 @@
             <template x-for="k in targetIoSF" :key="k.kab">
               <div class="tgt-kab">
                 <div class="tgt-kab-h"><b x-text="k.kab"></b>
-                  <span x-text="'IO bulan ini ' + k.mtd + ' dari target ' + k.tgt + ' · sisa ' + k.sisa + ' · target ' + k.mingguHari + ' hari ke depan: ' + k.wk + ' IO'"></span></div>
+                  <span x-text="'IO bulan ini ' + k.mtd + ' dari target ' + k.tgt + ' · target minggu ini (Senin–Minggu): ' + k.wk + ' IO, sudah ' + k.wkDone"></span></div>
                 <div class="tbl-wrap" style="box-shadow:none;border:0;max-height:260px;overflow:auto"><table>
                   <thead><tr><th>SF</th><th>Target minggu ini</th><th>Dari desa Prio/Strat (min.)</th><th>Sudah (sejak Senin)</th><th>Dari Prio/Strat</th><th>Status</th></tr></thead>
                   <tbody><template x-for="r in k.rows" :key="r.code"><tr>
