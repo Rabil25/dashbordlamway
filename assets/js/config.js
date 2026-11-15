@@ -56,7 +56,18 @@ const C = {
 let _odpPromise = null;
 function getOdpJson() {
   if (!_odpPromise) {
-    _odpPromise = fetch('data/odp.json').then(r => { if (!r.ok) throw new Error('odp.json HTTP ' + r.status); return r.json(); })
+    // cache:'no-cache' → browser selalu cek versi ke server (ETag); kalau sama pakai salinan, kalau baru langsung pakai yang baru
+    _odpPromise = fetch('data/odp.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('odp.json HTTP ' + r.status); return r.json(); })
+      .then(d => {
+        // Pengaman: 1 kode ODP = 1 titik (kalau dobel, ambil tahun/bulan ODP terbaru)
+        const arr = Array.isArray(d) ? d : (d.data || []), m = new Map();
+        const k = x => (+x.tahun_odp || 0) * 100 + (+x.bulan_odp || 0);
+        arr.forEach(x => { const id = String(x.odp || '').trim().toUpperCase(); if (!id) return;
+          const o = m.get(id); if (!o || k(x) > k(o)) m.set(id, x); });
+        const out = [...m.values()];
+        if (out.length !== arr.length) console.warn('[odp] ' + (arr.length - out.length) + ' ODP dobel diabaikan');
+        return Array.isArray(d) ? out : { ...d, data: out, total: out.length };
+      })
       .catch(e => { _odpPromise = null; throw e; });
   }
   return _odpPromise;
