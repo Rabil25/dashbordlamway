@@ -2512,6 +2512,7 @@
                         <span class="wz-kat" x-show="desaKatMap[desa]" :style="'--kc:'+(DJP_KAT[desaKatMap[desa]?.kat]?.color||'#9ca3af')"
                               x-text="DJP_KAT[desaKatMap[desa]?.kat]?.label||''" :title="'Skor potensi '+(desaKatMap[desa]?.skor??'')"></span>
                         <span class="wz-saran" x-show="desaSaranMap[desa]?.k" :class="'s-' + (desaSaranMap[desa]?.k||'')" :title="desaSaranMap[desa]?.txt" x-text="desaSaranMap[desa]?.k==='garap' ? (desaSaranMap[desa]?.kat==='strategis' ? '⭐📅' : '⭐') : '⛔'"></span>
+                        <span class="wz-used" x-show="desaDipakai(desa)" :title="'Sudah di-plan hari ini: ' + desaDipakai(desa)">👥 dipakai</span>
                         <span class="wz-km" x-show="desaJarakLabel(desa)" x-text="desaJarakLabel(desa)"></span>
                         <span class="wz-check-meta" x-text="(desaStats[desa]?.avail||0)+' ODP'"></span>
                       </button>
@@ -2533,11 +2534,13 @@
                     <button type="button" class="btn btn-xs btn-ghost" @click="clearSF()" x-show="sfSelected.length">Kosongkan</button>
                   </div>
                   <div class="wz-list">
+                    <div x-effect="form.tgl && loadUsedPlan()"></div>
                     <div class="wz-list-empty" x-show="!sfListFiltered.length" x-text="sfList.length ? 'SF tidak ditemukan' : 'Memuat daftar SF…'"></div>
                     <template x-for="sf in sfListFiltered" :key="sf.username">
                       <button type="button" class="wz-check" :class="{on: sfSelected.includes(sf.username)}" :aria-pressed="sfSelected.includes(sf.username)" @click="toggleSF(sf.username)">
                         <span class="wz-box"></span>
                         <span class="wz-check-name" x-text="sf.nama"></span>
+                        <span class="wz-used" x-show="sfSudahPlan(sf.username)" :title="'Sudah ada plan hari ini: ' + sfSudahPlan(sf.username) + ' — kalau disimpan lagi, plan lama SF ini diganti'">📋 sudah ada plan</span>
                         <span class="wz-check-meta mono" x-text="sf.username"></span>
                       </button>
                     </template>

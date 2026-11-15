@@ -67,6 +67,7 @@ function djpPlanData() {
     savedOk:     false,
     savedInfo:   null,
     // ── Saran analisa (siklus mingguan) ──
+    usedPlanRows: {},   // plan tersimpan per tanggal (untuk tanda 'sudah dipakai')
     djpVis:      null,   // kunjungan DJP 3 bln: { by: {kec|desa: {n}}, avail: [...] }
     saranOnly:   false,  // tampilkan hanya desa yang disarankan digarap
     tgtOpen:     false,
@@ -282,12 +283,41 @@ function djpPlanData() {
         return out;
       });
     },
+    // ── Plan yang sudah tersimpan di tanggal form (dipakai tim lain) ──
+    async loadUsedPlan() {
+      const tgl = this.form.tgl; if (!tgl || this.viewTgl === tgl || this.usedPlanRows[tgl]) return;
+      try { const c = JSON.parse(localStorage.getItem('djp_plandata_' + tgl) || 'null');
+        if (c && Array.isArray(c.data) && Date.now() - c.ts < 5 * 60 * 1000) { this.usedPlanRows = { ...this.usedPlanRows, [tgl]: c.data }; return; } } catch (e) {}
+      try { const st = localStorage.getItem('wok_token') || '';
+        const r = await fetch(`${this._gasUrl()}?type=djp_plan_get&session_token=${encodeURIComponent(st)}&tgl=${tgl}&tahun=${tgl.slice(0, 4)}`);
+        const d = await r.json(); if (d.ok) this.usedPlanRows = { ...this.usedPlanRows, [tgl]: d.data || [] }; } catch (e) {}
+    },
+    get usedPlan() {
+      const tgl = this.form.tgl, rows = this.viewTgl === tgl ? (this.planData || []) : (this.usedPlanRows[tgl] || []);
+      const nm = {}; (this.sfList || []).forEach(u => { nm[u.username] = u.nama; });
+      const desa = {}, sf = {};
+      rows.forEach(r => { const u = r.username_sf || r[1] || '', d = String(r.desa || r[7] || '').trim(); if (!u) return;
+        const n = r.nama_sf || r[2] || nm[u] || u;
+        (sf[u] = sf[u] || new Set()); if (d) sf[u].add(d);
+        if (d) (desa[d.toUpperCase()] = desa[d.toUpperCase()] || {})[u] = n; });
+      return { desa, sf };
+    },
+    // Desa sudah dipakai SF lain (SF yang sedang dipilih tidak dihitung, karena plan-nya akan diganti)
+    desaDipakai(desa) {
+      const o = this.usedPlan.desa[String(desa).toUpperCase()]; if (!o) return '';
+      const n = Object.entries(o).filter(([u]) => !this.sfSelected.includes(u)).map(([, n]) => n);
+      return n.length ? n.join(', ') : '';
+    },
+    sfSudahPlan(u) { const s = this.usedPlan.sf[u]; return s ? ([...s].join(', ') || 'ada plan') : ''; },
     get saranCounts() { const c = { garap: 0, kurangi: 0 }; Object.values(this.desaSaranMap).forEach(x => { if (x.k) c[x.k]++; }); return c; },
     // Isi draf: 2 desa ⭐ Garap, diutamakan satu kecamatan yang paling banyak sisa port (efisien jarak)
-    isiSaran() {
+    async isiSaran() {
+      await this.loadUsedPlan();
       const m = this.desaSaranMap, all = this.desaAllKab;
-      const g = all.filter(d => m[d] && m[d].k === 'garap');
-      if (!g.length) { djpToast('Belum ada desa yang disarankan untuk kabupaten ini', 'info'); return; }
+      const g0 = all.filter(d => m[d] && m[d].k === 'garap');
+      const g = g0.filter(d => !this.desaDipakai(d)), skip = g0.length - g.length;
+      if (!g0.length) { djpToast('Belum ada desa yang disarankan untuk kabupaten ini', 'info'); return; }
+      if (!g.length) { djpToast(`Semua ${g0.length} desa ⭐ sudah dipakai tim lain di tanggal ini. Pilih desa manual dari daftar.`, 'info', 5000); return; }
       const byKec = {}; g.forEach(d => { (byKec[m[d].kec] = byKec[m[d].kec] || []).push(d); });
       const kecs = Object.entries(byKec).sort((a, b) => b[1].reduce((s, d) => s + m[d].avai, 0) - a[1].reduce((s, d) => s + m[d].avai, 0));
       // Desa 1 = sisa port terbanyak (utamakan kecamatan yang punya ≥2 desa ⭐).
@@ -303,7 +333,7 @@ function djpPlanData() {
       const info = cand.length ? `${pick[0]} + ${pick[1]} (${cand[0].km != null ? cand[0].km.toFixed(1).replace('.', ',') + ' km' : 'satu kecamatan'})`
         : `${d1} saja — tidak ada desa ⭐ lain dalam ${MAXKM} km`;
       this.desaSelected = pick; this.desaSort = 'dekat';
-      djpToast(`Saran: ${info}. Silakan cek & ubah bila perlu.`, 'success', 4500);
+      djpToast(`Saran: ${info}.` + (skip ? ` ${skip} desa ⭐ dilewati karena sudah dipakai tim lain hari ini.` : '') + ` Silakan cek & ubah bila perlu.`, 'success', 4500);
     },
 
     // ── Target IO minggu ini per SF (dari target IO kabupaten) ──
