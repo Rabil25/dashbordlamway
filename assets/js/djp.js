@@ -290,12 +290,20 @@ function djpPlanData() {
       if (!g.length) { djpToast('Belum ada desa yang disarankan untuk kabupaten ini', 'info'); return; }
       const byKec = {}; g.forEach(d => { (byKec[m[d].kec] = byKec[m[d].kec] || []).push(d); });
       const kecs = Object.entries(byKec).sort((a, b) => b[1].reduce((s, d) => s + m[d].avai, 0) - a[1].reduce((s, d) => s + m[d].avai, 0));
-      // Cukup 2 desa; utamakan kecamatan yang punya ≥2 desa ⭐ agar keduanya satu kecamatan
+      // Desa 1 = sisa port terbanyak (utamakan kecamatan yang punya ≥2 desa ⭐).
+      // Desa 2 = desa ⭐ lain dalam radius 15 km dari desa 1: utamakan satu kecamatan, lalu yang terdekat.
       kecs.sort((a, b) => (b[1].length >= 2) - (a[1].length >= 2));
-      const n = 2, pick = [];
-      for (const [, ds] of kecs) { for (const d of ds.sort((a, b) => m[b].avai - m[a].avai)) { if (pick.length < n) pick.push(d); } if (pick.length >= n) break; }
+      const MAXKM = 15, c = this.desaCentroid || {};
+      const d1 = kecs[0][1].sort((a, b) => m[b].avai - m[a].avai)[0], p1 = c[d1];
+      const km = d => (p1 && c[d]) ? haversineKm(p1.lat, p1.lng, c[d].lat, c[d].lng) : null;
+      const cand = g.filter(d => d !== d1).map(d => ({ d, km: km(d), same: m[d].kec === m[d1].kec }))
+        .filter(x => x.km != null ? x.km <= MAXKM : x.same)
+        .sort((a, b) => (b.same - a.same) || ((a.km ?? 0) - (b.km ?? 0)));
+      const pick = [d1].concat(cand.length ? [cand[0].d] : []);
+      const info = cand.length ? `${pick[0]} + ${pick[1]} (${cand[0].km != null ? cand[0].km.toFixed(1).replace('.', ',') + ' km' : 'satu kecamatan'})`
+        : `${d1} saja — tidak ada desa ⭐ lain dalam ${MAXKM} km`;
       this.desaSelected = pick; this.desaSort = 'dekat';
-      djpToast(`${pick.length} desa saran dipilih (dikelompokkan per kecamatan). Silakan cek & ubah bila perlu.`, 'success', 3500);
+      djpToast(`Saran: ${info}. Silakan cek & ubah bila perlu.`, 'success', 4500);
     },
 
     // ── Target IO minggu ini per SF (dari target IO kabupaten) ──
