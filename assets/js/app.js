@@ -1234,6 +1234,18 @@ function app() {
       }
     },
 
+    exportPrioritasCsv() {
+      const rows = this.prioritasDesaList || []; if (!rows.length) return;
+      const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+      const head = ['No','Desa','Kecamatan','Kabupaten','Avail','Occ%','PS Aktif','Jarak (km)','Kantor Terdekat','Kategori','Skor Potensi'];
+      const lines = [head.map(q).join(',')];
+      rows.forEach((d, i) => lines.push([i + 1, q(d.desa), q(d.kec), q(d.kab), d.totalAvail || 0, Math.round((d.occ_rate || 0) * 100),
+        d.psAktif || 0, d.nearestDist < 9999 ? d.nearestDist.toFixed(1) : '', q(d.nearestOffice), q(d.katLabel), d.skorPotensi ?? ''].join(',')));
+      const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `Prioritas_${this.cluster}_${localYMD(new Date())}.csv`.replace(/\s+/g, '_');
+      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    },
     get prioritasDesaList() {
       return this.klasifikasiDesa(this.prioritasKabFilter, this.prioritasKategoriFilter);
     },

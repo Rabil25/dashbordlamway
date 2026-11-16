@@ -2089,6 +2089,7 @@
             </select>
             <button class="btn-sm btn-outline" @click="loadPrioritas()" :disabled="prioritasLoading"
                     x-text="prioritasLoading ? 'Memuat…' : (prioritasOdpRaw.length ? '↺ Refresh' : 'Muat Data')"></button>
+            <button class="btn-sm btn-outline" @click="exportPrioritasCsv()" :disabled="!prioritasDesaList.length" title="Unduh daftar desa sesuai filter yang tampil">⬇ CSV</button>
           </div>
         </div>
 
