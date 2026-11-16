@@ -417,8 +417,8 @@ function djpPlanData() {
     // ── Getters: SF list dengan search ──
     get sfListFiltered() {
       const q = this.sfSearch.trim().toLowerCase();
-      return q ? this.sfList.filter(u => u.nama.toLowerCase().includes(q) || u.username.toLowerCase().includes(q))
-               : this.sfList;
+      const l = q ? this.sfList.filter(u => u.nama.toLowerCase().includes(q) || u.username.toLowerCase().includes(q)) : this.sfList;
+      return [...l].sort((a, b) => String(a.nama).trim().localeCompare(String(b.nama).trim(), 'id', { sensitivity: 'base' }));
     },
 
     // ── Getters: canGenerate ──
