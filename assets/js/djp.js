@@ -313,6 +313,13 @@ function djpPlanData() {
     // Tanggal plan paling cepat H+1 (dihitung ulang tiap dipakai, aman kalau halaman dibuka lewat tengah malam)
     get minPlanTgl() { const d = new Date(); d.setDate(d.getDate() + 1); return localYMD(d); },
     cekTglPlan() { if (!this.form.tgl || this.form.tgl < this.minPlanTgl) { this.form.tgl = this.minPlanTgl; djpToast('Plan hanya bisa dibuat mulai besok (H+1)', 'info'); } },
+    botLabel(b) {
+      if (!b) return '';
+      const st = (b.status || '').toLowerCase();
+      if (st.startsWith('selesai') || b.out) return '✅ ' + (b.in || '') + (b.out ? '–' + b.out : '');
+      return '🕐 in ' + (b.in || '');
+    },
+    botPatuh(sf) { const n = sf.odps.length, ok = sf.odps.filter(o => o.bot && (o.bot.out || (o.bot.status || '').toLowerCase().startsWith('selesai'))).length; return n ? ok + '/' + n + ' (' + Math.round(ok / n * 100) + '%)' : ''; },
     get saranCounts() { const c = { garap: 0, kurangi: 0 }; Object.values(this.desaSaranMap).forEach(x => { if (x.k) c[x.k]++; }); return c; },
     // Isi draf: 2 desa ⭐ Garap, diutamakan satu kecamatan yang paling banyak sisa port (efisien jarak)
     async isiSaran() {
@@ -722,7 +729,7 @@ function djpPlanData() {
         try { localStorage.setItem('djp_plandata_' + tglSimpan, JSON.stringify({ data: this.planData, ts: Date.now() })); } catch(e) {}
         this.savedOk = true;
         this.savedInfo = { tgl: tglSimpan, odp: d.saved || allRows.length, sf: activeSFs.length };
-        this._toast(`✅ ${d.saved || allRows.length} ODP tersimpan untuk ${activeSFs.length} SF`, 'success');
+        this._toast(`✅ ${d.saved || allRows.length} ODP tersimpan untuk ${activeSFs.length} SF` + (d.bot ? (d.bot.ok ? ' · terkirim ke bot sebagai tugas' : ' · ⚠️ gagal kirim ke bot: ' + d.bot.error) : ''), d.bot && !d.bot.ok ? 'error' : 'success', 6000);
       } catch(e) {
         // Gagal → draft tetap ada di layar dan di localStorage, user bisa klik Simpan lagi
         this._toast('❌ Gagal menyimpan: ' + (e.message || 'koneksi terputus') + '. Draft masih ada, coba Simpan lagi.', 'error', 8000);
@@ -807,6 +814,7 @@ function djpPlanData() {
           desa:    row.desa    || row[7] || '',
           avai:    row.avai    || 0,
           visit:   row.visit   || false,
+          bot:     row.bot     || null,
         });
       });
       return Object.values(map);

@@ -2620,6 +2620,7 @@
                   <span class="wz-sf-dot"></span>
                   <span class="wz-sf-name" x-text="sf.nama_sf"></span>
                   <span class="wz-sf-n" x-text="sf.odps.length+' ODP'"></span>
+                  <span class="wz-sf-n" title="ODP selesai clock out di bot / total plan" x-text="'Bot: '+botPatuh(sf)"></span>
                 </button>
               </template>
             </div>
@@ -2743,7 +2744,7 @@
                   <button type="button" class="btn btn-xs btn-danger" @click="deletePlanSF(sf.username_sf)">Hapus</button>
                 </div>
                 <table class="wz-table">
-                  <thead><tr><th>No</th><th>Kode ODP</th><th>Kec · Desa</th><th class="num">Avai</th><th>Visit</th></tr></thead>
+                  <thead><tr><th>No</th><th>Kode ODP</th><th>Kec · Desa</th><th class="num">Avai</th><th>Clock in/out</th></tr></thead>
                   <tbody>
                     <template x-for="(odp, j) in sf.odps" :key="j+'|'+odp.odp">
                       <tr>
@@ -2751,7 +2752,7 @@
                         <td><b x-text="odp.odp"></b></td>
                         <td x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
                         <td class="num" x-text="odp.avai||'—'"></td>
-                        <td><span x-show="odp.visit" title="Sudah visit">✅</span><span x-show="!odp.visit">—</span></td>
+                        <td><span x-show="odp.bot" :title="odp.bot ? ('Bot: '+(odp.bot.status||'')+(odp.bot.durasi?' · '+odp.bot.durasi+' mnt':'')) : ''" x-text="botLabel(odp.bot)"></span><span x-show="!odp.bot && odp.visit" title="Sudah visit (realisasi)">✅</span><span x-show="!odp.bot && !odp.visit">⬜</span></td>
                       </tr>
                     </template>
                   </tbody>

@@ -16,6 +16,12 @@ const DJP_CONFIG = {
   SF_SHEET_ID:  '1IhU91CyYKQRDLysUYgpPn258ieoADixO30Cl5YS3YeM',
   SF_SHEET_NAME:'Update SF',
   BATCH_SIZE:   500,
+  // Bot Telegram IndiHmLPG — plan otomatis jadi tugas clock in/out
+  BOT_SHEET_ID: '1csOC-Uat1y4D1mXY1Y6uM0oSeUzG2iOxyoh81I92QQY',
+  BOT_TUGAS:    'Tugas_DJP',
+  BOT_REKAP:    'Rekap_TugasDJP',
+  BOT_MIN_OUT:  15,
+  BOT_RADIUS:   '150 meter',
 };
 
 // Kolom DJP_Plan (0-based) — TAHUN ditambah di index 13 (kolom N)
@@ -67,6 +73,57 @@ function djpDeletePlanRows_(ws, keySet) {
     end = start - 1;
   }
   return hit.length;
+}
+
+
+// ================================================================
+//  INTEGRASI BOT IndiHmLPG
+//  Tugas_DJP : Lat|Long|Nama Tugas|ODP|Kategori|Min Clock Out|Mulai yyyyMMdd|Akhir yyyyMMdd|SF code|Radius
+//  Rekap_TugasDJP : Tanggal|SF Code|Nama SF|ODP/Nama Tugas|Jam In|Koordinat In|Jam Out|Durasi|Status
+// ================================================================
+function djpBotYmd_(v) {           // apa pun formatnya → 'yyyyMMdd'
+  if (v instanceof Date) return Utilities.formatDate(v, CONFIG.TIMEZONE, 'yyyyMMdd');
+  const t = (v || '').toString().trim();
+  let m = t.match(/^(\d{4})-?(\d{2})-?(\d{2})/); if (m) return m[1] + m[2] + m[3];
+  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return m[3] + ('0' + m[1]).slice(-2) + ('0' + m[2]).slice(-2); // M/d/yyyy
+  return t.replace(/\D/g, '').slice(0, 8);
+}
+// Ganti tugas bot untuk setiap kunci 'yyyyMMdd|SFCODE', lalu tambahkan baris baru (boleh kosong = hapus saja)
+function djpSyncBotTugas_(keySet, newRows) {
+  try {
+    const ws = SpreadsheetApp.openById(DJP_CONFIG.BOT_SHEET_ID).getSheetByName(DJP_CONFIG.BOT_TUGAS);
+    if (!ws) return { ok:false, error:'Tab Tugas_DJP tidak ditemukan' };
+    const v = ws.getDataRange().getValues(), hit = [];
+    for (let i = 1; i < v.length; i++) {
+      const k = djpBotYmd_(v[i][6]) + '|' + (v[i][8] || '').toString().trim().toUpperCase();
+      if (keySet[k]) hit.push(i + 1);
+    }
+    let end = hit.length - 1;
+    while (end >= 0) { let st = end; while (st > 0 && hit[st - 1] === hit[st] - 1) st--; ws.deleteRows(hit[st], end - st + 1); end = st - 1; }
+    if (newRows.length) {
+      const out = newRows.map(r => { const d = djpBotYmd_(r.tgl);
+        return [r.lat || '', r.lng || '', r.odp, r.odp, 'DJP', DJP_CONFIG.BOT_MIN_OUT, d, d, (r.username_sf || '').toString().trim(), DJP_CONFIG.BOT_RADIUS]; });
+      const rg = ws.getRange(ws.getLastRow() + 1, 1, out.length, out[0].length);
+      rg.offset(0, 6, out.length, 2).setNumberFormat('@');     // tanggal tetap teks yyyyMMdd
+      rg.setValues(out);
+    }
+    return { ok:true, removed: hit.length, added: newRows.length };
+  } catch (e) { return { ok:false, error: e.message }; }
+}
+// Status clock in/out dari bot untuk satu tanggal → { 'SF|ODP': {in, out, durasi, status} }
+function djpBotStatus_(tgl) {
+  const res = {};
+  try {
+    const ws = SpreadsheetApp.openById(DJP_CONFIG.BOT_SHEET_ID).getSheetByName(DJP_CONFIG.BOT_REKAP);
+    if (!ws || ws.getLastRow() < 2) return res;
+    const want = djpBotYmd_(tgl), fmt = x => x instanceof Date ? Utilities.formatDate(x, CONFIG.TIMEZONE, 'HH:mm') : (x || '').toString().trim();
+    ws.getRange(2, 1, ws.getLastRow() - 1, 9).getValues().forEach(r => {
+      if (djpBotYmd_(r[0]) !== want) return;
+      const k = (r[1] || '').toString().trim().toUpperCase() + '|' + (r[3] || '').toString().trim().toUpperCase();
+      res[k] = { in: fmt(r[4]), out: fmt(r[6]), durasi: (r[7] || '').toString(), status: (r[8] || '').toString().trim() };
+    });
+  } catch (e) {}
+  return res;
 }
 
 // ================================================================
@@ -243,8 +300,12 @@ function djpPlanSave(params) {
       CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_plan_' + t));
     } catch(e) {}
 
+    // Kirim jadi tugas bot (gagal di sini tidak membatalkan simpan plan)
+    const botKeys = {};
+    Object.keys(keySet).forEach(k => { const a = k.split('|'); botKeys[djpBotYmd_(a[0]) + '|' + a[1].toUpperCase()] = true; });
+    const bot = djpSyncBotTugas_(botKeys, rows);
     _ms.total = Date.now() - _t0;
-    return { ok:true, saved: toAppend.length, replaced: replaced, _ms: _ms };
+    return { ok:true, saved: toAppend.length, replaced: replaced, bot: bot, _ms: _ms };
   } catch(e) {
     return { ok:false, error:'djpPlanSave: ' + e.message };
   } finally {
@@ -257,6 +318,13 @@ function djpPlanSave(params) {
 //  params.tgl   = 'yyyy-MM-dd'
 //  params.tahun = '2025' (opsional, default: ambil dari tgl)
 // ================================================================
+// Tempelkan status clock in/out bot ke tiap baris plan (selalu segar, tidak ikut cache)
+function djpWithBot_(result, tgl) {
+  if (!result || !result.ok || !result.data || !result.data.length) return result;
+  const st = djpBotStatus_(tgl);
+  result.data.forEach(r => { const b = st[r.username_sf.toUpperCase() + '|' + r.odp.toUpperCase()]; if (b) r.bot = b; });
+  return result;
+}
 function djpPlanGet(params) {
   const auth = verifyToken(params.session_token || '');
   if (!auth.ok) return auth;
@@ -270,7 +338,7 @@ function djpPlanGet(params) {
   const cacheKey = 'djp_plan_' + tgl;
   try {
     const cached = cache.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    if (cached) return djpWithBot_(JSON.parse(cached), tgl);
   } catch(e) {}
 
   try {
@@ -313,7 +381,7 @@ function djpPlanGet(params) {
 
     const result = { ok:true, tgl, data, total: data.length };
     try { cache.put(cacheKey, JSON.stringify(result), 300); } catch(e) {} // cache 5 menit
-    return result;
+    return djpWithBot_(result, tgl);
   } catch(e) {
     return { ok:false, error:'djpPlanGet: ' + e.message };
   }
@@ -349,6 +417,8 @@ function djpPlanDelete(params) {
 
     // Invalidate cache
     try { CacheService.getScriptCache().remove('djp_plan_' + tgl); } catch(e) {}
+    const bk = {}; bk[djpBotYmd_(tgl) + '|' + username_sf.toUpperCase()] = true;
+    djpSyncBotTugas_(bk, []);
 
     if (deleted === 0) {
       return { ok:false, deleted: 0, error:'Tidak ada baris plan untuk ' + username_sf + ' pada ' + tgl + '.' };
@@ -684,6 +754,11 @@ const DJP_WOK_KAB = {
   'LAMPUNG UTARA': 'WAY KANAN', 'WAY KANAN': 'WAY KANAN',
 };   // kabupaten → cluster (aturan wilayah per kabupaten)
 
+// ODP-KBI-FP/97 -> ODP-KBI-FP/097 (samakan dengan penulisan ODPBot)
+function djpNormOdp(v) {
+  return (v || '').toString().trim().toUpperCase().replace(/\/(\d{1,2})$/, (m, n) => '/' + ('00' + n).slice(-3));
+}
+
 function djpImportSourceWPI() {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -702,7 +777,7 @@ function djpImportSourceWPI() {
     if ([iO, iLa, iLn, iKab, iKec, iDes].some(i => i < 0)) throw new Error('Header ODPBot tidak lengkap');
     const odp = {};
     for (let i = 1; i < odpVals.length; i++) {
-      const k = U(odpVals[i][iO]); if (!k || odp[k]) continue;
+      const k = djpNormOdp(odpVals[i][iO]); if (!k || odp[k]) continue;
       odp[k] = { lat: odpVals[i][iLa], lng: odpVals[i][iLn], kab: (odpVals[i][iKab] || '').toString().trim(), kec: (odpVals[i][iKec] || '').toString().trim(), desa: (odpVals[i][iDes] || '').toString().trim() };
     }
 
@@ -710,18 +785,19 @@ function djpImportSourceWPI() {
     const planVals = wsPlan.getDataRange().getValues();
     const ada = {};
     for (let i = 1; i < planVals.length; i++) {
-      ada[djpNormTgl(planVals[i][P.TGL]) + '|' + U(planVals[i][P.USERNAME_SF]) + '|' + U(planVals[i][P.ODP])] = true;
+      ada[djpNormTgl(planVals[i][P.TGL]) + '|' + U(planVals[i][P.USERNAME_SF]) + '|' + djpNormOdp(planVals[i][P.ODP])] = true;
     }
 
     // Source WPI (kolom dicari dari header)
     const w = wsWPI.getDataRange().getValues();
     const wh = w[0].map(U), wi = n => wh.indexOf(n);
-    const jCat = wi('SCHEDULE CATEGORY'), jIn = wi('CHECKIN'), jCode = wi('USER CODE'), jName = wi('USER NAME'), jOdp = wi('ODP');
-    if ([jCat, jIn, jCode, jName, jOdp].some(i => i < 0)) throw new Error('Header Source WPI tidak lengkap');
-    const tglOf = v => {
-      if (v instanceof Date) return Utilities.formatDate(v, CONFIG.TIMEZONE, 'yyyy-MM-dd');
-      const m = (v || '').toString().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : '';
+    const jCat = wi('SCHEDULE CATEGORY'), jYm = wi('TAHUN BULAN'), jDay = wi('TANGGAL'), jCode = wi('USER CODE'), jName = wi('USER NAME'), jOdp = wi('ODP');
+    if ([jCat, jYm, jDay, jCode, jName, jOdp].some(i => i < 0)) throw new Error('Header Source WPI tidak lengkap');
+    // Tanggal diambil dari kolom 'Tahun Bulan' (yyyymm) + 'Tanggal' (dd)
+    const tglOf = r => {
+      const ym = (r[jYm] || '').toString().replace(/\D/g, ''), d = parseInt(r[jDay], 10);
+      if (ym.length !== 6 || !(d >= 1 && d <= 31)) return '';
+      return ym.slice(0, 4) + '-' + ym.slice(4) + '-' + ('0' + d).slice(-2);
     };
 
     const now = new Date(), out = [], stat = { djp: 0, tanpaTanggal: 0, odpTakDikenal: 0, luarWOK: 0, ganda: 0, sudahAda: 0, ditambah: 0 };
@@ -729,14 +805,14 @@ function djpImportSourceWPI() {
       const r = w[i];
       if (U(r[jCat]) !== 'DJP') continue;
       stat.djp++;
-      const tgl = tglOf(r[jIn]); if (!tgl) { stat.tanpaTanggal++; continue; }
-      const o = odp[U(r[jOdp])]; if (!o) { stat.odpTakDikenal++; continue; }
+      const tgl = tglOf(r); if (!tgl) { stat.tanpaTanggal++; continue; }
+      const odpK = djpNormOdp(r[jOdp]); const o = odp[odpK]; if (!o) { stat.odpTakDikenal++; continue; }
       const cluster = DJP_WOK_KAB[U(o.kab)]; if (!cluster) { stat.luarWOK++; continue; }
       const sf = (r[jCode] || '').toString().trim();
-      const key = tgl + '|' + sf.toUpperCase() + '|' + U(r[jOdp]);
+      const key = tgl + '|' + sf.toUpperCase() + '|' + odpK;
       if (ada[key]) { stat[ada[key] === 'baru' ? 'ganda' : 'sudahAda']++; continue; }
       ada[key] = 'baru';
-      out.push([tgl, sf, (r[jName] || '').toString().trim(), (r[jOdp] || '').toString().trim(), cluster,
+      out.push([tgl, sf, (r[jName] || '').toString().trim(), odpK, cluster,
         o.kab.toUpperCase(), o.kec, o.desa, o.lat, o.lng, '', DJP_IMPORT_TAG, now, tgl.slice(0, 4)]);
     }
 
