@@ -106,10 +106,13 @@ function djpSyncBotTugas_(keySet, newRows) {
       try {
         const ud = SpreadsheetApp.openById(DJP_CONFIG.BOT_SHEET_ID).getSheetByName('Userdata');
         ud.getRange(2, 6, Math.max(1, ud.getLastRow() - 1), 1).getValues().forEach(x => {
-          const k = (x[0] || '').toString().trim(); if (k) kode[k.toUpperCase()] = k; });
+          const k = (x[0] || '').toString().trim(); if (!k) return;
+          const a = kode[k.toUpperCase()] = kode[k.toUpperCase()] || []; if (a.indexOf(k) < 0) a.push(k); });
       } catch (e) {}
-      const out = newRows.map(r => { const d = djpBotYmd_(r.tgl), sf = (r.username_sf || '').toString().trim();
-        return [r.lat || '', r.lng || '', r.odp, r.odp, 'DJP', DJP_CONFIG.BOT_MIN_OUT, d, d, kode[sf.toUpperCase()] || sf, DJP_CONFIG.BOT_RADIUS]; });
+      // Satu SF bisa terdaftar dengan beberapa penulisan (mis. SPSAB71 & Spsab71) → tulis untuk tiap penulisan
+      const out = [];
+      newRows.forEach(r => { const d = djpBotYmd_(r.tgl), sf = (r.username_sf || '').toString().trim();
+        (kode[sf.toUpperCase()] || [sf]).forEach(c => out.push([r.lat || '', r.lng || '', r.odp, r.odp, 'DJP', DJP_CONFIG.BOT_MIN_OUT, d, d, c, DJP_CONFIG.BOT_RADIUS])); });
       const rg = ws.getRange(ws.getLastRow() + 1, 1, out.length, out[0].length);
       rg.offset(0, 6, out.length, 2).setNumberFormat('@');     // tanggal tetap teks yyyyMMdd
       rg.setValues(out);
