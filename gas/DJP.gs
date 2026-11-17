@@ -849,3 +849,23 @@ function djpHapusImportWPI() {
     lock.releaseLock();
   }
 }
+
+// ================================================================
+//  SEKALI JALAN: kirim plan yang SUDAH tersimpan (hari ini s.d. ke depan) ke Tugas_DJP bot.
+//  Jalankan manual dari editor Apps Script: pilih fungsi djpKirimPlanKeBot → Jalankan.
+//  Aman diulang: tugas lama per (tanggal, SF) diganti, tidak dobel.
+// ================================================================
+function djpKirimPlanKeBot() {
+  const ws = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN);
+  const today = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd');
+  const rows = [], keys = {};
+  ws.getDataRange().getValues().slice(1).forEach(r => {
+    const tgl = djpNormTgl(r[P.TGL]), sf = (r[P.USERNAME_SF] || '').toString().trim(), odp = (r[P.ODP] || '').toString().trim();
+    if (!tgl || tgl < today || !sf || !odp) return;
+    rows.push({ tgl: tgl, username_sf: sf, odp: odp, lat: r[P.LAT], lng: r[P.LNG] });
+    keys[djpBotYmd_(tgl) + '|' + sf.toUpperCase()] = true;
+  });
+  const res = djpSyncBotTugas_(keys, rows);
+  Logger.log('Plan ' + today + ' dst: ' + rows.length + ' ODP, ' + Object.keys(keys).length + ' (tanggal×SF) → ' + JSON.stringify(res));
+  return res;
+}
