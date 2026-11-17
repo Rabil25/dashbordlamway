@@ -35,13 +35,14 @@ function djpPlanData() {
     return val;
   };
   const _today = localYMD();
+  const _besok = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return localYMD(d); })();
   const _year  = new Date().getFullYear().toString();
   return {
     // ── Setup state ──
     _odpAll: [],
     _clusterKabs: [],
     sfList: [],
-    form: { tgl: _today, kab: '', kantor: '' },
+    form: { tgl: _besok, kab: '', kantor: '' },
     desaSelected: [],
     sfSelected:   [],
     desaSearch:   '',
@@ -309,6 +310,9 @@ function djpPlanData() {
       return n.length ? n.join(', ') : '';
     },
     sfSudahPlan(u) { const s = this.usedPlan.sf[u]; return s ? ([...s].join(', ') || 'ada plan') : ''; },
+    // Tanggal plan paling cepat H+1 (dihitung ulang tiap dipakai, aman kalau halaman dibuka lewat tengah malam)
+    get minPlanTgl() { const d = new Date(); d.setDate(d.getDate() + 1); return localYMD(d); },
+    cekTglPlan() { if (!this.form.tgl || this.form.tgl < this.minPlanTgl) { this.form.tgl = this.minPlanTgl; djpToast('Plan hanya bisa dibuat mulai besok (H+1)', 'info'); } },
     get saranCounts() { const c = { garap: 0, kurangi: 0 }; Object.values(this.desaSaranMap).forEach(x => { if (x.k) c[x.k]++; }); return c; },
     // Isi draf: 2 desa ⭐ Garap, diutamakan satu kecamatan yang paling banyak sisa port (efisien jarak)
     async isiSaran() {
@@ -467,6 +471,7 @@ function djpPlanData() {
     // ── Main generate logic ──
     async generateDraft() {
       if (!this.canGenerate) return;
+      if (this.form.tgl < this.minPlanTgl) { this.cekTglPlan(); return; }
       this.generating = true;
       this.draftPlan = [];
       this.genStage = 0;
