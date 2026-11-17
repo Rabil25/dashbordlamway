@@ -101,8 +101,15 @@ function djpSyncBotTugas_(keySet, newRows) {
     let end = hit.length - 1;
     while (end >= 0) { let st = end; while (st > 0 && hit[st - 1] === hit[st] - 1) st--; ws.deleteRows(hit[st], end - st + 1); end = st - 1; }
     if (newRows.length) {
-      const out = newRows.map(r => { const d = djpBotYmd_(r.tgl);
-        return [r.lat || '', r.lng || '', r.odp, r.odp, 'DJP', DJP_CONFIG.BOT_MIN_OUT, d, d, (r.username_sf || '').toString().trim(), DJP_CONFIG.BOT_RADIUS]; });
+      // Bot mencocokkan SF code PERSIS (huruf besar/kecil) dengan Userdata kolom F → pakai penulisan dari Userdata
+      const kode = {};
+      try {
+        const ud = SpreadsheetApp.openById(DJP_CONFIG.BOT_SHEET_ID).getSheetByName('Userdata');
+        ud.getRange(2, 6, Math.max(1, ud.getLastRow() - 1), 1).getValues().forEach(x => {
+          const k = (x[0] || '').toString().trim(); if (k) kode[k.toUpperCase()] = k; });
+      } catch (e) {}
+      const out = newRows.map(r => { const d = djpBotYmd_(r.tgl), sf = (r.username_sf || '').toString().trim();
+        return [r.lat || '', r.lng || '', r.odp, r.odp, 'DJP', DJP_CONFIG.BOT_MIN_OUT, d, d, kode[sf.toUpperCase()] || sf, DJP_CONFIG.BOT_RADIUS]; });
       const rg = ws.getRange(ws.getLastRow() + 1, 1, out.length, out[0].length);
       rg.offset(0, 6, out.length, 2).setNumberFormat('@');     // tanggal tetap teks yyyyMMdd
       rg.setValues(out);
@@ -116,7 +123,7 @@ function djpBotStatus_(tgl) {
   try {
     const ws = SpreadsheetApp.openById(DJP_CONFIG.BOT_SHEET_ID).getSheetByName(DJP_CONFIG.BOT_REKAP);
     if (!ws || ws.getLastRow() < 2) return res;
-    const want = djpBotYmd_(tgl), fmt = x => x instanceof Date ? Utilities.formatDate(x, CONFIG.TIMEZONE, 'HH:mm') : (x || '').toString().trim();
+    const want = djpBotYmd_(tgl), fmt = x => x instanceof Date ? ('0' + x.getHours()).slice(-2) + ':' + ('0' + x.getMinutes()).slice(-2) : (x || '').toString().trim().slice(0, 5);
     ws.getRange(2, 1, ws.getLastRow() - 1, 9).getValues().forEach(r => {
       if (djpBotYmd_(r[0]) !== want) return;
       const k = (r[1] || '').toString().trim().toUpperCase() + '|' + (r[3] || '').toString().trim().toUpperCase();
