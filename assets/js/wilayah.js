@@ -30,7 +30,7 @@ async function wlLoadVisits(app) {
   if (WL.visits[bulan]) return WL.visits[bulan];
   const ms = [prevPeriod(bulan)]; ms.push(prevPeriod(ms[0])); ms.push(prevPeriod(ms[1]));
   const auth = { headers: { Authorization: 'Bearer ' + app.sessionToken } };
-  const res = await Promise.all(ms.map(m => fetch(`/api/data?type=djp_plan&bulan=${encodeURIComponent(m)}`, auth).then(r => r.json()).catch(() => null)));
+  const res = await Promise.all(ms.map(m => fetch(`/api/data?type=djp_real&bulan=${encodeURIComponent(m)}`, auth).then(r => r.json()).catch(() => null)));
   const seen = new Set(), by = {}, avail = [];
   res.forEach((d, i) => {
     const rows = (d && d.data) || []; if (rows.length) avail.push(ms[i]);

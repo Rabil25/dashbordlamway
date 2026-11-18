@@ -80,7 +80,7 @@ async function anCollect(app, mode) {
   const needRows = trendM.slice(0, 3);   // M-4..M-2 (M & M-1 sudah di allRows)
   const res = await Promise.all([
     ...needRows.map(m => getJSON(`/api/data?type=bulan_ini&bulan=${encodeURIComponent(m)}`)),
-    ...djpM.map(m => getJSON(`/api/data?type=djp_plan&bulan=${encodeURIComponent(m)}`)),
+    ...djpM.map(m => getJSON(`/api/data?type=djp_real&bulan=${encodeURIComponent(m)}`)),
     getJSON(`/api/data?type=djp_plan&bulan=${encodeURIComponent(bulan)}`),
   ]);
   const extraRows = res.slice(0, 3).flatMap(d => (d && d.data) || []);

@@ -12,16 +12,11 @@ const DJP_CONFIG = {
   SHEET_ID:     '1ioPvgGbRZIHb_zP-ushATvz434b3p1LQvGcpn1OxBIQ',
   SHEET_PLAN:   'DJP_Plan',
   SHEET_REAL:   'DJP_Realisasi',
+  SHEET_REAL2:  'DJP_Realisasi_Baru',   // kunjungan nyata: 1 baris = SF × desa × hari
   SHEET_ODP:    'ODPBot',
   SF_SHEET_ID:  '1IhU91CyYKQRDLysUYgpPn258ieoADixO30Cl5YS3YeM',
   SF_SHEET_NAME:'Update SF',
   BATCH_SIZE:   500,
-  // Bot Telegram IndiHmLPG — plan otomatis jadi tugas clock in/out
-  BOT_SHEET_ID: '1csOC-Uat1y4D1mXY1Y6uM0oSeUzG2iOxyoh81I92QQY',
-  BOT_TUGAS:    'Tugas_DJP',
-  BOT_REKAP:    'Rekap_TugasDJP',
-  BOT_MIN_OUT:  15,
-  BOT_RADIUS:   '150 meter',
 };
 
 // Kolom DJP_Plan (0-based) — TAHUN ditambah di index 13 (kolom N)
@@ -75,66 +70,6 @@ function djpDeletePlanRows_(ws, keySet) {
   return hit.length;
 }
 
-
-// ================================================================
-//  INTEGRASI BOT IndiHmLPG
-//  Tugas_DJP : Lat|Long|Nama Tugas|ODP|Kategori|Min Clock Out|Mulai yyyyMMdd|Akhir yyyyMMdd|SF code|Radius
-//  Rekap_TugasDJP : Tanggal|SF Code|Nama SF|ODP/Nama Tugas|Jam In|Koordinat In|Jam Out|Durasi|Status
-// ================================================================
-function djpBotYmd_(v) {           // apa pun formatnya → 'yyyyMMdd'
-  if (v instanceof Date) return Utilities.formatDate(v, CONFIG.TIMEZONE, 'yyyyMMdd');
-  const t = (v || '').toString().trim();
-  let m = t.match(/^(\d{4})-?(\d{2})-?(\d{2})/); if (m) return m[1] + m[2] + m[3];
-  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return m[3] + ('0' + m[1]).slice(-2) + ('0' + m[2]).slice(-2); // M/d/yyyy
-  return t.replace(/\D/g, '').slice(0, 8);
-}
-// Ganti tugas bot untuk setiap kunci 'yyyyMMdd|SFCODE', lalu tambahkan baris baru (boleh kosong = hapus saja)
-function djpSyncBotTugas_(keySet, newRows) {
-  try {
-    const ws = SpreadsheetApp.openById(DJP_CONFIG.BOT_SHEET_ID).getSheetByName(DJP_CONFIG.BOT_TUGAS);
-    if (!ws) return { ok:false, error:'Tab Tugas_DJP tidak ditemukan' };
-    const v = ws.getDataRange().getValues(), hit = [];
-    for (let i = 1; i < v.length; i++) {
-      const k = djpBotYmd_(v[i][6]) + '|' + (v[i][8] || '').toString().trim().toUpperCase();
-      if (keySet[k]) hit.push(i + 1);
-    }
-    let end = hit.length - 1;
-    while (end >= 0) { let st = end; while (st > 0 && hit[st - 1] === hit[st] - 1) st--; ws.deleteRows(hit[st], end - st + 1); end = st - 1; }
-    if (newRows.length) {
-      // Bot mencocokkan SF code PERSIS (huruf besar/kecil) dengan Userdata kolom F → pakai penulisan dari Userdata
-      const kode = {};
-      try {
-        const ud = SpreadsheetApp.openById(DJP_CONFIG.BOT_SHEET_ID).getSheetByName('Userdata');
-        ud.getRange(2, 6, Math.max(1, ud.getLastRow() - 1), 1).getValues().forEach(x => {
-          const k = (x[0] || '').toString().trim(); if (!k) return;
-          const a = kode[k.toUpperCase()] = kode[k.toUpperCase()] || []; if (a.indexOf(k) < 0) a.push(k); });
-      } catch (e) {}
-      // Satu SF bisa terdaftar dengan beberapa penulisan (mis. SPSAB71 & Spsab71) → tulis untuk tiap penulisan
-      const out = [];
-      newRows.forEach(r => { const d = djpBotYmd_(r.tgl), sf = (r.username_sf || '').toString().trim();
-        (kode[sf.toUpperCase()] || [sf]).forEach(c => out.push([r.lat || '', r.lng || '', r.odp, r.odp, 'DJP', DJP_CONFIG.BOT_MIN_OUT, d, d, c, DJP_CONFIG.BOT_RADIUS])); });
-      const rg = ws.getRange(ws.getLastRow() + 1, 1, out.length, out[0].length);
-      rg.offset(0, 6, out.length, 2).setNumberFormat('@');     // tanggal tetap teks yyyyMMdd
-      rg.setValues(out);
-    }
-    return { ok:true, removed: hit.length, added: newRows.length };
-  } catch (e) { return { ok:false, error: e.message }; }
-}
-// Status clock in/out dari bot untuk satu tanggal → { 'SF|ODP': {in, out, durasi, status} }
-function djpBotStatus_(tgl) {
-  const res = {};
-  try {
-    const ws = SpreadsheetApp.openById(DJP_CONFIG.BOT_SHEET_ID).getSheetByName(DJP_CONFIG.BOT_REKAP);
-    if (!ws || ws.getLastRow() < 2) return res;
-    const want = djpBotYmd_(tgl), fmt = x => x instanceof Date ? ('0' + x.getHours()).slice(-2) + ':' + ('0' + x.getMinutes()).slice(-2) : (x || '').toString().trim().slice(0, 5);
-    ws.getRange(2, 1, ws.getLastRow() - 1, 9).getValues().forEach(r => {
-      if (djpBotYmd_(r[0]) !== want) return;
-      const k = (r[1] || '').toString().trim().toUpperCase() + '|' + (r[3] || '').toString().trim().toUpperCase();
-      res[k] = { in: fmt(r[4]), out: fmt(r[6]), durasi: (r[7] || '').toString(), status: (r[8] || '').toString().trim() };
-    });
-  } catch (e) {}
-  return res;
-}
 
 // ================================================================
 //  MAIN HANDLER – dipanggil dari doGet di Code.gs
@@ -310,12 +245,8 @@ function djpPlanSave(params) {
       CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_plan_' + t));
     } catch(e) {}
 
-    // Kirim jadi tugas bot (gagal di sini tidak membatalkan simpan plan)
-    const botKeys = {};
-    Object.keys(keySet).forEach(k => { const a = k.split('|'); botKeys[djpBotYmd_(a[0]) + '|' + a[1].toUpperCase()] = true; });
-    const bot = djpSyncBotTugas_(botKeys, rows);
     _ms.total = Date.now() - _t0;
-    return { ok:true, saved: toAppend.length, replaced: replaced, bot: bot, _ms: _ms };
+    return { ok:true, saved: toAppend.length, replaced: replaced, _ms: _ms };
   } catch(e) {
     return { ok:false, error:'djpPlanSave: ' + e.message };
   } finally {
@@ -328,13 +259,6 @@ function djpPlanSave(params) {
 //  params.tgl   = 'yyyy-MM-dd'
 //  params.tahun = '2025' (opsional, default: ambil dari tgl)
 // ================================================================
-// Tempelkan status clock in/out bot ke tiap baris plan (selalu segar, tidak ikut cache)
-function djpWithBot_(result, tgl) {
-  if (!result || !result.ok || !result.data || !result.data.length) return result;
-  const st = djpBotStatus_(tgl);
-  result.data.forEach(r => { const b = st[r.username_sf.toUpperCase() + '|' + r.odp.toUpperCase()]; if (b) r.bot = b; });
-  return result;
-}
 function djpPlanGet(params) {
   const auth = verifyToken(params.session_token || '');
   if (!auth.ok) return auth;
@@ -348,7 +272,7 @@ function djpPlanGet(params) {
   const cacheKey = 'djp_plan_' + tgl;
   try {
     const cached = cache.get(cacheKey);
-    if (cached) return djpWithBot_(JSON.parse(cached), tgl);
+    if (cached) return JSON.parse(cached);
   } catch(e) {}
 
   try {
@@ -391,7 +315,7 @@ function djpPlanGet(params) {
 
     const result = { ok:true, tgl, data, total: data.length };
     try { cache.put(cacheKey, JSON.stringify(result), 300); } catch(e) {} // cache 5 menit
-    return djpWithBot_(result, tgl);
+    return result;
   } catch(e) {
     return { ok:false, error:'djpPlanGet: ' + e.message };
   }
@@ -427,8 +351,6 @@ function djpPlanDelete(params) {
 
     // Invalidate cache
     try { CacheService.getScriptCache().remove('djp_plan_' + tgl); } catch(e) {}
-    const bk = {}; bk[djpBotYmd_(tgl) + '|' + username_sf.toUpperCase()] = true;
-    djpSyncBotTugas_(bk, []);
 
     if (deleted === 0) {
       return { ok:false, deleted: 0, error:'Tidak ada baris plan untuk ' + username_sf + ' pada ' + tgl + '.' };
@@ -458,6 +380,7 @@ function djpRealisasiUpload(params) {
   if (!Array.isArray(rows) || rows.length === 0) {
     return { ok:false, error:'rows kosong.' };
   }
+  if (params.format === 'laporan_harian') return djpLaporanHarianSave_(rows, auth.user.username);
 
   try {
     const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
@@ -860,22 +783,113 @@ function djpHapusImportWPI() {
   }
 }
 
+
 // ================================================================
-//  SEKALI JALAN: kirim plan yang SUDAH tersimpan (hari ini s.d. ke depan) ke Tugas_DJP bot.
-//  Jalankan manual dari editor Apps Script: pilih fungsi djpKirimPlanKeBot → Jalankan.
-//  Aman diulang: tugas lama per (tanggal, SF) diganti, tidak dobel.
+//  DJP_Realisasi_Baru — kunjungan nyata (1 baris = SF × desa × hari)
+//  TGL|KODE_SF|NAMA_SF|KAB|KEC|DESA|JML_ODP|DIKUNJUNGI|TARGET_DJP|SUMBER|UPLOADED_BY|UPLOADED_AT
+//  Dihitung sebagai kunjungan bila DESA terisi DAN DIKUNJUNGI > 0.
 // ================================================================
-function djpKirimPlanKeBot() {
-  const ws = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN);
-  const today = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd');
-  const rows = [], keys = {};
-  ws.getDataRange().getValues().slice(1).forEach(r => {
-    const tgl = djpNormTgl(r[P.TGL]), sf = (r[P.USERNAME_SF] || '').toString().trim(), odp = (r[P.ODP] || '').toString().trim();
-    if (!tgl || tgl < today || !sf || !odp) return;
-    rows.push({ tgl: tgl, username_sf: sf, odp: odp, lat: r[P.LAT], lng: r[P.LNG] });
-    keys[djpBotYmd_(tgl) + '|' + sf.toUpperCase()] = true;
-  });
-  const res = djpSyncBotTugas_(keys, rows);
-  Logger.log('Plan ' + today + ' dst: ' + rows.length + ' ODP, ' + Object.keys(keys).length + ' (tanggal×SF) → ' + JSON.stringify(res));
-  return res;
+const RB_HEAD = ['TGL','KODE_SF','NAMA_SF','KAB','KEC','DESA','JML_ODP','DIKUNJUNGI','TARGET_DJP','SUMBER','UPLOADED_BY','UPLOADED_AT'];
+const RB_LAPORAN = 'Laporan Harian', RB_WPI = 'Source WPI';
+
+function djpRealBaruSheet_() {
+  const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
+  let ws = ss.getSheetByName(DJP_CONFIG.SHEET_REAL2);
+  if (!ws) ws = ss.insertSheet(DJP_CONFIG.SHEET_REAL2);
+  if (ws.getLastRow() === 0) {
+    ws.getRange(1, 1, 1, RB_HEAD.length).setValues([RB_HEAD]).setFontWeight('bold');
+    ws.setFrozenRows(1);
+    ws.getRange('A:A').setNumberFormat('@');               // tanggal disimpan teks yyyy-MM-dd
+  }
+  return ws;
+}
+// Hapus baris yang cocok: filter(row) → true
+function djpRealBaruDelete_(ws, match) {
+  const v = ws.getDataRange().getValues(), hit = [];
+  for (let i = 1; i < v.length; i++) if (match(v[i])) hit.push(i + 1);
+  let end = hit.length - 1;
+  while (end >= 0) { let st = end; while (st > 0 && hit[st - 1] === hit[st] - 1) st--; ws.deleteRows(hit[st], end - st + 1); end = st - 1; }
+  return hit.length;
+}
+function djpRealBaruAppend_(ws, out) {
+  for (let i = 0; i < out.length; i += DJP_CONFIG.BATCH_SIZE) {
+    const b = out.slice(i, i + DJP_CONFIG.BATCH_SIZE);
+    ws.getRange(ws.getLastRow() + 1, 1, b.length, RB_HEAD.length).setValues(b);
+  }
+}
+
+// Upload laporan harian Web Telkomsel: rows = [{tgl, kode_sf, nama_sf, target, dikunjungi}]
+// Desa diambil dari DJP_Plan (SF yang sama, tanggal yang sama).
+function djpLaporanHarianSave_(rows, by) {
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch (e) { return { ok:false, error:'Server sedang sibuk, coba lagi.' }; }
+  try {
+    const U = x => (x || '').toString().trim().toUpperCase();
+    const lap = {}, tglSet = {};
+    rows.forEach(r => {
+      const tgl = djpNormTgl(r.tgl), sf = U(r.kode_sf); if (!/^\d{4}-\d{2}-\d{2}$/.test(tgl) || !sf) return;
+      lap[tgl + '|' + sf] = { tgl, sf, nama: (r.nama_sf || '').toString().trim(), target: +r.target || 0, dik: +r.dikunjungi || 0 };
+      tglSet[tgl] = true;
+    });
+    const keys = Object.keys(lap); if (!keys.length) return { ok:false, error:'Tidak ada baris valid (Tanggal / Kode SF kosong).' };
+
+    // Plan per (tgl|SF) → desa
+    const plan = {};
+    SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN).getDataRange().getValues().slice(1).forEach(p => {
+      const tgl = djpNormTgl(p[P.TGL]); if (!tglSet[tgl]) return;
+      if ((p[P.DIBUAT_OLEH] || '').toString().trim() === DJP_IMPORT_TAG) return;
+      const k = tgl + '|' + U(p[P.USERNAME_SF]); if (!lap[k]) return;
+      const dk = U(p[P.KEC]) + '|' + U(p[P.DESA]);
+      const g = (plan[k] = plan[k] || {}); g[dk] = g[dk] || { kab: U(p[P.KAB]), kec: (p[P.KEC] || '').toString().trim(), desa: (p[P.DESA] || '').toString().trim(), n: 0 }; g[dk].n++;
+    });
+
+    const now = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss'), out = [];
+    let terplan = 0, tanpaPlan = 0, dikunjungi = 0;
+    keys.forEach(k => {
+      const L = lap[k], desas = plan[k] ? Object.values(plan[k]) : [];
+      if (desas.length) terplan++; else tanpaPlan++;
+      if (L.dik > 0) dikunjungi++;
+      if (desas.length && L.dik > 0) desas.forEach(d => out.push([L.tgl, L.sf, L.nama, d.kab, d.kec, d.desa, d.n, L.dik, L.target, RB_LAPORAN, by, now]));
+      else out.push([L.tgl, L.sf, L.nama, desas.length ? desas[0].kab : '', '', '', 0, L.dik, L.target, RB_LAPORAN, by, now]);
+    });
+
+    const ws = djpRealBaruSheet_();
+    const replaced = djpRealBaruDelete_(ws, r => r[9] === RB_LAPORAN && lap[djpNormTgl(r[0]) + '|' + U(r[1])]);
+    djpRealBaruAppend_(ws, out);
+    return { ok:true, sf: keys.length, baris: out.length, replaced, terplan, tanpaPlan, dikunjungi };
+  } catch (e) {
+    return { ok:false, error:'djpLaporanHarianSave: ' + e.message };
+  } finally { lock.releaseLock(); }
+}
+
+// ================================================================
+//  SEKALI JALAN: pindahkan baris "import Source WPI" dari DJP_Plan → DJP_Realisasi_Baru
+//  Jalankan manual dari editor: pilih djpPindahWPIKeRealisasi → Jalankan.
+//  Urutan aman: tulis dulu ke DJP_Realisasi_Baru, baru hapus dari DJP_Plan.
+// ================================================================
+function djpPindahWPIKeRealisasi() {
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    const U = x => (x || '').toString().trim().toUpperCase();
+    const v = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN).getDataRange().getValues();
+    const grp = {}, perSFHari = {};
+    for (let i = 1; i < v.length; i++) {
+      const p = v[i]; if ((p[P.DIBUAT_OLEH] || '').toString().trim() !== DJP_IMPORT_TAG) continue;
+      const tgl = djpNormTgl(p[P.TGL]), sf = U(p[P.USERNAME_SF]); if (!tgl || !sf) continue;
+      const k = tgl + '|' + sf + '|' + U(p[P.KEC]) + '|' + U(p[P.DESA]);
+      grp[k] = grp[k] || { tgl, sf, nama: (p[P.NAMA_SF] || '').toString().trim(), kab: U(p[P.KAB]), kec: (p[P.KEC] || '').toString().trim(), desa: (p[P.DESA] || '').toString().trim(), n: 0 };
+      grp[k].n++; perSFHari[tgl + '|' + sf] = (perSFHari[tgl + '|' + sf] || 0) + 1;
+    }
+    const g = Object.values(grp);
+    if (!g.length) { Logger.log('Tidak ada baris import Source WPI di DJP_Plan (mungkin sudah dipindah).'); return 0; }
+    const now = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+    const out = g.map(x => [x.tgl, x.sf, x.nama, x.kab, x.kec, x.desa, x.n, perSFHari[x.tgl + '|' + x.sf], '', RB_WPI, 'import Source WPI', now]);
+    const ws = djpRealBaruSheet_();
+    const old = djpRealBaruDelete_(ws, r => r[9] === RB_WPI);   // aman diulang
+    djpRealBaruAppend_(ws, out);
+    lock.releaseLock();
+    const hapus = djpHapusImportWPI();
+    Logger.log('Dipindah: ' + out.length + ' baris (SF×desa×hari) ke DJP_Realisasi_Baru; ' + hapus + ' baris dihapus dari DJP_Plan; ganti lama: ' + old);
+    return out.length;
+  } finally { try { lock.releaseLock(); } catch (e) {} }
 }

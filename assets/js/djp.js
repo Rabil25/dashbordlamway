@@ -313,13 +313,17 @@ function djpPlanData() {
     // Tanggal plan paling cepat H+1 (dihitung ulang tiap dipakai, aman kalau halaman dibuka lewat tengah malam)
     get minPlanTgl() { const d = new Date(); d.setDate(d.getDate() + 1); return localYMD(d); },
     cekTglPlan() { if (!this.form.tgl || this.form.tgl < this.minPlanTgl) { this.form.tgl = this.minPlanTgl; djpToast('Plan hanya bisa dibuat mulai besok (H+1)', 'info'); } },
-    botLabel(b) {
-      if (!b) return '';
-      const st = (b.status || '').toLowerCase();
-      if (st.startsWith('selesai') || b.out) return '✅ ' + (b.in || '') + (b.out ? '–' + b.out : '');
-      return '🕐 in ' + (b.in || '');
+    // Laporan harian Telkomsel (DJP_Realisasi_Baru) untuk tanggal plan yang sedang dilihat
+    realMap: {},
+    async loadRealTgl() {
+      const tgl = this.viewTgl; if (!tgl || this.realMap[tgl]) return;
+      try {
+        const d = await fetch(`/api/data?type=djp_real&bulan=${tgl.slice(0, 7)}`, { headers: { Authorization: 'Bearer ' + (localStorage.getItem('wok_token') || '') } }).then(r => r.json());
+        const m = {}; ((d && d.data) || []).filter(r => r.tgl === tgl).forEach(r => { m[r.username_sf] = r.dikunjungi; });
+        this.realMap = { ...this.realMap, [tgl]: m };
+      } catch (e) {}
     },
-    botPatuh(sf) { const n = sf.odps.length, ok = sf.odps.filter(o => o.bot && (o.bot.out || (o.bot.status || '').toLowerCase().startsWith('selesai'))).length; return n ? ok + '/' + n + ' (' + Math.round(ok / n * 100) + '%)' : ''; },
+    realSF(u) { const m = this.realMap[this.viewTgl]; return m ? (m[String(u || '').toUpperCase()] || 0) : 0; },
     get saranCounts() { const c = { garap: 0, kurangi: 0 }; Object.values(this.desaSaranMap).forEach(x => { if (x.k) c[x.k]++; }); return c; },
     // Isi draf: 2 desa ⭐ Garap, diutamakan satu kecamatan yang paling banyak sisa port (efisien jarak)
     async isiSaran() {
@@ -729,7 +733,7 @@ function djpPlanData() {
         try { localStorage.setItem('djp_plandata_' + tglSimpan, JSON.stringify({ data: this.planData, ts: Date.now() })); } catch(e) {}
         this.savedOk = true;
         this.savedInfo = { tgl: tglSimpan, odp: d.saved || allRows.length, sf: activeSFs.length };
-        this._toast(`✅ ${d.saved || allRows.length} ODP tersimpan untuk ${activeSFs.length} SF` + (d.bot ? (d.bot.ok ? ' · terkirim ke bot sebagai tugas' : ' · ⚠️ gagal kirim ke bot: ' + d.bot.error) : ''), d.bot && !d.bot.ok ? 'error' : 'success', 6000);
+        this._toast(`✅ ${d.saved || allRows.length} ODP tersimpan untuk ${activeSFs.length} SF`, 'success');
       } catch(e) {
         // Gagal → draft tetap ada di layar dan di localStorage, user bisa klik Simpan lagi
         this._toast('❌ Gagal menyimpan: ' + (e.message || 'koneksi terputus') + '. Draft masih ada, coba Simpan lagi.', 'error', 8000);
@@ -814,7 +818,6 @@ function djpPlanData() {
           desa:    row.desa    || row[7] || '',
           avai:    row.avai    || 0,
           visit:   row.visit   || false,
-          bot:     row.bot     || null,
         });
       });
       return Object.values(map);
@@ -838,39 +841,52 @@ function djpRealData() {
       window.addEventListener('page-djp_real', () => { this.csvRows=[]; this.csvPreview=[]; this.msg=''; this.fileName=''; });
     },
 
-    onDrop(e) {
-      e.preventDefault();
-      const f = e.dataTransfer.files[0];
-      if (f) this.readFile(f);
-    },
+    mode: '',          // 'laporan' = Laporan Kunjungan DJP Harian (Web Telkomsel) · 'lama' = CSV jadwal per ODP
 
-    onFileChange(e) {
-      const f = e.target.files[0];
-      if (f) this.readFile(f);
-    },
+    onDrop(e) { e.preventDefault(); this.readFiles([...e.dataTransfer.files]); },
+    onFileChange(e) { this.readFiles([...e.target.files]); e.target.value = ''; },
 
-    readFile(file) {
-      this.fileName = file.name;
-      this.msg = '';
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target.result;
-        const lines = text.split(/\r?\n/).filter(l=>l.trim());
-        if (!lines.length) { this.msg='❌ File kosong'; return; }
-        const sep = lines[0].includes('\t') ? '\t' : ',';
-        const headers = lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
-        const rows = lines.slice(1).map(l => {
-          const cols = l.split(sep).map(c=>c.trim().replace(/^"|"$/g,''));
-          const obj = {};
-          headers.forEach((h,i) => obj[h] = cols[i]||'');
-          return obj;
-        }).filter(r => Object.values(r).some(v=>v));
-        this.csvRows = rows;
-        this.csvPreview = rows.slice(0,5);
-        this.msg = `📋 ${rows.length} baris terdeteksi dari ${file.name}`;
-      };
-      reader.readAsText(file, 'UTF-8');
+    async _xlsxLib() {
+      if (window.XLSX) return window.XLSX;
+      await new Promise((ok, no) => { const sc = document.createElement('script');
+        sc.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'; sc.onload = ok; sc.onerror = () => no(new Error('Gagal memuat pembaca Excel')); document.head.appendChild(sc); });
+      return window.XLSX;
     },
+    async _readOne(file) {
+      if (/\.xlsx?$/i.test(file.name)) {
+        const X = await this._xlsxLib(), wb = X.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+        return X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: true });
+      }
+      const text = await file.text(), lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (!lines.length) return [];
+      const sep = lines[0].includes('\t') ? '\t' : (lines[0].split(';').length > lines[0].split(',').length ? ';' : ',');
+      const head = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
+      return lines.slice(1).map(l => { const c = l.split(sep).map(x => x.trim().replace(/^"|"$/g, '')); const o = {}; head.forEach((h, i) => o[h] = c[i] || ''); return o; })
+        .filter(r => Object.values(r).some(v => v !== ''));
+    },
+    async readFiles(files) {
+      if (!files.length) return;
+      this.msg = '⏳ Membaca file…'; this.fileName = files.map(f => f.name).join(', ');
+      try {
+        let all = [];
+        for (const f of files) all = all.concat(await this._readOne(f));
+        const h = all.length ? Object.keys(all[0]) : [];
+        this.mode = (h.includes('Kode SF') && h.includes('Dikunjungi')) ? 'laporan' : 'lama';
+        this.csvRows = all; this.csvPreview = all.slice(0, 5);
+        if (this.mode === 'laporan') {
+          const tg = [...new Set(all.map(r => this._tgl(r['Tanggal'] || r['Periode'])).filter(Boolean))].sort();
+          const dk = all.filter(r => +r['Dikunjungi'] > 0).length;
+          this.msg = `📋 Laporan Kunjungan DJP Harian: ${all.length} baris SF · tanggal ${tg.join(', ') || '?'} · ${dk} SF dikunjungi > 0`;
+        } else this.msg = `📋 ${all.length} baris terdeteksi (format jadwal per ODP)`;
+      } catch (e) { this.msg = '❌ ' + e.message; this.csvRows = []; this.csvPreview = []; }
+    },
+    _tgl(v) {
+      if (v instanceof Date) return localYMD(v);
+      const t = String(v || '').trim(); let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return m[0];
+      m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
+    },
+    // Rangkuman per SF setelah upload laporan harian
+    lapInfo: null,
 
     get csvHeaders() {
       if (!this.csvRows.length) return [];
@@ -885,6 +901,18 @@ function djpRealData() {
       const uploader = (JSON.parse(localStorage.getItem('wok_user')||'null')||{}).username||'';
       this.uploading = true;
       this.msg = 'Mengupload...';
+      if (this.mode === 'laporan') {
+        try {
+          const rows = this.csvRows.map(r => ({ tgl: this._tgl(r['Tanggal'] || r['Periode']), kode_sf: String(r['Kode SF'] || '').trim(),
+            nama_sf: String(r['Sales Force'] || '').trim(), target: +r['Target DJP'] || 0, dikunjungi: +r['Dikunjungi'] || 0 })).filter(r => r.tgl && r.kode_sf);
+          const res = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_realisasi_upload', format:'laporan_harian', session_token:st, rows }) });
+          const d = await res.json(); if (!d.ok) throw new Error(d.error || 'Upload gagal');
+          this.msg = `✅ ${d.sf} SF tersimpan ke DJP_Realisasi_Baru (${d.baris} baris) · ${d.dikunjungi} SF dikunjungi > 0 · ${d.terplan} SF punya plan` +
+            (d.tanpaPlan ? ` · ⚠️ ${d.tanpaPlan} SF tanpa plan di tanggal itu (tidak dihitung kunjungan desa)` : '') + (d.replaced ? ` · ${d.replaced} baris lama diganti` : '');
+          this.csvRows = []; this.csvPreview = []; this.fileName = '';
+        } catch (e) { this.msg = '❌ ' + e.message; }
+        this.uploading = false; return;
+      }
       try {
         const BATCH = 500;
         let inserted = 0, skipped = 0;

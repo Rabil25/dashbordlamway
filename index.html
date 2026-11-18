@@ -2620,7 +2620,6 @@
                   <span class="wz-sf-dot"></span>
                   <span class="wz-sf-name" x-text="sf.nama_sf"></span>
                   <span class="wz-sf-n" x-text="sf.odps.length+' ODP'"></span>
-                  <span class="wz-sf-n" title="ODP selesai clock out di bot / total plan" x-text="'Bot: '+botPatuh(sf)"></span>
                 </button>
               </template>
             </div>
@@ -2726,7 +2725,7 @@
         <section class="wz-card" id="djp-saved">
           <div class="wz-head wz-head-row">
             <span class="wz-ico">📋</span>
-            <div style="flex:1;min-width:0"><h3>Plan tersimpan</h3><p x-text="planData.length ? planData.length+' ODP · '+planBySF.length+' SF · '+fmtTglPanjang(viewTgl) : fmtTglPanjang(viewTgl)"></p></div>
+            <div style="flex:1;min-width:0" x-effect="viewTgl && loadRealTgl()"><h3>Plan tersimpan</h3><p x-text="planData.length ? planData.length+' ODP · '+planBySF.length+' SF · '+fmtTglPanjang(viewTgl) : fmtTglPanjang(viewTgl)"></p></div>
             <div class="wz-foot-r">
               <input type="date" class="select" x-model="viewTgl" @change="loadPlan(true)" aria-label="Tanggal plan">
               <button type="button" class="btn btn-ghost btn-sm" @click="loadPlan(true)" :disabled="planLoading" x-text="planLoading ? 'Memuat…' : '↻ Muat'"></button>
@@ -2741,10 +2740,11 @@
                   <span class="wz-avatar" x-text="(sf.nama_sf||'?').slice(0,1)"></span>
                   <div><b x-text="sf.nama_sf"></b><small class="mono" x-text="sf.username_sf"></small></div>
                   <span class="wz-sf-n" x-text="sf.odps.length+' ODP'"></span>
+                  <span class="wz-sf-n" x-show="realSF(sf.username_sf)" title="Angka 'Dikunjungi' dari Laporan Kunjungan DJP Harian Web Telkomsel" x-text="'✅ Telkomsel: dikunjungi '+realSF(sf.username_sf)"></span>
                   <button type="button" class="btn btn-xs btn-danger" @click="deletePlanSF(sf.username_sf)">Hapus</button>
                 </div>
                 <table class="wz-table">
-                  <thead><tr><th>No</th><th>Kode ODP</th><th>Kec · Desa</th><th class="num">Avai</th><th>Clock in/out</th></tr></thead>
+                  <thead><tr><th>No</th><th>Kode ODP</th><th>Kec · Desa</th><th class="num">Avai</th></tr></thead>
                   <tbody>
                     <template x-for="(odp, j) in sf.odps" :key="j+'|'+odp.odp">
                       <tr>
@@ -2752,7 +2752,6 @@
                         <td><b x-text="odp.odp"></b></td>
                         <td x-text="(odp.kec||'')+(odp.desa?(' · '+odp.desa):'')"></td>
                         <td class="num" x-text="odp.avai||'—'"></td>
-                        <td><span x-show="odp.bot" :title="odp.bot ? ('Bot: '+(odp.bot.status||'')+(odp.bot.durasi?' · '+odp.bot.durasi+' mnt':'')) : ''" x-text="botLabel(odp.bot)"></span><span x-show="!odp.bot && odp.visit" title="Sudah visit (realisasi)">✅</span><span x-show="!odp.bot && !odp.visit">⬜</span></td>
                       </tr>
                     </template>
                   </tbody>
@@ -2769,11 +2768,11 @@
       <div class="page" :class="{active:page==='djp_real'}" x-show="page==='djp_real'" x-data="djpRealData()">
         <div class="section-hdr">
           <div class="section-title">Realisasi DJP</div>
-          <div class="section-sub">Upload CSV hasil kunjungan dari Web Telkomsel</div>
+          <div class="section-sub">Upload Laporan Kunjungan DJP Harian (.xlsx / .csv) dari Web Telkomsel — boleh beberapa file sekaligus</div>
         </div>
 
         <div class="card" style="padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;color:var(--text-1);margin-bottom:10px">Upload CSV</div>
+          <div style="font-weight:700;font-size:13px;color:var(--text-1);margin-bottom:10px">Upload Laporan</div>
 
           <!-- Drop zone -->
           <label style="display:block;border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;color:var(--text-2);transition:border-color .15s"
@@ -2781,9 +2780,9 @@
             @dragleave="$el.style.borderColor=''"
             @drop.prevent="onDrop($event);$el.style.borderColor=''">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 8px;display:block;opacity:.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Drag &amp; drop file CSV di sini</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">Drag &amp; drop file laporan (.xlsx / .csv) di sini</div>
             <div style="font-size:11px;color:var(--text-3)">atau klik untuk pilih file</div>
-            <input type="file" accept=".csv" style="display:none" @change="onFileChange($event)">
+            <input type="file" accept=".csv,.xlsx,.xls" multiple style="display:none" @change="onFileChange($event)">
           </label>
 
           <!-- Preview -->
