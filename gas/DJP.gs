@@ -2,7 +2,7 @@
 //  DJP – Daily Journey Plan  (Versi 23)
 //  Spreadsheet Monitoring : 1ioPvgGbRZIHb_zP-ushATvz434b3p1LQvGcpn1OxBIQ
 //  Sheet DJP_Plan         : TGL|USERNAME_SF|NAMA_SF|ODP|CLUSTER|KAB|KEC|DESA|LAT|LNG|AVAI|DIBUAT_OLEH|DIBUAT_AT|TAHUN
-//  Sheet DJP_Realisasi_Baru: TGL|KODE_SF|NAMA_SF|KAB|KEC|DESA|JML_ODP|DIKUNJUNGI|TARGET_DJP|SUMBER|UPLOADED_BY|UPLOADED_AT
+//  Sheet DJP_Realisasi_Baru: TGL|KODE_SF|NAMA_SF|PLAN|KAB|KEC|DESA|JML_ODP|DIKUNJUNGI|TARGET_DJP|SUMBER|UPLOADED_BY|UPLOADED_AT
 //  Sheet ODPBot           : (header dinamis) ODP|AVAI|USED|OCC 2|LATITUDE|LONGITUDE|KAB|KEC|DESA|Telkomsel Cluster
 //  Spreadsheet Users      : 1IhU91CyYKQRDLysUYgpPn258ieoADixO30Cl5YS3YeM
 //  Sheet Update SF        : (header baris 1) col[1]=NAMA, col[2]=CODE/NIK, col[15]=CLUSTER, col[16]=STATUS, col[19]=STO_CODE, col[20]=KAB_U, col[33]=KAB_AH
@@ -71,9 +71,9 @@ function djpRealBaruRead_(prefix) {
   if (!ws || ws.getLastRow() < 2) return out;
   ws.getRange(2, 1, ws.getLastRow() - 1, RB_HEAD.length).getValues().forEach(r => {
     const tgl = djpNormTgl(r[0]); if (!tgl.startsWith(prefix)) return;
-    const sf = U(r[1]), dik = +r[7] || 0;
-    const k = sf + '|' + tgl; out.sf[k] = { dik: Math.max(dik, (out.sf[k] || {}).dik || 0), target: +r[8] || 0 };
-    if (dik > 0 && (r[5] || '').toString().trim()) out.desa[sf + '|' + U(r[4]) + '|' + U(r[5]) + '|' + tgl] = true;
+    const sf = U(r[1]), dik = +r[8] || 0;
+    const k = sf + '|' + tgl; out.sf[k] = { dik: Math.max(dik, (out.sf[k] || {}).dik || 0), target: +r[9] || 0 };
+    if (dik > 0 && (r[6] || '').toString().trim()) out.desa[sf + '|' + U(r[5]) + '|' + U(r[6]) + '|' + tgl] = true;
   });
   return out;
 }
@@ -702,10 +702,11 @@ function djpHapusImportWPI() {
 
 // ================================================================
 //  DJP_Realisasi_Baru — kunjungan nyata (1 baris = SF × desa × hari)
-//  TGL|KODE_SF|NAMA_SF|KAB|KEC|DESA|JML_ODP|DIKUNJUNGI|TARGET_DJP|SUMBER|UPLOADED_BY|UPLOADED_AT
-//  Dihitung sebagai kunjungan bila DESA terisi DAN DIKUNJUNGI > 0.
+//  TGL|KODE_SF|NAMA_SF|PLAN|KAB|KEC|DESA|JML_ODP|DIKUNJUNGI|TARGET_DJP|SUMBER|UPLOADED_BY|UPLOADED_AT
+//  PLAN = 'Ada Plan' / kosong. KAB/KEC/DESA hanya diisi bila Ada Plan DAN DIKUNJUNGI > 0 (= kunjungan desa).
 // ================================================================
-const RB_HEAD = ['TGL','KODE_SF','NAMA_SF','KAB','KEC','DESA','JML_ODP','DIKUNJUNGI','TARGET_DJP','SUMBER','UPLOADED_BY','UPLOADED_AT'];
+const RB_HEAD = ['TGL','KODE_SF','NAMA_SF','PLAN','KAB','KEC','DESA','JML_ODP','DIKUNJUNGI','TARGET_DJP','SUMBER','UPLOADED_BY','UPLOADED_AT'];
+const RB_ADA = 'Ada Plan';
 const RB_LAPORAN = 'Laporan Harian', RB_WPI = 'Source WPI';
 
 function djpRealBaruSheet_() {
@@ -765,12 +766,12 @@ function djpLaporanHarianSave_(rows, by) {
       const L = lap[k], desas = plan[k] ? Object.values(plan[k]) : [];
       if (desas.length) terplan++; else tanpaPlan++;
       if (L.dik > 0) dikunjungi++;
-      if (desas.length && L.dik > 0) desas.forEach(d => out.push([L.tgl, L.sf, L.nama, d.kab, d.kec, d.desa, d.n, L.dik, L.target, RB_LAPORAN, by, now]));
-      else out.push([L.tgl, L.sf, L.nama, desas.length ? desas[0].kab : '', '', '', 0, L.dik, L.target, RB_LAPORAN, by, now]);
+      if (desas.length && L.dik > 0) desas.forEach(d => out.push([L.tgl, L.sf, L.nama, RB_ADA, d.kab, d.kec, d.desa, d.n, L.dik, L.target, RB_LAPORAN, by, now]));
+      else out.push([L.tgl, L.sf, L.nama, desas.length ? RB_ADA : '', '', '', '', '', L.dik, L.target, RB_LAPORAN, by, now]);
     });
 
     const ws = djpRealBaruSheet_();
-    const replaced = djpRealBaruDelete_(ws, r => r[9] === RB_LAPORAN && lap[djpNormTgl(r[0]) + '|' + U(r[1])]);
+    const replaced = djpRealBaruDelete_(ws, r => r[10] === RB_LAPORAN && lap[djpNormTgl(r[0]) + '|' + U(r[1])]);
     djpRealBaruAppend_(ws, out);
     try { CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_daily_' + t)); } catch (e) {}
     return { ok:true, sf: keys.length, baris: out.length, replaced, terplan, tanpaPlan, dikunjungi };
@@ -800,11 +801,39 @@ function djpSalinWPIKeRealisasi() {
     const g = Object.values(grp);
     if (!g.length) { Logger.log('Tidak ada baris import Source WPI di DJP_Plan.'); return 0; }
     const now = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
-    const out = g.map(x => [x.tgl, x.sf, x.nama, x.kab, x.kec, x.desa, x.n, perSFHari[x.tgl + '|' + x.sf], '', RB_WPI, 'import Source WPI', now]);
+    const out = g.map(x => [x.tgl, x.sf, x.nama, RB_ADA, x.kab, x.kec, x.desa, x.n, perSFHari[x.tgl + '|' + x.sf], '', RB_WPI, 'import Source WPI', now]);
     const ws = djpRealBaruSheet_();
-    const old = djpRealBaruDelete_(ws, r => r[9] === RB_WPI);   // aman diulang
+    const old = djpRealBaruDelete_(ws, r => r[10] === RB_WPI);   // aman diulang
     djpRealBaruAppend_(ws, out);
     Logger.log('Disalin: ' + out.length + ' baris (SF×desa×hari) ke DJP_Realisasi_Baru; ganti lama: ' + old + '. DJP_Plan tidak diubah.');
     return out.length;
   } finally { try { lock.releaseLock(); } catch (e) {} }
+}
+
+
+// ================================================================
+//  SEKALI JALAN: ubah DJP_Realisasi_Baru format lama (tanpa kolom PLAN) → format baru
+//  Sisipkan kolom PLAN setelah NAMA_SF, rapikan isi sesuai aturan:
+//   - Ada Plan + Dikunjungi > 0 → KAB/KEC/DESA terisi
+//   - Ada Plan + Dikunjungi 0   → PLAN = 'Ada Plan', KAB/KEC/DESA kosong
+//   - Tanpa plan                → semua kosong
+//  Jalankan sekali: pilih djpRealBaruTambahKolomPlan → Jalankan.
+// ================================================================
+function djpRealBaruTambahKolomPlan() {
+  const ws = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_REAL2);
+  if (!ws) throw new Error('Tab DJP_Realisasi_Baru tidak ada');
+  if ((ws.getRange(1, 4).getValue() || '').toString().trim().toUpperCase() === 'PLAN') { Logger.log('Kolom PLAN sudah ada.'); return; }
+  ws.insertColumnAfter(3);
+  ws.getRange(1, 1, 1, RB_HEAD.length).setValues([RB_HEAD]).setFontWeight('bold');
+  const n = ws.getLastRow() - 1; if (n < 1) return;
+  const rg = ws.getRange(2, 4, n, 4), v = rg.getValues();        // PLAN | KAB | KEC | DESA
+  const dik = ws.getRange(2, 9, n, 1).getValues();
+  const out = v.map((r, i) => {
+    const kab = (r[1] || '').toString().trim(), desa = (r[3] || '').toString().trim();
+    const adaPlan = !!(kab || desa);                               // format lama: KAB terisi = SF punya plan
+    if (adaPlan && desa && (+dik[i][0] > 0)) return [RB_ADA, r[1], r[2], r[3]];
+    return [adaPlan ? RB_ADA : '', '', '', ''];
+  });
+  rg.setValues(out);
+  Logger.log('Kolom PLAN ditambahkan, ' + n + ' baris dirapikan.');
 }
