@@ -863,11 +863,11 @@ function djpLaporanHarianSave_(rows, by) {
 }
 
 // ================================================================
-//  SEKALI JALAN: pindahkan baris "import Source WPI" dari DJP_Plan → DJP_Realisasi_Baru
-//  Jalankan manual dari editor: pilih djpPindahWPIKeRealisasi → Jalankan.
-//  Urutan aman: tulis dulu ke DJP_Realisasi_Baru, baru hapus dari DJP_Plan.
+//  SEKALI JALAN: SALIN baris "import Source WPI" dari DJP_Plan → DJP_Realisasi_Baru
+//  Jalankan manual dari editor: pilih djpSalinWPIKeRealisasi → Jalankan.
+//  Baris di DJP_Plan TIDAK dihapus (tetap dipakai rotasi ODP / Last Plan). Aman diulang.
 // ================================================================
-function djpPindahWPIKeRealisasi() {
+function djpSalinWPIKeRealisasi() {
   const lock = LockService.getScriptLock(); lock.waitLock(30000);
   try {
     const U = x => (x || '').toString().trim().toUpperCase();
@@ -881,15 +881,13 @@ function djpPindahWPIKeRealisasi() {
       grp[k].n++; perSFHari[tgl + '|' + sf] = (perSFHari[tgl + '|' + sf] || 0) + 1;
     }
     const g = Object.values(grp);
-    if (!g.length) { Logger.log('Tidak ada baris import Source WPI di DJP_Plan (mungkin sudah dipindah).'); return 0; }
+    if (!g.length) { Logger.log('Tidak ada baris import Source WPI di DJP_Plan.'); return 0; }
     const now = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
     const out = g.map(x => [x.tgl, x.sf, x.nama, x.kab, x.kec, x.desa, x.n, perSFHari[x.tgl + '|' + x.sf], '', RB_WPI, 'import Source WPI', now]);
     const ws = djpRealBaruSheet_();
     const old = djpRealBaruDelete_(ws, r => r[9] === RB_WPI);   // aman diulang
     djpRealBaruAppend_(ws, out);
-    lock.releaseLock();
-    const hapus = djpHapusImportWPI();
-    Logger.log('Dipindah: ' + out.length + ' baris (SF×desa×hari) ke DJP_Realisasi_Baru; ' + hapus + ' baris dihapus dari DJP_Plan; ganti lama: ' + old);
+    Logger.log('Disalin: ' + out.length + ' baris (SF×desa×hari) ke DJP_Realisasi_Baru; ganti lama: ' + old + '. DJP_Plan tidak diubah.');
     return out.length;
   } finally { try { lock.releaseLock(); } catch (e) {} }
 }
