@@ -2,7 +2,7 @@
 //  DJP – Daily Journey Plan  (Versi 23)
 //  Spreadsheet Monitoring : 1ioPvgGbRZIHb_zP-ushATvz434b3p1LQvGcpn1OxBIQ
 //  Sheet DJP_Plan         : TGL|USERNAME_SF|NAMA_SF|ODP|CLUSTER|KAB|KEC|DESA|LAT|LNG|AVAI|DIBUAT_OLEH|DIBUAT_AT|TAHUN
-//  Sheet DJP_Realisasi    : SCHEDULE_ID|TUGAS_ID|NAMA_SF|TGL|ODP|STATUS|CHECKIN|CHECKOUT|LAT|LNG|ODP_CONDITION|PROSPECT_ESTIMATE|NOTES|UPLOADED_BY|UPLOADED_AT
+//  Sheet DJP_Realisasi_Baru: TGL|KODE_SF|NAMA_SF|KAB|KEC|DESA|JML_ODP|DIKUNJUNGI|TARGET_DJP|SUMBER|UPLOADED_BY|UPLOADED_AT
 //  Sheet ODPBot           : (header dinamis) ODP|AVAI|USED|OCC 2|LATITUDE|LONGITUDE|KAB|KEC|DESA|Telkomsel Cluster
 //  Spreadsheet Users      : 1IhU91CyYKQRDLysUYgpPn258ieoADixO30Cl5YS3YeM
 //  Sheet Update SF        : (header baris 1) col[1]=NAMA, col[2]=CODE/NIK, col[15]=CLUSTER, col[16]=STATUS, col[19]=STO_CODE, col[20]=KAB_U, col[33]=KAB_AH
@@ -11,7 +11,6 @@
 const DJP_CONFIG = {
   SHEET_ID:     '1ioPvgGbRZIHb_zP-ushATvz434b3p1LQvGcpn1OxBIQ',
   SHEET_PLAN:   'DJP_Plan',
-  SHEET_REAL:   'DJP_Realisasi',
   SHEET_REAL2:  'DJP_Realisasi_Baru',   // kunjungan nyata: 1 baris = SF × desa × hari
   SHEET_ODP:    'ODPBot',
   SF_SHEET_ID:  '1IhU91CyYKQRDLysUYgpPn258ieoADixO30Cl5YS3YeM',
@@ -25,15 +24,6 @@ const P = {
   CLUSTER:4, KAB:5, KEC:6, DESA:7,
   LAT:8, LNG:9, AVAI:10,
   DIBUAT_OLEH:11, DIBUAT_AT:12, TAHUN:13,
-};
-
-// Kolom DJP_Realisasi (0-based)
-const R = {
-  SCHEDULE_ID:0, TUGAS_ID:1, NAMA_SF:2, TGL:3,
-  ODP:4, STATUS:5, CHECKIN:6, CHECKOUT:7,
-  LAT:8, LNG:9, ODP_CONDITION:10,
-  PROSPECT_ESTIMATE:11, NOTES:12,
-  UPLOADED_BY:13, UPLOADED_AT:14,
 };
 
 // ================================================================
@@ -70,6 +60,23 @@ function djpDeletePlanRows_(ws, keySet) {
   return hit.length;
 }
 
+
+
+// Kunjungan nyata dari DJP_Realisasi_Baru untuk tanggal/bulan (prefix 'yyyy-MM-dd' atau 'yyyy-MM')
+// → { desa: {'SF|KEC|DESA|tgl': true}, sf: {'SF|tgl': {dik, target}} }
+function djpRealBaruRead_(prefix) {
+  const U = x => (x || '').toString().trim().toUpperCase();
+  const out = { desa: {}, sf: {} };
+  const ws = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_REAL2);
+  if (!ws || ws.getLastRow() < 2) return out;
+  ws.getRange(2, 1, ws.getLastRow() - 1, RB_HEAD.length).getValues().forEach(r => {
+    const tgl = djpNormTgl(r[0]); if (!tgl.startsWith(prefix)) return;
+    const sf = U(r[1]), dik = +r[7] || 0;
+    const k = sf + '|' + tgl; out.sf[k] = { dik: Math.max(dik, (out.sf[k] || {}).dik || 0), target: +r[8] || 0 };
+    if (dik > 0 && (r[5] || '').toString().trim()) out.desa[sf + '|' + U(r[4]) + '|' + U(r[5]) + '|' + tgl] = true;
+  });
+  return out;
+}
 
 // ================================================================
 //  MAIN HANDLER – dipanggil dari doGet di Code.gs
@@ -380,61 +387,8 @@ function djpRealisasiUpload(params) {
   if (!Array.isArray(rows) || rows.length === 0) {
     return { ok:false, error:'rows kosong.' };
   }
-  if (params.format === 'laporan_harian') return djpLaporanHarianSave_(rows, auth.user.username);
-
-  try {
-    const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
-    const ws = ss.getSheetByName(DJP_CONFIG.SHEET_REAL);
-    if (!ws) return { ok:false, error:'Sheet DJP_Realisasi tidak ditemukan.' };
-
-    const now          = new Date().toISOString();
-    const uploaded_by  = auth.user.username;
-
-    const toAppend = rows.map(r => [
-      r.schedule_id       || '',
-      r.tugas_id          || '',
-      r.nama_sf           || r['TUGAS NAME'] || '',
-      r.tgl               || r['TUGAS DATE'] || '',
-      r.odp               || r['ODP']        || '',
-      r.status            || r['STATUS']     || '',
-      r.checkin           || r['CHECKIN']    || '',
-      r.checkout          || r['CHECKOUT']   || '',
-      r.lat               || r['LATITUDE']   || '',
-      r.lng               || r['LONGITUDE']  || '',
-      r.odp_condition     || r['ODP CONDITION'] || '',
-      r.prospect_estimate || r['PROSPECT ESTIMATE'] || '',
-      r.notes             || r['NOTES']      || '',
-      uploaded_by,
-      now,
-    ]);
-
-    // Cek duplikasi berdasarkan SCHEDULE_ID yang sudah ada
-    const existing = ws.getDataRange().getValues().slice(1);
-    const existingIds = new Set(existing.map(r => (r[R.SCHEDULE_ID]||'').toString().trim()));
-    const filtered = toAppend.filter(r => !existingIds.has((r[0]||'').toString().trim()));
-
-    if (filtered.length === 0) {
-      return { ok:true, saved:0, skipped: toAppend.length, message:'Semua data sudah ada (duplikat).' };
-    }
-
-    // Batch append
-    for (let i = 0; i < filtered.length; i += DJP_CONFIG.BATCH_SIZE) {
-      const batch = filtered.slice(i, i + DJP_CONFIG.BATCH_SIZE);
-      ws.getRange(ws.getLastRow() + 1, 1, batch.length, batch[0].length)
-        .setValues(batch);
-    }
-
-    // Invalidate daily cache
-    try { CacheService.getScriptCache().remove('djp_daily_' + new Date().toISOString().slice(0,10)); } catch(e) {}
-
-    return {
-      ok: true,
-      saved:   filtered.length,
-      skipped: toAppend.length - filtered.length,
-    };
-  } catch(e) {
-    return { ok:false, error:'djpRealisasiUpload: ' + e.message };
-  }
+  // Hanya format Laporan Kunjungan DJP Harian (Web Telkomsel). Format jadwal per ODP lama sudah tidak dipakai.
+  return djpLaporanHarianSave_(rows, auth.user.username);
 }
 
 // ================================================================
@@ -477,60 +431,21 @@ function djpDaily(params) {
         lng:         parseFloat(r[P.LNG]) || 0,
       }));
 
-    // Baca Realisasi
-    const wsReal = ss.getSheetByName(DJP_CONFIG.SHEET_REAL);
-    const realRows = wsReal ? wsReal.getDataRange().getValues().slice(1) : [];
-    const realisasi = realRows
-      .filter(r => normTgl(r[R.TGL]) === tgl)
-      .map(r => ({
-        schedule_id:      (r[R.SCHEDULE_ID]||'').toString().trim(),
-        nama_sf:          (r[R.NAMA_SF]||'').toString().trim(),
-        odp:              (r[R.ODP]||'').toString().trim(),
-        status:           (r[R.STATUS]||'').toString().trim(),
-        checkin:          (r[R.CHECKIN]||'').toString().trim(),
-        checkout:         (r[R.CHECKOUT]||'').toString().trim(),
-        odp_condition:    (r[R.ODP_CONDITION]||'').toString().trim(),
-        prospect_estimate: parseInt(r[R.PROSPECT_ESTIMATE]) || 0,
-        notes:            (r[R.NOTES]||'').toString().trim(),
-      }));
-
-    // Fungsi ekstrak jam dari berbagai format timestamp/waktu
-    function extractJam(checkinStr) {
-      if (!checkinStr) return '';
-      const s = checkinStr.toString().trim();
-      // Format "2025-01-15 08:30:00" atau "08:30:00" atau "08:30"
-      const m = s.match(/(\d{1,2}):(\d{2})/);
-      if (m) return m[1].padStart(2,'0') + ':' + m[2];
-      return '';
-    }
-
-    // Gabungkan: per SF → list ODP plan + status realisasi
+    // Realisasi: SF dianggap sudah ke ODP plan bila desa ODP itu tercatat dikunjungi SF tsb. di DJP_Realisasi_Baru
+    const RB = djpRealBaruRead_(tgl), U = x => (x || '').toString().trim().toUpperCase();
+    const isImport = {}; planRows.forEach(r => { if (normTgl(r[P.TGL]) === tgl && (r[P.DIBUAT_OLEH] || '').toString().trim() === DJP_IMPORT_TAG) isImport[U(r[P.USERNAME_SF]) + '|' + U(r[P.ODP])] = true; });
     const sfMap = {};
+    let totalReal = 0;
     plan.forEach(p => {
+      const su = U(p.username_sf);
       if (!sfMap[p.username_sf]) {
-        sfMap[p.username_sf] = { username_sf: p.username_sf, nama_sf: p.nama_sf, odp_list: [] };
+        const L = RB.sf[su + '|' + tgl] || null;
+        sfMap[p.username_sf] = { username_sf: p.username_sf, nama_sf: p.nama_sf, odp_list: [], dikunjungi: L ? L.dik : null, target: L ? L.target : null };
       }
-      // Cari realisasi untuk ODP ini
-      const real = realisasi.find(r => r.odp === p.odp && r.nama_sf === p.nama_sf) || null;
-      const checkin_jam = real ? extractJam(real.checkin) : '';
-      const done = real && real.status && real.status !== '' && real.status !== '-';
-      sfMap[p.username_sf].odp_list.push({
-        odp:           p.odp,
-        cluster:       p.cluster,
-        kab:           p.kab,
-        kec:           p.kec,
-        desa:          p.desa,
-        lat:           p.lat,
-        lng:           p.lng,
-        status:        real ? real.status : 'Belum',
-        checkin:       real ? real.checkin : '',
-        checkin_jam:   checkin_jam,                  // FIX #4: jam check-in saja
-        realisasi:     done ? 'Done' : '',           // FIX #4: "Done" atau ""
-        checkout:      real ? real.checkout : '',
-        odp_condition: real ? real.odp_condition : '',
-        prospect:      real ? real.prospect_estimate : 0,
-        notes:         real ? real.notes : '',
-      });
+      const done = !!(RB.desa[su + '|' + U(p.kec) + '|' + U(p.desa) + '|' + tgl] || isImport[su + '|' + U(p.odp)]);
+      if (done) totalReal++;
+      sfMap[p.username_sf].odp_list.push({ odp: p.odp, cluster: p.cluster, kab: p.kab, kec: p.kec, desa: p.desa, lat: p.lat, lng: p.lng,
+        status: done ? 'Dikunjungi' : 'Belum', realisasi: done ? 'Done' : '' });
     });
 
     // Flat rows untuk tabel DJP Daily (Fix #4)
@@ -543,7 +458,8 @@ function djpDaily(params) {
           odp:        o.odp,
           kec:        o.kec,
           desa:       o.desa,
-          checkin_jam:o.checkin_jam,
+          dikunjungi: sf.dikunjungi,
+          target:     sf.target,
           realisasi:  o.realisasi,
         });
       });
@@ -555,7 +471,7 @@ function djpDaily(params) {
       tgl,
       total_sf:    summary.length,
       total_plan:  plan.length,
-      total_real:  realisasi.length,
+      total_real:  totalReal,
       summary,      // nested (backward compat)
       rows: flatRows, // flat untuk tabel baru (Fix #4)
       updatedAt:   new Date().toISOString(),
@@ -598,14 +514,14 @@ function djpOdpList(params) {
       });
     }
 
-    // ── 2. Visit: ODP yang ada di Realisasi bulan ini ──
-    const wsReal = ss.getSheetByName(DJP_CONFIG.SHEET_REAL);
-    if (wsReal) {
-      wsReal.getDataRange().getValues().slice(1).forEach(r => {
-        if (djpNormTgl(r[R.TGL]).startsWith(bulan)) {
-          const odp = (r[R.ODP]||'').toString().trim();
-          if (odp) visitSet[odp] = true;
-        }
+    // ── 2. Visit: ODP plan yang desanya tercatat dikunjungi SF tsb. (DJP_Realisasi_Baru) ──
+    const RB = djpRealBaruRead_(bulan), U = x => (x || '').toString().trim().toUpperCase();
+    if (wsPlan) {
+      wsPlan.getDataRange().getValues().slice(1).forEach(r => {
+        const tgl = djpNormTgl(r[P.TGL]); if (!tgl.startsWith(bulan)) return;
+        const odp = (r[P.ODP] || '').toString().trim(); if (!odp) return;
+        if ((r[P.DIBUAT_OLEH] || '').toString().trim() === DJP_IMPORT_TAG ||
+            RB.desa[U(r[P.USERNAME_SF]) + '|' + U(r[P.KEC]) + '|' + U(r[P.DESA]) + '|' + tgl]) visitSet[odp] = true;
       });
     }
 
@@ -856,6 +772,7 @@ function djpLaporanHarianSave_(rows, by) {
     const ws = djpRealBaruSheet_();
     const replaced = djpRealBaruDelete_(ws, r => r[9] === RB_LAPORAN && lap[djpNormTgl(r[0]) + '|' + U(r[1])]);
     djpRealBaruAppend_(ws, out);
+    try { CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_daily_' + t)); } catch (e) {}
     return { ok:true, sf: keys.length, baris: out.length, replaced, terplan, tanpaPlan, dikunjungi };
   } catch (e) {
     return { ok:false, error:'djpLaporanHarianSave: ' + e.message };

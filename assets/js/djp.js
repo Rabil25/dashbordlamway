@@ -877,7 +877,7 @@ function djpRealData() {
           const tg = [...new Set(all.map(r => this._tgl(r['Tanggal'] || r['Periode'])).filter(Boolean))].sort();
           const dk = all.filter(r => +r['Dikunjungi'] > 0).length;
           this.msg = `📋 Laporan Kunjungan DJP Harian: ${all.length} baris SF · tanggal ${tg.join(', ') || '?'} · ${dk} SF dikunjungi > 0`;
-        } else this.msg = `📋 ${all.length} baris terdeteksi (format jadwal per ODP)`;
+        } else { this.msg = '❌ Format tidak dikenali. Gunakan file "Laporan Kunjungan DJP Harian" dari Web Telkomsel (ada kolom Kode SF & Dikunjungi).'; this.csvRows = []; this.csvPreview = []; }
       } catch (e) { this.msg = '❌ ' + e.message; this.csvRows = []; this.csvPreview = []; }
     },
     _tgl(v) {
