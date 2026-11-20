@@ -2325,9 +2325,9 @@
                       </template>
                       <em x-show="d.desas.length>8" x-text="'+'+(d.desas.length-8)"></em>
                     </span>
-                    <span class="tl-cnt"><span x-text="d.desas.length ? d.desas.length+' desa' : '–'"></span><template x-if="!d.isFuture && (d.desas.length || d.desaR)"><span> · ✔ <b :style="'color:'+(d.desas.length && !d.desaRPlan ? '#dc2626' : d.desaRPlan >= d.desas.length ? '#16a34a' : '#ca8a04')" x-text="d.desaRPlan"></b><span x-show="d.luarPlan.length" style="color:#2563eb" x-text="' +'+d.luarPlan.length"></span></span></template></span>
-                    <span class="tl-cnt" x-show="d.sfP || d.sfR" style="font-size:10px"
-                          :title="'SF plan / SF realisasi'">👤 <span x-text="d.sfP"></span><template x-if="!d.isFuture"><span> / <b :style="'color:'+(d.sfP && !d.sfR ? '#dc2626' : d.sfR >= d.sfP ? '#16a34a' : '#ca8a04')" x-text="d.sfR"></b></span></template></span>
+                    <span class="tl-cnt" style="white-space:nowrap;line-height:1.35" x-text="d.desas.length ? d.desas.length+' desa' : '–'"></span>
+                    <span class="tl-cnt" style="white-space:nowrap;font-size:11px;line-height:1.35;min-height:15px"><template x-if="!d.isFuture && (d.desas.length || d.desaR)"><span>✔ <b :style="'color:'+(d.desas.length && !d.desaRPlan ? '#dc2626' : d.desaRPlan >= d.desas.length ? '#16a34a' : '#ca8a04')" x-text="d.desaRPlan"></b><b x-show="d.luarPlan.length" style="color:#2563eb;margin-left:4px" x-text="'+'+d.luarPlan.length"></b></span></template></span>
+                    <span class="tl-cnt" style="white-space:nowrap;font-size:11px;line-height:1.35;min-height:15px" title="SF plan / SF realisasi"><template x-if="d.sfP || d.sfR"><span>👤 <span x-text="d.sfP"></span><template x-if="!d.isFuture"><span>/<b :style="'color:'+(d.sfP && !d.sfR ? '#dc2626' : d.sfR >= d.sfP ? '#16a34a' : '#ca8a04')" x-text="d.sfR"></b></span></template></span></template></span>
                   </button>
                 </template>
               </div>
