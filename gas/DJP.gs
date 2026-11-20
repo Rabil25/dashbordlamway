@@ -387,7 +387,8 @@ function djpRealisasiUpload(params) {
   if (!Array.isArray(rows) || rows.length === 0) {
     return { ok:false, error:'rows kosong.' };
   }
-  // Hanya format Laporan Kunjungan DJP Harian (Web Telkomsel). Format jadwal per ODP lama sudah tidak dipakai.
+  if (params.format === 'detail_djp') return djpDetailSave_(rows, auth.user.username);
+  // Format Laporan Kunjungan DJP Harian (Web Telkomsel)
   return djpLaporanHarianSave_(rows, auth.user.username);
 }
 
@@ -771,6 +772,11 @@ function djpLaporanHarianSave_(rows, by) {
     });
 
     const ws = djpRealBaruSheet_();
+    // (tanggal, SF) yang sudah punya data Detail DJP tidak ditimpa laporan harian (detail lebih akurat)
+    const adaDetail = {};
+    if (ws.getLastRow() > 1) ws.getRange(2, 1, ws.getLastRow() - 1, 11).getValues().forEach(r => { if (r[10] === 'Detail DJP') adaDetail[djpNormTgl(r[0]) + '|' + U(r[1])] = true; });
+    const outF = out.filter(r => !adaDetail[r[0] + '|' + r[1]]);
+    out.length = 0; outF.forEach(r => out.push(r));
     const replaced = djpRealBaruDelete_(ws, r => r[10] === RB_LAPORAN && lap[djpNormTgl(r[0]) + '|' + U(r[1])]);
     djpRealBaruAppend_(ws, out);
     try { CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_daily_' + t)); } catch (e) {}
@@ -836,4 +842,44 @@ function djpRealBaruTambahKolomPlan() {
   });
   rg.setValues(out);
   Logger.log('Kolom PLAN ditambahkan, ' + n + ' baris dirapikan.');
+}
+
+
+// ================================================================
+//  Upload Detail DJP (per homepass, sudah dirangkum di web menjadi SF × desa × hari)
+//  rows = [{tgl, kode_sf, nama_sf, kab, kec, desa, jml_odp, dikunjungi, target}]
+//  Mengganti baris Laporan Harian / Detail DJP untuk (tanggal, SF) yang sama.
+// ================================================================
+const RB_DETAIL = 'Detail DJP';
+function djpDetailSave_(rows, by) {
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch (e) { return { ok:false, error:'Server sedang sibuk, coba lagi.' }; }
+  try {
+    const U = x => (x || '').toString().trim().toUpperCase();
+    const keys = {}, tglSet = {};
+    rows.forEach(r => { const t = djpNormTgl(r.tgl); if (t && r.kode_sf) { keys[t + '|' + U(r.kode_sf)] = true; tglSet[t] = true; } });
+    if (!Object.keys(keys).length) return { ok:false, error:'Tidak ada baris valid.' };
+    // SF punya plan web di tanggal itu?
+    const ada = {};
+    SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN).getDataRange().getValues().slice(1).forEach(p => {
+      const t = djpNormTgl(p[P.TGL]); if (!tglSet[t]) return;
+      if ((p[P.DIBUAT_OLEH] || '').toString().trim() === DJP_IMPORT_TAG) return;
+      ada[t + '|' + U(p[P.USERNAME_SF])] = true;
+    });
+    const now = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+    let terplan = 0, dikunjungi = 0;
+    const out = rows.filter(r => djpNormTgl(r.tgl) && r.kode_sf).map(r => {
+      const t = djpNormTgl(r.tgl), sf = U(r.kode_sf), pl = ada[t + '|' + sf] ? RB_ADA : '';
+      if (pl) terplan++; if (+r.dikunjungi > 0) dikunjungi++;
+      return [t, sf, (r.nama_sf || '').toString().trim(), pl, U(r.kab), (r.kec || '').toString().trim(), (r.desa || '').toString().trim(),
+              +r.jml_odp || 0, +r.dikunjungi || 0, +r.target || 0, RB_DETAIL, by, now];
+    });
+    const ws = djpRealBaruSheet_();
+    const replaced = djpRealBaruDelete_(ws, r => (r[10] === RB_LAPORAN || r[10] === RB_DETAIL) && keys[djpNormTgl(r[0]) + '|' + U(r[1])]);
+    djpRealBaruAppend_(ws, out);
+    try { CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_daily_' + t)); } catch (e) {}
+    return { ok:true, baris: out.length, replaced, sf: Object.keys(keys).length, terplan, dikunjungi };
+  } catch (e) {
+    return { ok:false, error:'djpDetailSave: ' + e.message };
+  } finally { lock.releaseLock(); }
 }

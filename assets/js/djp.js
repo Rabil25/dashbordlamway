@@ -871,13 +871,19 @@ function djpRealData() {
         let all = [];
         for (const f of files) all = all.concat(await this._readOne(f));
         const h = all.length ? Object.keys(all[0]) : [];
-        this.mode = (h.includes('Kode SF') && h.includes('Dikunjungi')) ? 'laporan' : 'lama';
+        this.mode = (h.includes('SF_CODE') && h.includes('STATUS_DJP') && h.includes('ODP')) ? 'detail'
+                  : (h.includes('Kode SF') && h.includes('Dikunjungi')) ? 'laporan' : 'lama';
         this.csvRows = all; this.csvPreview = all.slice(0, 5);
-        if (this.mode === 'laporan') {
+        if (this.mode === 'detail') {
+          const agg = await this._detailAgg(all); this.detailRows = agg.rows;
+          const tg = [...new Set(agg.rows.map(r => r.tgl))].sort();
+          this.msg = `📋 Detail DJP: ${all.length} tugas · ${agg.done} CHECKOUT · ${new Set(agg.rows.map(r => r.kode_sf)).size} SF · ${tg[0] || '?'} s.d. ${tg[tg.length - 1] || '?'} → ${agg.rows.length} baris SF×desa×hari` +
+            (agg.unknown ? ` · ⚠️ ${agg.unknown} ODP tidak dikenal di data ODP (desa kosong)` : '');
+        } else if (this.mode === 'laporan') {
           const tg = [...new Set(all.map(r => this._tgl(r['Tanggal'] || r['Periode'])).filter(Boolean))].sort();
           const dk = all.filter(r => +r['Dikunjungi'] > 0).length;
           this.msg = `📋 Laporan Kunjungan DJP Harian: ${all.length} baris SF · tanggal ${tg.join(', ') || '?'} · ${dk} SF dikunjungi > 0`;
-        } else { this.msg = '❌ Format tidak dikenali. Gunakan file "Laporan Kunjungan DJP Harian" dari Web Telkomsel (ada kolom Kode SF & Dikunjungi).'; this.csvRows = []; this.csvPreview = []; }
+        } else { this.msg = '❌ Format tidak dikenali. Gunakan file Detail DJP (kolom SF_CODE, ODP, STATUS_DJP) atau "Laporan Kunjungan DJP Harian" dari Web Telkomsel.'; this.csvRows = []; this.csvPreview = []; }
       } catch (e) { this.msg = '❌ ' + e.message; this.csvRows = []; this.csvPreview = []; }
     },
     _tgl(v) {
@@ -887,6 +893,28 @@ function djpRealData() {
     },
     // Rangkuman per SF setelah upload laporan harian
     lapInfo: null,
+    detailRows: [],
+    // Detail DJP (per homepass) → SF × desa × hari. Desa diambil dari ODP (odp.json).
+    async _detailAgg(all) {
+      const od = await getOdpJson(), list = Array.isArray(od) ? od : (od.data || []), map = {};
+      const N = s => String(s || '').toUpperCase().replace(/\s+/g, '');
+      list.forEach(o => { map[N(o.odp)] = o; });
+      const g = {}, unk = new Set(); let done = 0;
+      all.forEach(r => {
+        const tgl = this._tgl(r['TANGGAL_TUGAS']), sf = String(r['SF_CODE'] || '').trim().toUpperCase(); if (!tgl || !sf) return;
+        const odp = String(r['ODP'] || '').trim(), o = map[N(odp)];
+        if (!o && odp) unk.add(odp);
+        const kab = o ? String(o.kab || '').trim().toUpperCase() : '', kec = o ? String(o.kec || '').trim() : '', desa = o ? String(o.desa || '').trim() : '';
+        const k = [tgl, sf, kec.toUpperCase(), desa.toUpperCase()].join('|');
+        const x = g[k] = g[k] || { tgl, kode_sf: sf, nama_sf: String(r['SF_NAMA'] || '').trim(), kab, kec, desa, odps: new Set(), dik: 0, target: 0 };
+        x.target++;
+        const st = String(r['STATUS_DJP'] || '').trim().toUpperCase();
+        if (st === 'CHECKOUT' || st === 'CHECKIN') { x.dik++; x.odps.add(odp); done++; }
+      });
+      const rows = Object.values(g).map(x => ({ tgl: x.tgl, kode_sf: x.kode_sf, nama_sf: x.nama_sf, kab: x.kab, kec: x.kec, desa: x.desa,
+        jml_odp: x.odps.size, dikunjungi: x.dik, target: x.target }));
+      return { rows, done, unknown: unk.size };
+    },
 
     get csvHeaders() {
       if (!this.csvRows.length) return [];
@@ -901,6 +929,20 @@ function djpRealData() {
       const uploader = (JSON.parse(localStorage.getItem('wok_user')||'null')||{}).username||'';
       this.uploading = true;
       this.msg = 'Mengupload...';
+      if (this.mode === 'detail') {
+        try {
+          const rows = this.detailRows, CH = 1500; let tot = { baris: 0, replaced: 0, sf: 0, terplan: 0, dikunjungi: 0 };
+          // kirim per kelompok tanggal agar request tidak terlalu besar
+          const tgls = [...new Set(rows.map(r => r.tgl))].sort(); let buf = [];
+          const send = async b => { const res = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_realisasi_upload', format:'detail_djp', session_token:st, rows: b }) });
+            const d = await res.json(); if (!d.ok) throw new Error(d.error || 'Upload gagal'); Object.keys(tot).forEach(k => tot[k] += d[k] || 0); };
+          for (const t of tgls) { const part = rows.filter(r => r.tgl === t); if (buf.length && buf.length + part.length > CH) { await send(buf); buf = []; } buf = buf.concat(part); this.msg = `Mengupload… ${t}`; }
+          if (buf.length) await send(buf);
+          this.msg = `✅ Detail DJP tersimpan ke DJP_Realisasi_Baru: ${tot.baris} baris SF×desa×hari · ${tot.dikunjungi} baris dikunjungi > 0 · ${tot.terplan} baris ada plan` + (tot.replaced ? ` · ${tot.replaced} baris lama diganti` : '');
+          this.csvRows = []; this.csvPreview = []; this.detailRows = []; this.fileName = '';
+        } catch (e) { this.msg = '❌ ' + e.message; }
+        this.uploading = false; return;
+      }
       if (this.mode === 'laporan') {
         try {
           const rows = this.csvRows.map(r => ({ tgl: this._tgl(r['Tanggal'] || r['Periode']), kode_sf: String(r['Kode SF'] || '').trim(),
