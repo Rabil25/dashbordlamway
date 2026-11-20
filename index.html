@@ -2326,6 +2326,8 @@
                       <em x-show="d.desas.length>8" x-text="'+'+(d.desas.length-8)"></em>
                     </span>
                     <span class="tl-cnt" x-text="d.desas.length ? d.desas.length+' desa' : '–'"></span>
+                    <span class="tl-cnt" x-show="d.sfP || d.sfR" style="font-size:10px"
+                          :title="'SF plan / SF realisasi'">👤 <span x-text="d.sfP"></span><template x-if="!d.isFuture"><span> / <b :style="'color:'+(d.sfP && !d.sfR ? '#dc2626' : d.sfR >= d.sfP ? '#16a34a' : '#ca8a04')" x-text="d.sfR"></b></span></template></span>
                   </button>
                 </template>
               </div>
@@ -2346,6 +2348,10 @@
                     <div class="tl-sub" x-show="tlSelDay && tlSelDay.desas.length"
                          x-text="(tlSelDay?.desas.length||0)+' desa · '+(tlSelDay?.odpCount||0)+' ODP · '+(tlSelDay?.sfCount||0)+' SF'"></div>
                   </div>
+                </div>
+                <div class="tl-sub" x-show="tlSelDay && !tlSelDay.isFuture && (tlSelDay.sfP || tlSelDay.sfR)" style="padding:4px 2px 8px">
+                  👤 SF plan <b x-text="tlSelDay?.sfP"></b> · SF realisasi <b x-text="tlSelDay?.sfR"></b>
+                  <template x-if="tlSelDay?.sfMiss.length"><div style="color:#dc2626;margin-top:3px">Plan tapi tidak visit: <span x-text="tlSelDay.sfMiss.join(', ')"></span></div></template>
                 </div>
                 <div x-show="!tlSelDay || !tlSelDay.desas.length" class="tl-empty">
                   <span x-text="tlKat ? 'Tidak ada desa kategori ini pada tanggal tersebut.' : 'Belum ada plan pada tanggal ini.'"></span>

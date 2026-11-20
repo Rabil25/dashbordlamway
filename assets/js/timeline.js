@@ -118,6 +118,14 @@ function timelineData() {
         d.odps.push({ odp: r.odp, sf: r.nama_sf || r.username_sf });
         d.sf[r.username_sf] = r.nama_sf || r.username_sf;
       });
+      // SF per hari: plan vs realisasi (username dinormalisasi UPPER)
+      const U = v => String(v || '').trim().toUpperCase();
+      const kabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
+      const sfPlan = {}, sfReal = {}, sfNm = {};
+      this.tlClusterRows.forEach(r => { (sfPlan[r.tgl] || (sfPlan[r.tgl] = new Set())).add(U(r.username_sf)); sfNm[U(r.username_sf)] = r.nama_sf || r.username_sf; });
+      this.tlReal.forEach(r => { const kab = U(r.kab);
+        if (!kabs.includes(kab) || (this.tlKab && kab !== U(this.tlKab)) || (this.tlSf && U(r.username_sf) !== U(this.tlSf))) return;
+        (sfReal[r.tgl] || (sfReal[r.tgl] = new Set())).add(U(r.username_sf)); });
       const out = [];
       for (let i = 1; i <= n; i++) {
         const tgl = p + '-' + String(i).padStart(2, '0');
@@ -132,6 +140,8 @@ function timelineData() {
           isToday: tgl === today, isFuture: tgl > today,
           desas, odpCount,
           sfCount: new Set(desas.flatMap(d => Object.keys(d.sf))).size,
+          sfP: (sfPlan[tgl]?.size) || 0, sfR: (sfReal[tgl]?.size) || 0,
+          sfMiss: [...(sfPlan[tgl] || [])].filter(u => !sfReal[tgl]?.has(u)).map(u => sfNm[u]).sort(),
         });
       }
       return out;
