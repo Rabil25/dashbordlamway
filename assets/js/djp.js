@@ -877,8 +877,8 @@ function djpRealData() {
         if (this.mode === 'detail') {
           const agg = await this._detailAgg(all); this.detailRows = agg.rows;
           const tg = [...new Set(agg.rows.map(r => r.tgl))].sort();
-          this.msg = `📋 Detail DJP: ${all.length} tugas · ${agg.done} CHECKOUT · ${new Set(agg.rows.map(r => r.kode_sf)).size} SF · ${tg[0] || '?'} s.d. ${tg[tg.length - 1] || '?'} → ${agg.rows.length} baris SF×desa×hari` +
-            (agg.unknown ? ` · ⚠️ ${agg.unknown} ODP tidak dikenal di data ODP (desa kosong)` : '');
+          this.msg = `📋 Detail DJP: ${agg.tugas} tugas wilayah kita (dari ${all.length} baris file) · ${agg.done} CHECKOUT · ${new Set(agg.rows.map(r => r.kode_sf)).size} SF · ${tg[0] || '?'} s.d. ${tg[tg.length - 1] || '?'} → ${agg.rows.length} baris SF×desa×hari` +
+            (agg.unknown ? ` · ${agg.unknown} ODP di luar wilayah/tidak dikenal diabaikan` : '');
         } else if (this.mode === 'laporan') {
           const tg = [...new Set(all.map(r => this._tgl(r['Tanggal'] || r['Periode'])).filter(Boolean))].sort();
           const dk = all.filter(r => +r['Dikunjungi'] > 0).length;
@@ -899,21 +899,21 @@ function djpRealData() {
       const od = await getOdpJson(), list = Array.isArray(od) ? od : (od.data || []), map = {};
       const N = s => String(s || '').toUpperCase().replace(/\s+/g, '');
       list.forEach(o => { map[N(o.odp)] = o; });
-      const g = {}, unk = new Set(); let done = 0;
+      const g = {}, unk = new Set(); let done = 0, tugas = 0;
       all.forEach(r => {
         const tgl = this._tgl(r['TANGGAL_TUGAS']), sf = String(r['SF_CODE'] || '').trim().toUpperCase(); if (!tgl || !sf) return;
         const odp = String(r['ODP'] || '').trim(), o = map[N(odp)];
-        if (!o && odp) unk.add(odp);
+        if (!o) { if (odp) unk.add(odp); return; }   // ODP di luar wilayah kita (file bisa berisi seluruh Lampung/Sumbagsel) → abaikan
         const kab = o ? String(o.kab || '').trim().toUpperCase() : '', kec = o ? String(o.kec || '').trim() : '', desa = o ? String(o.desa || '').trim() : '';
         const k = [tgl, sf, kec.toUpperCase(), desa.toUpperCase()].join('|');
         const x = g[k] = g[k] || { tgl, kode_sf: sf, nama_sf: String(r['SF_NAMA'] || '').trim(), kab, kec, desa, odps: new Set(), dik: 0, target: 0 };
-        x.target++;
+        x.target++; tugas++;
         const st = String(r['STATUS_DJP'] || '').trim().toUpperCase();
         if (st === 'CHECKOUT' || st === 'CHECKIN') { x.dik++; x.odps.add(odp); done++; }
       });
       const rows = Object.values(g).map(x => ({ tgl: x.tgl, kode_sf: x.kode_sf, nama_sf: x.nama_sf, kab: x.kab, kec: x.kec, desa: x.desa,
         jml_odp: x.odps.size, dikunjungi: x.dik, target: x.target }));
-      return { rows, done, unknown: unk.size };
+      return { rows, done, tugas, unknown: unk.size };
     },
 
     get csvHeaders() {
