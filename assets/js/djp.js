@@ -887,7 +887,7 @@ function djpRealData() {
       } catch (e) { this.msg = '❌ ' + e.message; this.csvRows = []; this.csvPreview = []; }
     },
     _tgl(v) {
-      if (v instanceof Date) return localYMD(v);
+      if (v instanceof Date) return localYMD(new Date(v.getTime() + 12 * 3600e3));   // Excel 00:00 bisa bergeser beberapa detik/menit ke hari sebelumnya → bulatkan
       const t = String(v || '').trim(); let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return m[0];
       m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
     },
@@ -934,7 +934,7 @@ function djpRealData() {
           const rows = this.detailRows, CH = 5000; let tot = { baris: 0, replaced: 0, sf: 0, terplan: 0, dikunjungi: 0 };
           // kirim per kelompok tanggal agar request tidak terlalu besar
           const tgls = [...new Set(rows.map(r => r.tgl))].sort(); let buf = [];
-          const send = async b => { const res = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_realisasi_upload', format:'detail_djp', session_token:st, rows: b }) });
+          const send = async b => { const res = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_realisasi_upload', format:'detail_djp', session_token:st, rows: b, range_min: b.reduce((m, r) => r.tgl < m ? r.tgl : m, '9999'), range_max: b.reduce((m, r) => r.tgl > m ? r.tgl : m, '') }) });
             const d = await res.json(); if (!d.ok) throw new Error(d.error || 'Upload gagal'); Object.keys(tot).forEach(k => tot[k] += d[k] || 0); };
           for (const t of tgls) { const part = rows.filter(r => r.tgl === t); if (buf.length && buf.length + part.length > CH) { await send(buf); buf = []; } buf = buf.concat(part); this.msg = `⏳ Sedang diproses server, mohon tunggu… jangan tutup halaman (${rows.length} baris)`; }
           if (buf.length) await send(buf);

@@ -387,7 +387,7 @@ function djpRealisasiUpload(params) {
   if (!Array.isArray(rows) || rows.length === 0) {
     return { ok:false, error:'rows kosong.' };
   }
-  if (params.format === 'detail_djp') return djpDetailSave_(rows, auth.user.username);
+  if (params.format === 'detail_djp') return djpDetailSave_(rows, auth.user.username, djpNormTgl(params.range_min || ''), djpNormTgl(params.range_max || ''));
   // Format Laporan Kunjungan DJP Harian (Web Telkomsel)
   return djpLaporanHarianSave_(rows, auth.user.username);
 }
@@ -710,8 +710,8 @@ const RB_HEAD = ['TGL','KODE_SF','NAMA_SF','PLAN','KAB','KEC','DESA','JML_ODP','
 const RB_ADA = 'Ada Plan';
 const RB_LAPORAN = 'Laporan Harian', RB_WPI = 'Source WPI';
 
-function djpRealBaruSheet_() {
-  const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
+function djpRealBaruSheet_(ssOpt) {
+  const ss = ssOpt || SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
   let ws = ss.getSheetByName(DJP_CONFIG.SHEET_REAL2);
   if (!ws) ws = ss.insertSheet(DJP_CONFIG.SHEET_REAL2);
   if (ws.getLastRow() === 0) {
@@ -854,7 +854,7 @@ function djpRealBaruTambahKolomPlan() {
 //  Mengganti baris Laporan Harian / Detail DJP untuk (tanggal, SF) yang sama.
 // ================================================================
 const RB_DETAIL = 'Detail DJP';
-function djpDetailSave_(rows, by) {
+function djpDetailSave_(rows, by, rMin, rMax) {
   const lock = LockService.getScriptLock();
   try { lock.waitLock(30000); } catch (e) { return { ok:false, error:'Server sedang sibuk, coba lagi.' }; }
   try {
@@ -864,7 +864,8 @@ function djpDetailSave_(rows, by) {
     if (!Object.keys(keys).length) return { ok:false, error:'Tidak ada baris valid.' };
     // SF punya plan web di tanggal itu?
     const ada = {};
-    const wp = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN), np = wp.getLastRow() - 1;
+    const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);           // buka sekali saja (spreadsheet besar)
+    const wp = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN), np = wp.getLastRow() - 1;
     if (np > 0) {
       const ab = wp.getRange(2, 1, np, 2).getValues(), by_ = wp.getRange(2, P.DIBUAT_OLEH + 1, np, 1).getValues();   // TGL, USERNAME_SF, DIBUAT_OLEH saja
       for (let i = 0; i < np; i++) {
@@ -881,8 +882,12 @@ function djpDetailSave_(rows, by) {
       return [t, sf, (r.nama_sf || '').toString().trim(), pl, U(r.kab), (r.kec || '').toString().trim(), (r.desa || '').toString().trim(),
               +r.jml_odp || 0, +r.dikunjungi || 0, +r.target || 0, RB_DETAIL, by, now];
     });
-    const ws = djpRealBaruSheet_();
-    const replaced = djpRealBaruDelete_(ws, r => (r[10] === RB_LAPORAN || r[10] === RB_DETAIL) && keys[djpNormTgl(r[0]) + '|' + U(r[1])]);
+    const ws = djpRealBaruSheet_(ss);
+    // File detail mewakili seluruh periodenya: data SF yang sama dalam rentang tanggal file diganti semua
+    const sfSet = {}; Object.keys(keys).forEach(k => { sfSet[k.split('|')[1]] = true; });
+    const inRange = t => rMin && rMax && t >= rMin && t <= rMax;
+    const replaced = djpRealBaruDelete_(ws, r => { if (r[10] !== RB_LAPORAN && r[10] !== RB_DETAIL) return false;
+      const t = djpNormTgl(r[0]), sf = U(r[1]); return keys[t + '|' + sf] || (sfSet[sf] && inRange(t)); });
     djpRealBaruAppend_(ws, out);
     try { CacheService.getScriptCache().removeAll(Object.keys(tglSet).map(t => 'djp_daily_' + t)); } catch (e) {}
     return { ok:true, baris: out.length, replaced, sf: Object.keys(keys).length, terplan, dikunjungi };
