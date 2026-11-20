@@ -69,7 +69,7 @@ async function anCollect(app, mode) {
     const dPrev = daysInPeriod(prev);
     W = [+(bulan.replace('-', '') + '01'), end];
     W0 = [+(prev.replace('-', '') + '01'), +(prev.replace('-', '') + String(Math.min(refDay, dPrev)).padStart(2, '0'))];
-    label = refDay < days ? `MTD 1–${refDay} ${periodLabel(bulan)}` : periodLabel(bulan);
+    label = refDay < days ? `1–${refDay} ${periodLabel(bulan)}` : periodLabel(bulan);
     label0 = `1–${Math.min(refDay, dPrev)} ${periodLabel(prev)}`;
   }
   const trendM = [bulan]; for (let i = 0; i < 4; i++) trendM.unshift(prevPeriod(trendM[0]));   // M-4..M
@@ -288,27 +288,27 @@ function anAnalyze(D) {
   if (mg) {
     const down = E.filter(e => e.io < (e.io0 || 0));
     S.pace = [
-      'Target tercapai bila sales menghasilkan IO cukup dan tepat sasaran (≥70% di desa Prioritas + Strategis); IO adalah satu-satunya hasil yang dikontrol penuh oleh sales.',
-      E.map(e => `${nm(e)}: IO minggu ini ${e.io}, ${anD(e.ioDrr)}/hari vs butuh ${anD(e.ioNeed)}; lokasi potensial ${anPs(Math.round(e.ioPotShare || 0))}`).join('; ') + '.',
-      (E.filter(e => e.ioDrr < e.ioNeed).length ? `Laju IO di bawah kebutuhan: ${E.filter(e => e.ioDrr < e.ioNeed).map(e => `${nm(e)} (kurang ${anD(e.ioNeed - e.ioDrr)} IO/hari)`).join(', ')}. ` : 'Laju IO semua entitas memenuhi kebutuhan. ') +
-        (E.filter(e => (e.ioPotShare || 0) < 70).length ? `IO belum tepat sasaran di ${E.filter(e => (e.ioPotShare || 0) < 70).map(nm).join(', ')}.` : 'IO sudah tepat sasaran.'),
+      'Target tercapai bila jumlah IO cukup dan minimal 70% IO berasal dari desa Prioritas dan Strategis. IO adalah satu-satunya hasil yang sepenuhnya dikendalikan sales.',
+      E.map(e => `${nm(e)}: IO minggu ini ${e.io}, rata-rata ${anD(e.ioDrr)} IO per hari, padahal yang dibutuhkan ${anD(e.ioNeed)} IO per hari; ${anPs(Math.round(e.ioPotShare || 0))} IO berasal dari desa Prioritas dan Strategis`).join('; ') + '.',
+      (E.filter(e => e.ioDrr < e.ioNeed).length ? `Laju IO di bawah kebutuhan: ${E.filter(e => e.ioDrr < e.ioNeed).map(e => `${nm(e)} (kurang ${anD(e.ioNeed - e.ioDrr)} IO per hari)`).join(', ')}. ` : 'Jumlah IO per hari di semua wilayah sudah memenuhi kebutuhan. ') +
+        (E.filter(e => (e.ioPotShare || 0) < 70).length ? `Kurang dari 70% IO berasal dari desa Prioritas dan Strategis di ${E.filter(e => (e.ioPotShare || 0) < 70).map(nm).join(', ')}.` : 'Minimal 70% IO sudah berasal dari desa Prioritas dan Strategis.'),
     ];
   } else {
     const wi = worst(e => e.ioOlAch);
     S.pace = [
-      'Target tercapai bila sales menghasilkan IO cukup dan tepat sasaran (≥70% di desa Prioritas + Strategis); IO adalah satu-satunya hasil yang dikontrol penuh oleh sales, PS mengikutinya.',
-      E.map(e => `${nm(e)}: IO ${e.ioMtd} → outlook ${e.ioOl} dari target ${e.ioTgt} (${anPs(Math.round(e.ioOlAch || 0))}), lokasi potensial ${anPs(Math.round(e.ioPotShare || 0))}`).join('; ') + '.',
-      D.sisa === 0 ? `Capaian IO terendah: ${nm(wi)}.` : `${nm(wi)} paling perlu dorongan: butuh ${anD(wi.ioNeed)} IO/hari (kini ${anD(wi.ioDrr)}), utamakan desa Prioritas & Strategis.`,
+      'Target tercapai bila jumlah IO cukup dan minimal 70% IO berasal dari desa Prioritas dan Strategis. IO adalah satu-satunya hasil yang sepenuhnya dikendalikan sales; PS mengikuti IO.',
+      E.map(e => `${nm(e)}: IO sampai hari ini ${e.ioMtd}, perkiraan akhir bulan ${e.ioOl} dari target ${e.ioTgt} (${anPs(Math.round(e.ioOlAch || 0))}); ${anPs(Math.round(e.ioPotShare || 0))} IO berasal dari desa Prioritas dan Strategis`).join('; ') + '.',
+      D.sisa === 0 ? `Capaian IO terendah: ${nm(wi)}.` : `${nm(wi)} paling perlu dorongan: butuh ${anD(wi.ioNeed)} IO per hari untuk mencapai target, sedangkan rata-rata saat ini ${anD(wi.ioDrr)} IO per hari. Utamakan desa Prioritas dan Strategis.`,
     ];
   }
   // funnel
   const wf = worst(e => e.psre), bf = best(e => e.psre);
   const gap = wf && bf && wf !== bf ? Math.round(wf.re * (bf.psre - wf.psre) / 100) : 0;
   S.funnel = [
-    'Order yang sudah registrasi (RE) tapi belum jadi PS masih bisa diselamatkan bersama teknisi; sebagian penyebabnya di luar kendali sales (tarikan ODP, teknisi, cuaca).',
-    E.map(e => `${nm(e)}: PS/RE ${anPs(Math.round(e.psre || 0))}, batal ${e.coh[1]} (${anD(e.cancelPer100)}%), pending ${e.coh[2]}`).join('; ') + `. Porsi produk — Tsel One: ${per(e => anPs(e.tselOne))}; IndiHome Reguler: ${per(e => anPs(e.ihReg))}.`,
-    gap >= 3 ? `Gap konversi ${nm(wf)} setara ±${gap} PS bila PS/RE sama dengan ${nm(bf)}. Prioritas: tuntaskan ${wf.coh[2]} order pending ${nm(wf)} dan tekan batal; dorong IndiHome Reguler untuk ARPU.`
-      : `Konversi antar entitas relatif setara. Fokus pada ${sum(E.map(e => e.coh[2]))} order pending agar menjadi PS, dan jaga porsi IndiHome Reguler.`,
+    'Order yang sudah lolos registrasi (RE) tetapi belum menjadi PS masih bisa diselamatkan bersama teknisi. Sebagian penyebabnya di luar kendali sales: jarak tarikan kabel ke ODP, jumlah teknisi, dan cuaca.',
+    E.map(e => `${nm(e)}: ${anPs(Math.round(e.psre || 0))} order RE sudah menjadi PS, ${e.coh[1]} order batal (${anD(e.cancelPer100)} per 100 IO), ${e.coh[2]} order masih menunggu`).join('; ') + `. Porsi PS produk Tsel One: ${per(e => anPs(e.tselOne))}; IndiHome Reguler: ${per(e => anPs(e.ihReg))}.`,
+    gap >= 3 ? `Bila persentase RE yang menjadi PS di ${nm(wf)} sama dengan ${nm(bf)}, ${nm(wf)} akan mendapat sekitar ${gap} PS tambahan. Prioritas: selesaikan ${wf.coh[2]} order ${nm(wf)} yang masih menunggu, kurangi order batal, dan dorong penjualan IndiHome Reguler karena nilai tagihan bulanannya (ARPU) lebih tinggi.`
+      : `Persentase RE yang menjadi PS di semua wilayah relatif setara. Fokus pada ${sum(E.map(e => e.coh[2]))} order yang masih menunggu agar menjadi PS, dan jaga porsi penjualan IndiHome Reguler.`,
   ];
   // DJP wilayah
   const agg = E.map(e => e.bucket);
@@ -316,63 +316,63 @@ function anAnalyze(D) {
   const peakTxt = E.map(e => { const a = tot(e); let pk = -1, pv = -1; a.forEach((v, i) => { if (v != null && v > pv) { pv = v; pk = i; } });
     return { e, pk, pv, last: a[a.length - 1] }; });
   const satur = peakTxt.filter(x => x.pk > 0 && x.pk < D.ents[0].bucketL.length - 1 && x.last != null && x.last < x.pv);
-  const satList = E.flatMap(e => e.saturated.map(s => `${s.desa} (${s.v} kunj., ${s.ps} PS)`)).slice(0, 3);
+  const satList = E.flatMap(e => e.saturated.map(s => `${s.desa} (${s.v} kunjungan, ${s.ps} PS)`)).slice(0, 3);
   const totVis = sum(E.map(e => e.vis)), totPS = sum(E.map(e => e.ps));
   S.djp = [
-    `Bila DJP efektif, desa yang lebih sering dikunjungi SF dalam 3 bulan sebelumnya (${djpLbl}) menghasilkan PS lebih tinggi — sampai titik jenuh.`,
-    `Rata-rata PS per desa, dari desa yang tidak dikunjungi sampai yang paling sering (${D.ents[0].bucketL.join(', ')} kunjungan/bulan) — ` + E.map(e => `${nm(e)}: ${e.bucket.map(b => b.avg == null ? 'tidak ada desa' : anD(b.avg)).join(' → ')}`).join('; ') + '.' + (satList.length ? ` Contoh jenuh: ${satList.join(', ')}.` : ''),
-    `${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS berasal dari desa yang dikunjungi DJP` +
-      (satur.length ? `; ${satur.map(x => nm(x.e)).join(', ')} PS per desa memuncak di kelompok ${D.ents[0].bucketL[satur[0].pk]} kunjungan/bulan lalu turun (jenuh) — alihkan kelebihan kunjungan ke desa prioritas yang belum tersentuh.` : '; makin sering desa dikunjungi, makin tinggi PS — pertahankan frekuensi di desa produktif.') +
+    `Bila kunjungan DJP efektif, desa yang lebih sering dikunjungi SF dalam 3 bulan sebelumnya (${djpLbl}) akan menghasilkan PS lebih banyak, sampai batas tertentu ketika tambahan kunjungan tidak lagi menambah PS.`,
+    `Rata-rata PS per desa bulan ini, dikelompokkan menurut rata-rata jumlah kunjungan per bulan (${D.ents[0].bucketL.join(', ')} kunjungan per bulan): ` + E.map(e => `${nm(e)} berturut-turut ${e.bucket.map(b => b.avg == null ? 'tidak ada desa' : anD(b.avg)).join(', ')} PS`).join('; ') + '.' + (satList.length ? ` Desa yang sering dikunjungi tetapi PS-nya sedikit: ${satList.join(', ')}.` : ''),
+    `${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS bulan ini berasal dari desa yang dikunjungi DJP dalam 3 bulan sebelumnya` +
+      (satur.length ? `. Di ${satur.map(x => nm(x.e)).join(', ')}, rata-rata PS per desa paling tinggi pada kelompok ${D.ents[0].bucketL[satur[0].pk]} kunjungan per bulan, lalu turun pada desa yang lebih sering dikunjungi. Kunjungan berlebih sebaiknya dialihkan ke desa Prioritas yang belum pernah dikunjungi.` : '. Makin sering desa dikunjungi, makin tinggi PS-nya, jadi frekuensi kunjungan di desa yang menghasilkan PS perlu dipertahankan.') +
       ' Catatan: desa yang sering dikunjungi biasanya memang desa besar, jadi angka ini menunjukkan hubungan, belum tentu sebab-akibat.',
   ];
   // SF
   const hi = E.map(e => e.sfB[3].avg), lo = E.map(e => e.sfB[1].avg);
   const lowN = E.map(e => e.sfB[1].n);
   S.sf = [
-    'SF yang konsisten hadir di desa teritorinya (kunjungan DJP rutin) akan menghasilkan PS lebih banyak.',
-    `Rata-rata PS per SF — SF >25 kunjungan/bln: ${per(e => nv(e.sfB[3].avg))}; SF 1–10 kunjungan/bln: ${per(e => nv(e.sfB[1].avg))}. Keeratan hubungan kunjungan–PS (0 = tidak ada, 1 = sangat erat): ${per(e => anD(e.corr, 2))}. Satu SF rata-rata menggarap ${per(e => anD(e.desaPerSf) + ' desa')}.`,
-    `${E.map(e => `${nm(e)} ${e.sfB[1].n} SF`).join(', ')} masih di kelompok 1–10 kunjungan/bulan — naikkan frekuensi ke desa teritori yang sama.` +
-      (sum(E.map(e => e.watch.length)) ? ` ${sum(E.map(e => e.watch.length))} SF rajin DJP tanpa PS perlu coaching kualitas kunjungan.` : ''),
+    'SF yang rutin mengunjungi desa wilayah kerjanya (kunjungan DJP) akan menghasilkan PS lebih banyak.',
+    `Rata-rata PS per SF bulan ini: SF dengan lebih dari 25 kunjungan per bulan ${per(e => nv(e.sfB[3].avg))}; SF dengan 1–10 kunjungan per bulan ${per(e => nv(e.sfB[1].avg))}. Keeratan hubungan antara jumlah kunjungan dan PS per SF (skala 0 = tidak berhubungan sampai 1 = sangat berhubungan): ${per(e => anD(e.corr, 2))}. Rata-rata satu SF mengunjungi ${per(e => anD(e.desaPerSf) + ' desa')}.`,
+    `Masih ada SF yang hanya 1–10 kali kunjungan per bulan (${E.map(e => `${nm(e)} ${e.sfB[1].n} SF`).join(', ')}); jumlah kunjungan mereka ke desa wilayah kerjanya perlu ditambah.` +
+      (sum(E.map(e => e.watch.length)) ? ` Ada ${sum(E.map(e => e.watch.length))} SF yang sering kunjungan DJP tetapi belum menghasilkan PS; mereka perlu dibimbing soal cara menawarkan produk.` : ''),
   ];
   // prioritas
   const skipNames = E.flatMap(e => e.skipProd.map(s => `${s.desa} ${s.ps} PS`)).slice(0, 2);
   const noPlan = E.filter(e => e.planCur === 0);
   S.prio = [
-    'Desa Prioritas & Strategis (potensi tertinggi) seharusnya menjadi sumber IO & PS terbesar, dan desa Skip yang terkecil.',
-    `PS dari desa Prioritas+Strategis: ${per(e => anPs(anP(e.psKat[0] + e.psKat[1], e.ps)))}; dari desa Skip: ${per(e => anPs(anP(e.psKat[3], e.ps)))}` + (skipNames.length ? ` (mis. ${skipNames.join(', ')})` : '') +
-      `. Desa Prioritas yang belum pernah dikunjungi DJP: ${per(e => e.prioUntouched.length + ' desa')}. Plan DJP ${periodLabel(D.bulan)}: ${per(e => e.planCur + ' kunjungan')}.`,
-    (skipNames.length ? 'Desa Skip yang ternyata produktif jangan ditinggalkan — tinjau ulang kategorinya. ' : '') + `Pindahkan kunjungan dari desa jenuh ke ${sum(E.map(e => e.prioUntouched.length))} desa prioritas belum tersentuh` + (noPlan.length ? `, dan ${noPlan.map(nm).join(', ')} segera publish plan DJP ${periodLabel(D.bulan)}.` : '.'),
+    'Desa Prioritas dan Strategis (potensi tertinggi) seharusnya menjadi sumber IO dan PS terbesar, dan desa Skip yang terkecil.',
+    `Porsi PS dari desa Prioritas dan Strategis: ${per(e => anPs(anP(e.psKat[0] + e.psKat[1], e.ps)))}; dari desa Skip: ${per(e => anPs(anP(e.psKat[3], e.ps)))}` + (skipNames.length ? ` (misalnya ${skipNames.join(', ')})` : '') +
+      `. Desa Prioritas yang belum pernah dikunjungi DJP dalam 3 bulan terakhir: ${per(e => e.prioUntouched.length + ' desa')}. Jumlah kunjungan yang direncanakan di plan DJP ${periodLabel(D.bulan)}: ${per(e => e.planCur + ' kunjungan')}.`,
+    (skipNames.length ? 'Desa Skip yang ternyata menghasilkan PS jangan ditinggalkan; kategorinya perlu ditinjau ulang. ' : '') + `Alihkan kunjungan dari desa yang sering dikunjungi tetapi PS-nya sedikit ke ${sum(E.map(e => e.prioUntouched.length))} desa Prioritas yang belum pernah dikunjungi` + (noPlan.length ? `, dan ${noPlan.map(nm).join(', ')} segera membuat plan DJP ${periodLabel(D.bulan)} di dashboard.` : '.'),
   ];
   // kesimpulan utama
   const wo = worst(e => mg ? e.drr - e.need : e.olAch);
   S.main = [];
-  S.main.push([`IO (dikontrol sales) — perkiraan akhir bulan vs target: ${per(e => anPs(Math.round(e.ioOlAch || 0)))}.`, ` IO dari desa Prioritas/Strategis: ${per(e => anPs(Math.round(e.ioPotShare || 0)))} (acuan ≥70%). Paling perlu dorongan: ${nm(worst(e => e.ioOlAch))}, butuh ${anD(worst(e => e.ioOlAch).ioNeed)} IO/hari.`]);
-  if (mg) S.main.push([`Momentum minggu ini: ${E.map(e => `${nm(e)} ${anSg(anP(e.ps - e.ps0, e.ps0))}`).join(', ')}.`, ` Paling perlu dorongan: ${nm(wo)} (butuh ${anD(wo.need)} PS/hari).`]);
-  else S.main.push([`PS (hasil) — perkiraan akhir bulan vs target: ${per(e => anPs(Math.round(e.olAch)))}.`, D.sisa ? ` Terendah ${nm(wo)}.` : '']);
-  S.main.push([gap >= 3 ? `Order banyak tertahan setelah registrasi di ${nm(wf)}.` : 'Order yang sudah registrasi umumnya jadi PS.', ` Persentase RE yang jadi PS: ${per(e => anPs(Math.round(e.psre || 0)))}; ${sum(E.map(e => e.coh[2]))} order masih pending (perlu bantuan teknisi).`]);
-  S.main.push([`Kunjungan DJP ${djpLbl}:`, ` ${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS bulan ini berasal dari desa yang pernah dikunjungi${satur.length ? '; beberapa desa sudah sering dikunjungi tapi hasilnya kecil (jenuh)' : ''}.`]);
-  S.main.push(['Rata-rata PS per SF menurut seringnya kunjungan:', ` SF >25 kunjungan/bln: ${per(e => nv(e.sfB[3].avg))}; SF 1–10 kunjungan/bln: ${per(e => nv(e.sfB[1].avg))}.`]);
-  S.main.push([noPlan.length ? `Plan DJP ${anMonthShort(D.bulan)} ${noPlan.map(nm).join(', ')} masih 0.` : `Plan DJP ${anMonthShort(D.bulan)} berjalan (${sum(E.map(e => e.planCur))} kunjungan).`, ` PS dari desa kategori Skip: ${per(e => anPs(anP(e.psKat[3], e.ps)))} — bila besar, desa itu sebenarnya produktif dan kategorinya perlu ditinjau.`]);
-  if (missing.length) S.main.push([`Data DJP ${missing.join(', ')} belum tersedia.`, ' Analisa DJP memakai bulan yang ada.']);
+  S.main.push([`IO (sepenuhnya dikendalikan sales), perkiraan akhir bulan dibanding target: ${per(e => anPs(Math.round(e.ioOlAch || 0)))}.`, ` Porsi IO dari desa Prioritas dan Strategis: ${per(e => anPs(Math.round(e.ioPotShare || 0)))} (standar minimal 70%). Paling perlu dorongan: ${nm(worst(e => e.ioOlAch))}, butuh ${anD(worst(e => e.ioOlAch).ioNeed)} IO per hari sampai akhir bulan.`]);
+  if (mg) S.main.push([`Momentum minggu ini: ${E.map(e => `${nm(e)} ${anSg(anP(e.ps - e.ps0, e.ps0))}`).join(', ')}.`, ` Paling perlu dorongan: ${nm(wo)} (butuh ${anD(wo.need)} PS per hari sampai akhir bulan).`]);
+  else S.main.push([`PS (hasil akhir), perkiraan akhir bulan dibanding target: ${per(e => anPs(Math.round(e.olAch)))}.`, D.sisa ? ` Perkiraan terendah: ${nm(wo)}.` : '']);
+  S.main.push([gap >= 3 ? `Di ${nm(wf)}, banyak order tertahan setelah lolos registrasi.` : 'Order yang sudah lolos registrasi umumnya menjadi PS.', ` Persentase RE yang menjadi PS: ${per(e => anPs(Math.round(e.psre || 0)))}; ${sum(E.map(e => e.coh[2]))} order masih menunggu pemasangan (perlu bantuan teknisi).`]);
+  S.main.push([`Kunjungan DJP ${djpLbl}:`, ` ${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS bulan ini berasal dari desa yang dikunjungi dalam 3 bulan tersebut${satur.length ? '; beberapa desa sudah sering dikunjungi tetapi PS-nya sedikit' : ''}.`]);
+  S.main.push(['Rata-rata PS per SF menurut jumlah kunjungannya:', ` SF dengan lebih dari 25 kunjungan per bulan ${per(e => nv(e.sfB[3].avg))} PS; SF dengan 1–10 kunjungan per bulan ${per(e => nv(e.sfB[1].avg))} PS.`]);
+  S.main.push([noPlan.length ? `Plan DJP ${periodLabel(D.bulan)} untuk ${noPlan.map(nm).join(', ')} masih kosong.` : `Plan DJP ${periodLabel(D.bulan)} sudah dibuat (${sum(E.map(e => e.planCur))} kunjungan direncanakan).`, ` Porsi PS dari desa kategori Skip: ${per(e => anPs(anP(e.psKat[3], e.ps)))}. Bila porsinya besar, desa tersebut sebenarnya produktif dan kategorinya perlu ditinjau.`]);
+  if (missing.length) S.main.push([`Data DJP ${missing.join(', ')} belum tersedia.`, ' Analisa DJP hanya memakai bulan yang datanya ada.']);
   S.final = [
-    'IO tepat sasaran = SF hadir rutin di desa Prioritas & Strategis (termasuk yang jauh, lewat jadwal khusus) × kualitas kunjungan. PS mengikuti IO, dengan faktor teknis (tarikan ODP ≤250 m, teknisi, cuaca) di luar kendali penuh sales.',
-    E.map(e => `${nm(e)}: IO outlook ${anPs(Math.round(e.ioOlAch || 0))}, lokasi potensial ${anPs(Math.round(e.ioPotShare || 0))}, ${anD(e.visPerSfM, 0)} kunjungan/SF/bln, PS/RE ${anPs(Math.round(e.psre || 0))}, ${mg ? 'PS minggu ' + anSg(anP(e.ps - e.ps0, e.ps0)) : 'outlook ' + anPs(Math.round(e.olAch))}`).join('; ') + '.',
-    (() => { const wi = worst(e => e.ioOlAch); return D.sisa === 0 ? `Bulan berikutnya: ${nm(wi)} jadi fokus — kunjungan rutin ke desa Prioritas & Strategis sejak awal bulan.` : `Fokus sisa periode: ${nm(wi)} menaikkan IO ke ±${anD(wi.ioNeed, 0)}/hari di desa Prioritas & Strategis (desa Strategis lewat jadwal khusus per kecamatan); order pending dikawal bersama teknisi.`; })(),
+    'IO yang tepat sasaran didapat bila SF rutin mengunjungi desa Prioritas dan Strategis (desa yang jauh lewat jadwal khusus) dan kunjungannya berkualitas. PS mengikuti IO, tetapi juga dipengaruhi faktor teknis di luar kendali sales: jarak rumah ke ODP maksimal 250 meter, jumlah teknisi, dan cuaca.',
+    E.map(e => `${nm(e)}: perkiraan IO akhir bulan ${anPs(Math.round(e.ioOlAch || 0))} dari target, ${anPs(Math.round(e.ioPotShare || 0))} IO dari desa Prioritas dan Strategis, rata-rata ${anD(e.visPerSfM, 0)} kunjungan per SF per bulan, ${anPs(Math.round(e.psre || 0))} RE menjadi PS, ${mg ? 'PS minggu ini ' + anSg(anP(e.ps - e.ps0, e.ps0)) + ' dibanding minggu lalu' : 'perkiraan PS akhir bulan ' + anPs(Math.round(e.olAch)) + ' dari target'}`).join('; ') + '.',
+    (() => { const wi = worst(e => e.ioOlAch); return D.sisa === 0 ? `Bulan berikutnya: ${nm(wi)} menjadi fokus, dengan kunjungan rutin ke desa Prioritas dan Strategis sejak awal bulan.` : `Fokus sampai akhir bulan: ${nm(wi)} menaikkan IO menjadi sekitar ${anD(wi.ioNeed, 0)} IO per hari dari desa Prioritas dan Strategis (desa Strategis lewat jadwal khusus per kecamatan), dan order yang masih menunggu dikawal bersama teknisi.`; })(),
   ];
   // aksi
   const A = [];
   { const ioE = E.filter(e => e.ioNeed > e.ioDrr + 0.05 || (e.ioPotShare || 0) < 70);
-    if (ioE.length) A.push(['Kejar IO di lokasi potensial (≥70% di desa Prioritas + Strategis); desa Strategis dijadwalkan per kecamatan', ioE.map(nm).join(', '), 'TL', ioE.map(e => `${nm(e)} ≥${anD(e.ioNeed, 0)} IO/hari`).join('; '), 'Mulai besok']); }
+    if (ioE.length) A.push(['Kejar IO dari desa Prioritas dan Strategis (minimal 70% dari seluruh IO); desa Strategis dijadwalkan per kecamatan', ioE.map(nm).join(', '), 'TL', ioE.map(e => `${nm(e)} minimal ${anD(e.ioNeed, 0)} IO per hari`).join('; '), 'Mulai besok']); }
   const pendE = E.filter(e => e.coh[2] >= 5 || (e.psre || 100) < 80);
-  if (pendE.length) A.push(['Kawal order pending & batal: daftar order >3 hari belum PS, eskalasi ke TA/HCOT', pendE.map(nm).join(', '), 'TL + PJ', `Pending ${pendE.map(e => `${nm(e)} ${e.coh[2]}`).join(', ')} turun ≥60%; PS/RE ≥80%`, 'Minggu ini']);
+  if (pendE.length) A.push(['Kawal order yang masih menunggu dan yang batal: buat daftar order yang lebih dari 3 hari belum PS, lalu eskalasi ke tim teknisi (TA/HCOT)', pendE.map(nm).join(', '), 'TL + PJ', `Order menunggu (${pendE.map(e => `${nm(e)} ${e.coh[2]}`).join(', ')}) turun minimal 60%; minimal 80% RE menjadi PS`, 'Minggu ini']);
   const lowE = E.filter(e => e.sfB[1].n > 0);
-  if (lowE.length) A.push([`Naikkan frekuensi DJP SF kelompok 1–10 kunjungan/bulan ke desa teritori yang sama (≥3 kali/desa/bulan)`, lowE.map(nm).join(', '), [...new Set(lowE.map(e => e.tl))].join(', '), `${sum(lowE.map(e => e.sfB[1].n))} SF naik ke >10 kunjungan/bulan`, 'Mulai minggu depan']);
+  if (lowE.length) A.push([`Tambah kunjungan DJP SF yang baru 1–10 kali per bulan, ke desa wilayah kerjanya (minimal 3 kali per desa per bulan)`, lowE.map(nm).join(', '), [...new Set(lowE.map(e => e.tl))].join(', '), `${sum(lowE.map(e => e.sfB[1].n))} SF naik menjadi lebih dari 10 kunjungan per bulan`, 'Mulai minggu depan']);
   const unt = E.flatMap(e => e.prioUntouched.slice(0, 2));
-  if (satList.length || unt.length) A.push([`Alihkan kunjungan dari desa jenuh${satList.length ? ' (' + E.flatMap(e => e.saturated.map(s => s.desa)).slice(0, 3).join(', ') + ')' : ''} ke desa prioritas belum tersentuh${unt.length ? ' (' + unt.slice(0, 3).join(', ') + ')' : ''}`, E.map(nm).join(', '), 'TL + PJ', `${sum(E.map(e => e.prioUntouched.length))} desa prioritas tersentuh`, 'Plan minggu depan']);
-  if (noPlan.length) A.push([`Publish plan DJP ${periodLabel(D.bulan)} di dashboard (saat ini 0)`, noPlan.map(nm).join(', '), [...new Set(noPlan.map(e => e.tl))].join(', '), '≥80% kunjungan ke desa prioritas/strategis', 'Segera']);
+  if (satList.length || unt.length) A.push([`Alihkan kunjungan dari desa yang sering dikunjungi tetapi PS-nya sedikit${satList.length ? ' (' + E.flatMap(e => e.saturated.map(s => s.desa)).slice(0, 3).join(', ') + ')' : ''} ke desa Prioritas yang belum pernah dikunjungi${unt.length ? ' (' + unt.slice(0, 3).join(', ') + ')' : ''}`, E.map(nm).join(', '), 'TL + PJ', `${sum(E.map(e => e.prioUntouched.length))} desa Prioritas mulai dikunjungi`, 'Plan minggu depan']);
+  if (noPlan.length) A.push([`Buat plan DJP ${periodLabel(D.bulan)} di dashboard (saat ini masih kosong)`, noPlan.map(nm).join(', '), [...new Set(noPlan.map(e => e.tl))].join(', '), 'Minimal 80% kunjungan ke desa Prioritas dan Strategis', 'Segera']);
   const needE = E.filter(e => e.need > e.drrM + 0.05);
-  if (needE.length) A.push(['Tambah SF aktif/hari & sweeping desa avai ≥20 tanpa PS di entitas yang tertinggal', needE.map(nm).join(', '), [...new Set(needE.map(e => e.tl))].join(', '), needE.map(e => `${nm(e)} ≥${anD(e.need, 0)} PS/hari`).join('; '), 'Sisa bulan']);
-  A.push(['Coaching SF rajin DJP tanpa PS; kalibrasi desa skip produktif → strategis; dorong IndiHome Reguler', E.map(nm).join(', '), 'PJ', 'SF rajin tanpa PS = 0; IH Reguler naik', 'Akhir bulan']);
+  if (needE.length) A.push(['Tambah jumlah SF yang turun per hari, dan datangi desa yang masih punya minimal 20 port ODP kosong tetapi belum ada PS', needE.map(nm).join(', '), [...new Set(needE.map(e => e.tl))].join(', '), needE.map(e => `${nm(e)} minimal ${anD(e.need, 0)} PS per hari`).join('; '), 'Sisa bulan']);
+  A.push(['Bimbing SF yang sering kunjungan tetapi belum ada PS; tinjau ulang desa Skip yang ternyata menghasilkan PS menjadi Strategis; dorong penjualan IndiHome Reguler', E.map(nm).join(', '), 'PJ', 'Tidak ada lagi SF yang sering kunjungan tanpa PS; porsi IndiHome Reguler naik', 'Akhir bulan']);
   const allN = E.map(nm).join(', ');
   A.forEach(a => { if (a[1] === allN && E.length > 2) a[1] = 'Semua'; });
   S.actions = A.slice(0, 6);
@@ -398,7 +398,7 @@ async function anBuild(D, S, B) {
   const mg = D.mode === 'mingguan';
   const tx = (s, t, o) => s.addText(t, { fontFace: F, margin: 0, isTextBox: true, ...o });
   const head = (s, t, sub) => { tx(s, t, { x: 0.4, y: 0.22, w: 10.9, h: 0.42, fontSize: 20, bold: true, color: DARK }); tx(s, sub, { x: 0.4, y: 0.62, w: 10.9, h: 0.28, fontSize: 10, color: GREY }); };
-  const SRC = `Sumber: Monitoring HH (dedup Unik) • DJP_Plan • klasifikasi desa dashboard • PS: ${D.label}${mg ? ' vs ' + D.label0 : ''} • DJP: ${S.djpLbl} (kunjungan = SF × desa × hari)` + (S.missing.length ? ` • DJP ${S.missing.join(', ')} belum tersedia` : '');
+  const SRC = `Sumber: Monitoring HH (order unik) • kunjungan DJP dari DJP_Realisasi_Baru • plan dari DJP_Plan • kategori desa dari menu Prioritas • periode PS: ${D.label}${mg ? ' dibanding ' + D.label0 : ''} • periode kunjungan DJP: ${S.djpLbl}; 1 kunjungan = 1 SF datang ke 1 desa pada 1 tanggal` + (S.missing.length ? ` • data DJP ${S.missing.join(', ')} belum tersedia` : '');
   const foot = (s, extra) => tx(s, SRC + (extra || ''), { x: 0.85, y: 7.1, w: 11.1, h: 0.3, fontSize: 7.5, color: GREY });
   const card = (s, x, y, w, h, title, color) => {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.08, fill: { color: 'FFFFFF' }, line: { color: 'E3E3E3', width: 1 } });
@@ -407,9 +407,9 @@ async function anBuild(D, S, B) {
   };
   const syl = (s, x, y, w, h, m) => {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.08, fill: { color: AN.PINK }, line: { color: RED, width: 1.25 } });
-    tx(s, 'ANALISA SILOGISME', { x: x + 0.2, y: y + 0.08, w: w - 0.4, h: 0.3, fontSize: 10.5, bold: true, color: RED });
+    tx(s, 'ALUR ANALISA', { x: x + 0.2, y: y + 0.08, w: w - 0.4, h: 0.3, fontSize: 10.5, bold: true, color: RED });
     const rh = (h - 0.45) / 3;
-    [['PREMIS MAYOR', GREY], ['PREMIS MINOR', AMB], ['KESIMPULAN', RED]].forEach(([l, c], i) => {
+    [['ATURAN UMUM', GREY], ['FAKTA DATA', AMB], ['KESIMPULAN', RED]].forEach(([l, c], i) => {
       const yy = y + 0.42 + i * rh;
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: x + 0.2, y: yy + 0.04, w: 1.3, h: 0.28, rectRadius: 0.05, fill: { color: c }, line: { color: c } });
       tx(s, l, { x: x + 0.2, y: yy + 0.04, w: 1.3, h: 0.28, fontSize: 7.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle' });
@@ -459,23 +459,23 @@ async function anBuild(D, S, B) {
   // ── 1. RINGKASAN ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, `ANALISA PS ${mg ? 'MINGGUAN' : periodLabel(D.bulan).toUpperCase()} • BASIS DJP 3 BULAN`, `${modeTxt}${L2}PS ${D.label}${L2}DJP ${S.djpLbl}${L2}${names.join(' vs ')}`);
+    head(s, `ANALISA PS ${mg ? 'MINGGUAN' : periodLabel(D.bulan).toUpperCase()} DAN KUNJUNGAN DJP 3 BULAN SEBELUMNYA`, `${modeTxt}${L2}PS periode ${D.label}${L2}kunjungan DJP ${S.djpLbl}${L2}${names.join(' dibanding ')}`);
     if (k === 2) {
       E.forEach((e, i) => {
         const x = 0.4 + i * 4.2;
         card(s, x, 1.15, 4.05, 5.8, e.name.toUpperCase(), e.color);
         tx(s, e.tl, { x: x + 0.28, y: 1.45, w: 3.6, h: 0.25, fontSize: 8.5, color: GREY });
-        tx(s, [{ text: anI(e.ps), options: { fontSize: 40, bold: true, color: e.color } }, { text: mg ? `  PS minggu ini (lalu ${e.ps0})` : `  / ${e.tgtM} target PS`, options: { fontSize: 11, color: GREY } }],
+        tx(s, [{ text: anI(e.ps), options: { fontSize: 40, bold: true, color: e.color } }, { text: mg ? `  PS minggu ini (minggu lalu ${e.ps0})` : `  PS dari target ${e.tgtM}`, options: { fontSize: 11, color: GREY } }],
           { x: x + 0.28, y: 1.75, w: 3.7, h: 0.75, valign: 'middle' });
         const t = [
-          mg ? ['vs minggu lalu', anSg(anP(e.ps - e.ps0, e.ps0)), `${e.ps0} → ${e.ps} PS`, e.ps >= e.ps0 ? GRN : RED]
-            : ['Outlook akhir bulan', `${e.ol} (${Math.round(e.olAch)}%)`, `DRR ${anD(e.drrM)} PS/hari`, e.olAch >= 100 ? GRN : RED],
-          mg ? ['Capaian target minggu', anPs(Math.round(e.ach)), `target pro-rata ${anD(e.tgtW, 0)}`, e.ach >= 100 ? GRN : RED]
-            : ['vs periode sama bln lalu', anSg(anP(e.ps - e.ps0, e.ps0)), `${e.ps0} → ${e.ps} PS`, e.ps >= e.ps0 ? GRN : RED],
-          ['Rasio PS/RE', anPs(Math.round(e.psre || 0)), `IO ${e.io} • RE ${e.re}`, (e.psre || 0) >= 80 ? GRN : AMB],
-          ['Butuh PS/hari', anD(e.need), `sisa ${D.sisa} hari`, e.need > e.drrM ? RED : GRN],
-          [`Kunjungan DJP ${S.djpLbl}`, anI(e.vis), `${e.sfDJP} SF • ${e.desaTouched} desa`, DARK],
-          ['PS dari desa ber-DJP', anPs(anP(e.psFromVis, e.ps)), `${e.psFromVis} dari ${e.ps} PS`, DARK],
+          mg ? ['Dibanding minggu lalu', anSg(anP(e.ps - e.ps0, e.ps0)), `dari ${e.ps0} menjadi ${e.ps} PS`, e.ps >= e.ps0 ? GRN : RED]
+            : ['Perkiraan PS akhir bulan', `${e.ol} (${Math.round(e.olAch)}%)`, `rata-rata ${anD(e.drrM)} PS per hari`, e.olAch >= 100 ? GRN : RED],
+          mg ? ['Capaian target minggu ini', anPs(Math.round(e.ach)), `target minggu ini ${anD(e.tgtW, 0)} PS`, e.ach >= 100 ? GRN : RED]
+            : ['Dibanding tanggal yang sama bulan lalu', anSg(anP(e.ps - e.ps0, e.ps0)), `dari ${e.ps0} menjadi ${e.ps} PS`, e.ps >= e.ps0 ? GRN : RED],
+          ['RE yang menjadi PS', anPs(Math.round(e.psre || 0)), `IO ${e.io}, RE ${e.re}`, (e.psre || 0) >= 80 ? GRN : AMB],
+          ['PS per hari yang dibutuhkan', anD(e.need), `untuk ${D.sisa} hari tersisa`, e.need > e.drrM ? RED : GRN],
+          [`Kunjungan DJP ${S.djpLbl}`, anI(e.vis), `oleh ${e.sfDJP} SF ke ${e.desaTouched} desa`, DARK],
+          ['PS dari desa yang dikunjungi DJP', anPs(anP(e.psFromVis, e.ps)), `${e.psFromVis} dari ${e.ps} PS`, DARK],
         ];
         t.forEach((v, j) => tile(s, x + 0.2 + (j % 2) * 1.85, 2.65 + Math.floor(j / 2) * 1.4, 1.75, 1.28, ...v));
       });
@@ -483,11 +483,11 @@ async function anBuild(D, S, B) {
       card(s, 0.4, 1.15, 8.25, 5.8, 'KPI PER KABUPATEN', RED);
       const hdr = ['Indikator', ...names].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED }, align: 'center' } }));
       const rowsT = [
-        ['PS ' + (mg ? 'minggu ini' : 'MTD'), ...E.map(e => anI(e.ps))], ['Target PS bulan', ...E.map(e => anI(e.tgtM))],
-        ['Outlook (capaian)', ...E.map(e => `${e.ol} (${Math.round(e.olAch)}%)`)], ['vs periode lalu', ...E.map(e => anSg(anP(e.ps - e.ps0, e.ps0)))],
-        ['DRR / butuh per hari', ...E.map(e => `${anD(e.drrM)} / ${anD(e.need)}`)], ['PS/RE', ...E.map(e => anPs(Math.round(e.psre || 0)))],
-        [`Kunjungan DJP ${S.djpLbl}`, ...E.map(e => anI(e.vis))], ['SF DJP • desa', ...E.map(e => `${e.sfDJP} • ${e.desaTouched}`)],
-        ['PS dari desa ber-DJP', ...E.map(e => anPs(anP(e.psFromVis, e.ps)))], ['Plan DJP bulan ini', ...E.map(e => anI(e.planCur))],
+        ['PS ' + (mg ? 'minggu ini' : 'sejak tanggal 1'), ...E.map(e => anI(e.ps))], ['Target PS sebulan', ...E.map(e => anI(e.tgtM))],
+        ['Perkiraan PS akhir bulan', ...E.map(e => `${e.ol} (${Math.round(e.olAch)}%)`)], ['Dibanding periode lalu', ...E.map(e => anSg(anP(e.ps - e.ps0, e.ps0)))],
+        ['PS per hari: rata-rata / dibutuhkan', ...E.map(e => `${anD(e.drrM)} / ${anD(e.need)}`)], ['RE yang menjadi PS', ...E.map(e => anPs(Math.round(e.psre || 0)))],
+        [`Kunjungan DJP ${S.djpLbl}`, ...E.map(e => anI(e.vis))], ['SF yang kunjungan / desa dikunjungi', ...E.map(e => `${e.sfDJP} SF / ${e.desaTouched} desa`)],
+        ['PS dari desa yang dikunjungi DJP', ...E.map(e => anPs(anP(e.psFromVis, e.ps)))], ['Kunjungan di plan DJP bulan ini', ...E.map(e => anI(e.planCur))],
       ];
       s.addTable([hdr, ...rowsT.map((r, i) => r.map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j ? 'center' : 'left' } })))],
         { x: 0.6, y: 1.6, w: 7.85, colW: [2.2, ...E.map(() => 5.65 / k)], rowH: 0.44, fontFace: F, fontSize: 9, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.05 });
@@ -506,20 +506,20 @@ async function anBuild(D, S, B) {
   // ── 2. PENCAPAIAN & TREN ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'PENCAPAIAN & TREN PS', `Tren 5 bulan, capaian ${mg ? 'minggu ini vs minggu lalu' : 'vs target pro-rata'}, dan PS harian ${D.label}`);
+    head(s, 'PENCAPAIAN & TREN PS', `Tren 5 bulan, capaian ${mg ? 'minggu ini dibanding minggu lalu' : 'dibanding target yang seharusnya tercapai sampai hari ini'}, dan PS harian ${D.label}`);
     card(s, 0.4, 1.12, 6.15, 2.95);
-    const ml = D.trendM.map((m, i) => anMonthShort(m) + (i === 4 && D.refDay < D.days ? ' (outlook)' : ''));
+    const ml = D.trendM.map((m, i) => anMonthShort(m) + (i === 4 && D.refDay < D.days ? ' (perkiraan)' : ''));
     s.addChart(pres.charts.LINE, E.map(e => ({ name: e.short, labels: ml, values: [...e.monthly.slice(0, 4), D.refDay < D.days ? e.ol : e.monthly[4]] })),
-      { x: 0.5, y: 1.18, w: 5.95, h: 2.85, ...ax, title: 'PS per Bulan' + (D.refDay < D.days ? ' (bulan berjalan = outlook DRR × hari)' : ''), chartColors: cols, lineSize: 2.5, lineDataSymbolSize: 7,
+      { x: 0.5, y: 1.18, w: 5.95, h: 2.85, ...ax, title: 'PS per Bulan' + (D.refDay < D.days ? ' (bulan berjalan: perkiraan akhir bulan = rata-rata PS per hari × jumlah hari)' : ''), chartColors: cols, lineSize: 2.5, lineDataSymbolSize: 7,
         showValue: true, dataLabelPosition: 't', dataLabelColor: DARK });
     card(s, 6.78, 1.12, 6.15, 2.95);
-    if (mg) bar(s, names, [{ name: 'Minggu lalu', values: E.map(e => e.ps0) }, { name: 'Minggu ini', values: E.map(e => e.ps) }, { name: 'Target pro-rata 7 hari', values: E.map(e => Math.round(e.tgtW)) }],
-      { x: 6.88, y: 1.18, w: 5.95, h: 2.85, title: 'PS Minggu Ini vs Minggu Lalu vs Target', chartColors: ['BFBFBF', RED, '595959'] });
-    else bar(s, names, [{ name: 'PS ' + D.label, values: E.map(e => e.ps) }, { name: 'Target s.d. hari ini (pro-rata)', values: E.map(e => Math.round(e.tgtToDate)) }],
-      { x: 6.88, y: 1.18, w: 5.95, h: 2.85, title: 'PS vs Target Pro-rata', chartColors: [RED, 'D9D9D9'] });
+    if (mg) bar(s, names, [{ name: 'Minggu lalu', values: E.map(e => e.ps0) }, { name: 'Minggu ini', values: E.map(e => e.ps) }, { name: 'Target 7 hari', values: E.map(e => Math.round(e.tgtW)) }],
+      { x: 6.88, y: 1.18, w: 5.95, h: 2.85, title: 'PS Minggu Ini, Minggu Lalu, dan Target', chartColors: ['BFBFBF', RED, '595959'] });
+    else bar(s, names, [{ name: 'PS ' + D.label, values: E.map(e => e.ps) }, { name: 'Target yang seharusnya tercapai sampai hari ini', values: E.map(e => Math.round(e.tgtToDate)) }],
+      { x: 6.88, y: 1.18, w: 5.95, h: 2.85, title: 'PS Dibanding Target Sampai Hari Ini', chartColors: [RED, 'D9D9D9'] });
     card(s, 0.4, 4.22, 6.15, 2.78);
     const dl = []; for (let n = D.W[0]; n <= D.W[1]; n = addDays(n, 1)) dl.push(String(n % 100));
-    bar(s, dl, entSeries(e => e.daily), { x: 0.5, y: 4.28, w: 5.95, h: 2.68, title: 'PS Harian (1–2 hari terakhir bisa belum lengkap)', chartColors: cols, showValue: dl.length <= 10, barGapWidthPct: 40 });
+    bar(s, dl, entSeries(e => e.daily), { x: 0.5, y: 4.28, w: 5.95, h: 2.68, title: 'PS per Hari (data 1–2 hari terakhir mungkin belum lengkap)', chartColors: cols, showValue: dl.length <= 10, barGapWidthPct: 40 });
     syl(s, 6.78, 4.22, 6.15, 2.78, S.pace);
     foot(s);
   }
@@ -527,18 +527,18 @@ async function anBuild(D, S, B) {
   // ── 3. FUNNEL, PRODUK & CHANNEL ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'FUNNEL, PRODUK & CHANNEL', `Konversi IO → RE → PS dan komposisi PS ${D.label}`);
+    head(s, 'ALUR ORDER, PRODUK & CHANNEL', `Perjalanan order dari IO ke RE ke PS, dan komposisi PS ${D.label}`);
     card(s, 0.4, 1.12, 4.1, 3.05);
     bar(s, names, [{ name: 'IO', values: E.map(e => e.io) }, { name: 'RE', values: E.map(e => e.re) }, { name: 'PS', values: E.map(e => e.ps) }],
-      { x: 0.5, y: 1.18, w: 3.9, h: 2.95, title: 'Funnel IO–RE–PS', chartColors: ['D9D9D9', '8C8C8C', RED], dataLabelFontSize: k > 3 ? 6 : 8 });
+      { x: 0.5, y: 1.18, w: 3.9, h: 2.95, title: 'Jumlah IO, RE, dan PS', chartColors: ['D9D9D9', '8C8C8C', RED], dataLabelFontSize: k > 3 ? 6 : 8 });
     card(s, 4.62, 1.12, 4.1, 3.05);
-    pctBar(s, ['PS', 'Batal', 'Pending'], [GRN, RED, AMB], e => e.coh, { x: 4.72, y: 1.18, w: 3.9, h: 2.95, title: 'Status Order dari IO Periode Ini', showValue: true, dataLabelPosition: 'ctr', dataLabelColor: 'FFFFFF' });
+    pctBar(s, ['PS', 'Batal', 'Masih menunggu'], [GRN, RED, AMB], e => e.coh, { x: 4.72, y: 1.18, w: 3.9, h: 2.95, title: 'Status Order dari IO Periode Ini', showValue: true, dataLabelPosition: 'ctr', dataLabelColor: 'FFFFFF' });
     const pc = AN.PROD.filter((p, i) => sum(E.map(e => e.prod[i])) > 0), pi = pc.map(p => AN.PROD.indexOf(p));
     donutPair(s, 8.84, 1.12, 4.09, 3.05, 'Mix Produk PS', pc, pi.map(i => AN.PROD_C[i]), e => pi.map(i => e.prod[i]));
-    const tl = [['Agency', anJoin(E.map(e => anPs(e.agency))), 'porsi PS lewat agency', DARK], ['Speed 20 Mbps', anJoin(E.map(e => anPs(e.sp20))), 'porsi PS paket 20M', DARK],
-      ['Batal per 100 IO', anJoin(E.map(e => anD(e.cancelPer100))), anJoin(E.map(e => e.coh[1] + ' batal')), RED], ['IH Reguler share', anJoin(E.map(e => anPs(e.ihReg))), 'ARPU lebih tinggi', AMB]];
+    const tl = [['PS lewat agency', anJoin(E.map(e => anPs(e.agency))), 'porsi dari seluruh PS', DARK], ['PS paket 20 Mbps', anJoin(E.map(e => anPs(e.sp20))), 'porsi dari seluruh PS', DARK],
+      ['Order batal per 100 IO', anJoin(E.map(e => anD(e.cancelPer100))), 'jumlah batal: ' + anJoin(E.map(e => e.coh[1])), RED], ['PS IndiHome Reguler', anJoin(E.map(e => anPs(e.ihReg))), 'porsi dari seluruh PS; tagihan bulanan lebih tinggi', AMB]];
     tl.forEach((v, i) => tile(s, 0.4 + (i % 2) * 3.2, 4.32 + Math.floor(i / 2) * 1.36, 3.08, 1.26, ...v));
-    tx(s, 'Urutan angka tile: ' + names.join(' / '), { x: 0.4, y: 6.98, w: 6.3, h: 0.14, fontSize: 7, color: GREY, italic: true });
+    tx(s, 'Urutan angka di kotak: ' + names.join(' / '), { x: 0.4, y: 6.98, w: 6.3, h: 0.14, fontSize: 7, color: GREY, italic: true });
     syl(s, 6.92, 4.32, 6.01, 2.68, S.funnel);
     foot(s);
   }
@@ -546,78 +546,78 @@ async function anBuild(D, S, B) {
   // ── 4. DJP 3 BULAN → PS (WILAYAH) ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, `DJP 3 BULAN → PS: EFEKTIVITAS WILAYAH DESA`, `Kunjungan SF ke desa ${S.djpLbl} (SF × desa × hari) dihubungkan dengan PS ${D.label}`);
+    head(s, `KUNJUNGAN DJP 3 BULAN SEBELUMNYA DAN PS PER DESA`, `Kunjungan SF ke desa ${S.djpLbl} dihubungkan dengan PS ${D.label} (1 kunjungan = 1 SF datang ke 1 desa pada 1 tanggal)`);
     card(s, 0.4, 1.12, 4.1, 2.95);
-    bar(s, D.djpM.map(m => anMonthShort(m) + (D.availM.includes(m) ? '' : ' (n/a)')), entSeries(e => e.visByM), { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: 'Kunjungan Desa per Bulan', chartColors: cols, dataLabelFontSize: k > 3 ? 6 : 8 });
+    bar(s, D.djpM.map(m => anMonthShort(m) + (D.availM.includes(m) ? '' : ' (tidak ada data)')), entSeries(e => e.visByM), { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: 'Jumlah Kunjungan Desa per Bulan', chartColors: cols, dataLabelFontSize: k > 3 ? 6 : 8 });
     card(s, 4.62, 1.12, 4.1, 2.95);
-    pctBar(s, AN.KAT_L, AN.KAT_C, e => e.katVis, { x: 4.72, y: 1.18, w: 3.9, h: 2.85, title: `Sasaran Kunjungan (Prioritas: ${anJoin(E.map(e => anPs(e.prioVisShare)))})` });
+    pctBar(s, AN.KAT_L, AN.KAT_C, e => e.katVis, { x: 4.72, y: 1.18, w: 3.9, h: 2.85, title: `Kunjungan per Kategori Desa (ke desa Prioritas: ${anJoin(E.map(e => anPs(e.prioVisShare)))})` });
     card(s, 8.84, 1.12, 4.09, 2.95);
-    bar(s, E[0].bucketL, entSeries(e => e.bucket.map(b => b.avg == null ? 0 : Math.round(b.avg * 10) / 10)), { x: 8.94, y: 1.18, w: 3.89, h: 2.85, title: 'Rata-rata PS per Desa vs Frekuensi Kunjungan', chartColors: cols, dataLabelFormatCode: '0.0',
-      catAxisTitle: 'kunjungan SF per desa per bulan', showCatAxisTitle: true, catAxisTitleFontSize: 8, catAxisTitleColor: GREY, catAxisTitleFontFace: F, dataLabelFontSize: k > 3 ? 6 : 8 });
-    const tl = [['PS dari desa ber-DJP', anJoin(E.map(e => anPs(anP(e.psFromVis, e.ps)))), anJoin(E.map(e => e.psFromVis + ' PS')), DARK],
-      ['PS oleh SF di desa garapannya', anJoin(E.map(e => anPs(anP(e.psSamePair, e.ps)))), 'rutin ≥3 kunjungan: ' + anJoin(E.map(e => e.psRutin)), DARK],
-      ['Kunjungan / SF / bulan', anJoin(E.map(e => anD(e.visPerSfM, 0))), anJoin(E.map(e => anD(e.desaPerSf) + ' desa/SF')), AMB],
-      ['Desa tersentuh DJP', anJoin(E.map(e => e.desaTouched)), 'dari ' + anJoin(E.map(e => e.desaTotal)) + ' desa', DARK]];
+    bar(s, E[0].bucketL, entSeries(e => e.bucket.map(b => b.avg == null ? 0 : Math.round(b.avg * 10) / 10)), { x: 8.94, y: 1.18, w: 3.89, h: 2.85, title: 'Rata-rata PS per Desa menurut Jumlah Kunjungan', chartColors: cols, dataLabelFormatCode: '0.0',
+      catAxisTitle: 'rata-rata kunjungan SF ke desa per bulan', showCatAxisTitle: true, catAxisTitleFontSize: 8, catAxisTitleColor: GREY, catAxisTitleFontFace: F, dataLabelFontSize: k > 3 ? 6 : 8 });
+    const tl = [['PS dari desa yang dikunjungi DJP', anJoin(E.map(e => anPs(anP(e.psFromVis, e.ps)))), anJoin(E.map(e => e.psFromVis + ' PS')), DARK],
+      ['PS oleh SF di desa yang ia kunjungi', anJoin(E.map(e => anPs(anP(e.psSamePair, e.ps)))), 'PS di desa yang dikunjungi minimal 3 kali: ' + anJoin(E.map(e => e.psRutin)), DARK],
+      ['Kunjungan per SF per bulan', anJoin(E.map(e => anD(e.visPerSfM, 0))), 'desa per SF: ' + anJoin(E.map(e => anD(e.desaPerSf))), AMB],
+      ['Desa yang pernah dikunjungi DJP', anJoin(E.map(e => e.desaTouched)), 'dari ' + anJoin(E.map(e => e.desaTotal)) + ' desa', DARK]];
     tl.forEach((v, i) => tile(s, 0.4 + (i % 2) * 2.05, 4.22 + Math.floor(i / 2) * 1.4, 1.95, 1.28, ...v));
     syl(s, 4.62, 4.22, 8.31, 2.6, S.djp);
-    foot(s, L2 + 'tile: ' + names.join(' / '));
+    foot(s, L2 + 'urutan angka di kotak: ' + names.join(' / '));
   }
 
   // ── 5. SF ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'SF: KEHADIRAN DI DESA TERITORI vs PS', `Kelompok SF menurut rata-rata kunjungan desa per bulan (${S.djpLbl})`);
+    head(s, 'SF: KUNJUNGAN KE DESA WILAYAH KERJA DAN PS', `SF dikelompokkan menurut rata-rata jumlah kunjungan desa per bulan (${S.djpLbl})`);
     card(s, 0.4, 1.12, 4.1, 2.95);
-    bar(s, E[0].sfBL, entSeries(e => e.sfB.map(b => b.avg == null ? 0 : Math.round(b.avg * 10) / 10)), { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: 'Rata-rata PS per SF', chartColors: cols, dataLabelFormatCode: '0.0', dataLabelFontSize: k > 3 ? 6 : 8 });
+    bar(s, E[0].sfBL, entSeries(e => e.sfB.map(b => b.avg == null ? 0 : Math.round(b.avg * 10) / 10)), { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: 'Rata-rata PS per SF menurut jumlah kunjungan per bulan', chartColors: cols, dataLabelFormatCode: '0.0', dataLabelFontSize: k > 3 ? 6 : 8 });
     card(s, 4.62, 1.12, 4.1, 2.95);
-    bar(s, E[0].sfBL, entSeries(e => e.sfB.map(b => b.n)), { x: 4.72, y: 1.18, w: 3.9, h: 2.85, title: 'Jumlah SF per Kelompok', chartColors: cols, dataLabelFontSize: k > 3 ? 6 : 8 });
+    bar(s, E[0].sfBL, entSeries(e => e.sfB.map(b => b.n)), { x: 4.72, y: 1.18, w: 3.9, h: 2.85, title: 'Jumlah SF menurut jumlah kunjungan per bulan', chartColors: cols, dataLabelFontSize: k > 3 ? 6 : 8 });
     card(s, 8.84, 1.12, 4.09, 2.95, 'TOP SF PS ' + (mg ? 'MINGGU INI' : 'PERIODE INI'), RED);
     const top = E.flatMap(e => e.topSF.map(x => ({ ...x, ent: e.short }))).sort((a, b) => b.ps - a.ps).slice(0, 7);
-    const hdr = ['SF', k > 2 ? 'Kab' : 'Cl', 'Desa', 'Kunj.', 'PS'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
+    const hdr = ['SF', k > 2 ? 'Kabupaten' : 'Cluster', 'Desa', 'Kunjungan', 'PS'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
     s.addTable([hdr, ...top.map((r, i) => [r.n.slice(0, 20), r.ent.slice(0, 10), r.desa, r.v, r.ps].map(v => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG } } })))],
-      { x: 9.0, y: 1.55, w: 3.77, colW: [1.5, 0.8, 0.47, 0.55, 0.45], rowH: 0.3, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.03 });
+      { x: 9.0, y: 1.55, w: 3.77, colW: [1.35, 0.8, 0.45, 0.72, 0.45], rowH: 0.3, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.03 });
     const nW = sum(E.map(e => e.watch.length));
-    const tl = [['SF berjualan (≥1 PS)', anJoin(E.map(e => e.sfSell)), 'dari ' + anJoin(E.map(e => e.sfAll)) + ' SF', DARK],
-      [`SF produktif (≥${E[0].prodMin} PS)`, anJoin(E.map(e => e.sfProd)), anJoin(E.map(e => anPs(anP(e.sfProd, e.sfSell)))) + ' dari yang berjualan', AMB],
-      ['Korelasi kunjungan–PS', anJoin(E.map(e => anD(e.corr, 2))), '1 = sangat searah', DARK], ['Rajin DJP tapi 0 PS', anJoin(E.map(e => e.watch.length)), 'perlu coaching', RED]];
+    const tl = [['SF yang punya minimal 1 PS', anJoin(E.map(e => e.sfSell)), 'dari ' + anJoin(E.map(e => e.sfAll)) + ' SF', DARK],
+      [`SF dengan minimal ${E[0].prodMin} PS`, anJoin(E.map(e => e.sfProd)), anJoin(E.map(e => anPs(anP(e.sfProd, e.sfSell)))) + ' dari SF yang punya PS', AMB],
+      ['Hubungan kunjungan dan PS', anJoin(E.map(e => anD(e.corr, 2))), '0 = tidak berhubungan, 1 = sangat berhubungan', DARK], ['SF sering kunjungan tetapi 0 PS', anJoin(E.map(e => e.watch.length)), 'perlu dibimbing', RED]];
     tl.forEach((v, i) => tile(s, 0.4 + (i % 2) * 2.05, 4.22 + Math.floor(i / 2) * 1.4, 1.95, 1.28, ...v));
-    if (nW) tx(s, 'Watchlist: ' + E.flatMap(e => e.watch.map(x => `${x.n} (${x.v} kunj.) – ${e.short}`)).slice(0, 5).join(' • '), { x: 0.4, y: 6.86, w: 12.5, h: 0.22, fontSize: 7.5, color: RED, italic: true });
+    if (nW) tx(s, 'SF yang sering kunjungan tetapi belum ada PS: ' + E.flatMap(e => e.watch.map(x => `${x.n} (${x.v} kunjungan, ${e.short})`)).slice(0, 5).join(' • '), { x: 0.4, y: 6.86, w: 12.5, h: 0.22, fontSize: 7.5, color: RED, italic: true });
     syl(s, 4.62, 4.22, 8.31, 2.6, S.sf);
-    foot(s, L2 + 'tile: ' + names.join(' / '));
+    foot(s, L2 + 'urutan angka di kotak: ' + names.join(' / '));
   }
 
   // ── 6. PRIORITAS, PENETRASI & PLAN ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'PRIORITAS DESA, PENETRASI & PLAN DJP', `Sumbangan PS per kategori desa, cakupan desa prioritas, dan status plan DJP ${periodLabel(D.bulan)} (timeline)`);
+    head(s, 'KATEGORI DESA, PENETRASI & PLAN DJP', `Porsi PS per kategori desa, desa Prioritas yang sudah dikunjungi, dan status plan DJP ${periodLabel(D.bulan)}`);
     donutPair(s, 0.4, 1.12, 4.1, 2.95, 'PS per Kategori Desa', AN.KAT_L, AN.KAT_C, e => e.psKat);
     card(s, 4.62, 1.12, 4.1, 2.95);
-    bar(s, names, [{ name: 'Desa prioritas', values: E.map(e => e.prio[0]) }, { name: `Dikunjungi ${S.djpLbl}`, values: E.map(e => e.prio[1]) }, { name: 'Ada PS', values: E.map(e => e.prio[2]) }],
-      { x: 4.72, y: 1.18, w: 3.9, h: 2.85, title: 'Cakupan Desa Prioritas', chartColors: ['D9D9D9', AMB, RED], dataLabelFontSize: k > 3 ? 6 : 8 });
-    card(s, 8.84, 1.12, 4.09, 2.95, 'DESA: PS vs KUNJUNGAN DJP', RED);
+    bar(s, names, [{ name: 'Jumlah desa Prioritas', values: E.map(e => e.prio[0]) }, { name: `Dikunjungi ${S.djpLbl}`, values: E.map(e => e.prio[1]) }, { name: 'Sudah ada PS', values: E.map(e => e.prio[2]) }],
+      { x: 4.72, y: 1.18, w: 3.9, h: 2.85, title: 'Desa Prioritas: Dikunjungi dan Ada PS', chartColors: ['D9D9D9', AMB, RED], dataLabelFontSize: k > 3 ? 6 : 8 });
+    card(s, 8.84, 1.12, 4.09, 2.95, 'DESA: PS DAN JUMLAH KUNJUNGAN DJP', RED);
     const dRows = [...E.flatMap(e => e.topDesa.slice(0, k > 2 ? 2 : 3)).sort((a, b) => b.ps - a.ps).slice(0, 4), ...E.flatMap(e => e.saturated).sort((a, b) => b.v - a.v).slice(0, 3)];
-    const hdr = ['Desa', 'Kat.', 'Kunj.', 'PS'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
+    const hdr = ['Desa', 'Kategori', 'Kunjungan', 'PS'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
     const nTop = Math.min(4, dRows.length);
-    s.addTable([hdr, ...dRows.map((r, i) => [r.desa.slice(0, 20), anTitle(r.kat).slice(0, 5), r.v, r.ps].map(v => ({ text: String(v), options: { fill: { color: i >= nTop ? 'FDECEC' : (i % 2 ? 'FFFFFF' : BG) } } })))],
-      { x: 9.0, y: 1.55, w: 3.77, colW: [1.67, 0.65, 0.75, 0.7], rowH: 0.26, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.03 });
-    tx(s, 'Merah muda = kunjungan tinggi, PS rendah (jenuh)', { x: 9.0, y: 3.83, w: 3.8, h: 0.18, fontSize: 7, color: GREY, italic: true });
-    const tl = [[`Plan DJP ${anMonthShort(D.bulan)} (kunjungan)`, anJoin(E.map(e => e.planCur)), anJoin(E.map(e => e.planCur ? `${e.planCurSF} SF, ${anPs(e.planCurGood)} prio/strat` : 'belum ada')), E.some(e => !e.planCur) ? RED : DARK],
-      ['Prioritas belum di-DJP', anJoin(E.map(e => e.prioUntouched.length)), E.flatMap(e => e.prioUntouched.slice(0, 1)).slice(0, 2).join(', ') || '—', DARK],
-      ['Desa avai ≥20 tanpa PS', anJoin(E.map(e => e.penZero)), 'peluang penetrasi', AMB],
-      ['PS dari desa prioritas', anJoin(E.map(e => anPs(anP(e.psKat[0], e.ps)))), 'skip: ' + anJoin(E.map(e => anPs(anP(e.psKat[3], e.ps)))), DARK]];
+    s.addTable([hdr, ...dRows.map((r, i) => [r.desa.slice(0, 20), anTitle(r.kat), r.v, r.ps].map(v => ({ text: String(v), options: { fill: { color: i >= nTop ? 'FDECEC' : (i % 2 ? 'FFFFFF' : BG) } } })))],
+      { x: 9.0, y: 1.55, w: 3.77, colW: [1.42, 0.8, 0.85, 0.7], rowH: 0.26, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.03 });
+    tx(s, 'Baris merah muda = desa yang sering dikunjungi tetapi PS-nya sedikit', { x: 9.0, y: 3.83, w: 3.8, h: 0.18, fontSize: 7, color: GREY, italic: true });
+    const tl = [[`Kunjungan di plan DJP ${periodLabel(D.bulan)}`, anJoin(E.map(e => e.planCur)), anJoin(E.map(e => e.planCur ? `${e.planCurSF} SF, ${anPs(e.planCurGood)} ke Prioritas dan Strategis` : 'belum ada plan')), E.some(e => !e.planCur) ? RED : DARK],
+      ['Desa Prioritas belum pernah dikunjungi DJP', anJoin(E.map(e => e.prioUntouched.length)), E.flatMap(e => e.prioUntouched.slice(0, 1)).slice(0, 2).join(', ') || '—', DARK],
+      ['Desa dengan minimal 20 port kosong, belum ada PS', anJoin(E.map(e => e.penZero)), 'peluang penjualan', AMB],
+      ['Porsi PS dari desa Prioritas', anJoin(E.map(e => anPs(anP(e.psKat[0], e.ps)))), 'dari desa Skip: ' + anJoin(E.map(e => anPs(anP(e.psKat[3], e.ps)))), DARK]];
     tl.forEach((v, i) => tile(s, 0.4 + (i % 2) * 2.05, 4.22 + Math.floor(i / 2) * 1.4, 1.95, 1.28, ...v));
     syl(s, 4.62, 4.22, 8.31, 2.6, S.prio);
-    foot(s, L2 + 'tile: ' + names.join(' / '));
+    foot(s, L2 + 'urutan angka di kotak: ' + names.join(' / '));
   }
 
   // ── 6b. DISIPLIN PLAN vs REALISASI DJP ──
   if (D.discRange) {
     const s = pres.addSlide({ masterName: 'AN' });
     const [f, t] = D.discRange, fl = x => +x.slice(8, 10) + ' ' + anMonthShort(x.slice(0, 7));
-    head(s, 'DISIPLIN PLAN vs REALISASI DJP', `Plan (DJP_Plan) dibanding kunjungan nyata (DJP_Realisasi_Baru) ${fl(f)} – ${fl(t)}${L2}SF-hari & desa-hari`);
-    const tiles = [['SF plan → visit', e => anPs(e.disc.sfPct), e => `${e.disc.sfHit} dari ${e.disc.sfPlan} SF-hari`, e => e.disc.sfPct == null ? GREY : e.disc.sfPct >= 80 ? GRN : e.disc.sfPct >= 50 ? AMB : RED],
-      ['Desa plan didatangi', e => anPs(anP(e.disc.desaHit, e.disc.desaPlan)), e => `${e.disc.desaHit} dari ${e.disc.desaPlan} desa-hari`, e => { const p = anP(e.disc.desaHit, e.disc.desaPlan); return p == null ? GREY : p >= 80 ? GRN : p >= 50 ? AMB : RED; }],
-      ['Visit di luar plan', e => anI(sum(e.disc.luar)), () => 'desa-hari tanpa plan', () => DARK]];
+    head(s, 'DISIPLIN PLAN DAN REALISASI KUNJUNGAN DJP', `Jadwal kunjungan di plan (DJP_Plan) dibanding kunjungan yang benar-benar terjadi (DJP_Realisasi_Baru), ${fl(f)} – ${fl(t)}`);
+    const tiles = [['Jadwal SF yang terlaksana', e => anPs(e.disc.sfPct), e => `${e.disc.sfHit} dari ${e.disc.sfPlan} jadwal: SF tercatat kunjungan pada tanggal plan`, e => e.disc.sfPct == null ? GREY : e.disc.sfPct >= 80 ? GRN : e.disc.sfPct >= 50 ? AMB : RED],
+      ['Jadwal desa yang didatangi', e => anPs(anP(e.disc.desaHit, e.disc.desaPlan)), e => `${e.disc.desaHit} dari ${e.disc.desaPlan} jadwal: desa didatangi pada tanggal plan`, e => { const p = anP(e.disc.desaHit, e.disc.desaPlan); return p == null ? GREY : p >= 80 ? GRN : p >= 50 ? AMB : RED; }],
+      ['Kunjungan di luar plan', e => anI(sum(e.disc.luar)), () => 'kunjungan ke desa yang tidak dijadwalkan pada tanggal itu', () => DARK]];
     const tw = Math.min(2.0, (4.1 - 0.1 * (k - 1)) / k);
     tiles.forEach(([lbl, fv, fs, fc], r) => {
       tx(s, lbl, { x: 0.4, y: 1.15 + r * 1.6, w: 4.1, h: 0.25, fontSize: 10, bold: true, color: DARK });
@@ -625,13 +625,13 @@ async function anBuild(D, S, B) {
     });
     card(s, 4.62, 1.12, 8.31, 3.05);
     bar(s, AN.KAT_L, E.map(e => ({ name: e.short, values: e.disc.kat.map(c => c.plan ? Math.round(c.hit / c.plan * 100) : 0) })),
-      { x: 4.72, y: 1.18, w: 8.1, h: 2.95, title: 'Desa plan yang didatangi per kategori (%)', chartColors: cols, valAxisMaxVal: 100, valAxisLabelFormatCode: '0"%"', dataLabelFormatCode: '0"%"' });
-    const hdr = ['Kategori', ...E.flatMap(e => [e.short + ' plan', 'didatangi', 'luar plan'])].map(x => ({ text: x, options: { bold: true, color: 'FFFFFF', fill: { color: RED }, align: 'center' } }));
+      { x: 4.72, y: 1.18, w: 8.1, h: 2.95, title: 'Persentase jadwal desa yang didatangi, per kategori desa', chartColors: cols, valAxisMaxVal: 100, valAxisLabelFormatCode: '0"%"', dataLabelFormatCode: '0"%"' });
+    const hdr = ['Kategori', ...E.flatMap(e => [e.short + ': jadwal di plan', 'didatangi', 'di luar plan'])].map(x => ({ text: x, options: { bold: true, color: 'FFFFFF', fill: { color: RED }, align: 'center' } }));
     const rowsK = AN.KAT_L.map((l, ki) => [l, ...E.flatMap(e => { const c = e.disc.kat[ki]; return [c.plan, c.plan ? `${c.hit} (${anP(c.hit, c.plan)}%)` : '–', e.disc.luar[ki]]; })]);
     const nc = 1 + 3 * k, cw0 = 1.3, cwi = (8.31 - cw0) / (3 * k);
     s.addTable([hdr, ...rowsK.map((r, i) => r.map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j ? 'center' : 'left', color: j === 0 ? AN.KAT_C[i] === 'D9D9D9' ? GREY : AN.KAT_C[i] : DARK } })))],
       { x: 4.62, y: 4.32, w: 8.31, colW: [cw0, ...Array(nc - 1).fill(cwi)], rowH: 0.36, fontFace: F, fontSize: k > 3 ? 6.5 : 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
-    tx(s, 'SF-hari = 1 SF dalam 1 hari · desa-hari = 1 desa dalam 1 hari · dihitung s.d. tanggal realisasi terakhir yang sudah di-upload.',
+    tx(s, 'Satu jadwal SF = satu SF yang dijadwalkan kunjungan pada satu tanggal. Satu jadwal desa = satu desa yang dijadwalkan dikunjungi pada satu tanggal. Dihitung sampai tanggal terakhir data realisasi yang sudah di-upload.',
       { x: 4.62, y: 6.25, w: 8.31, h: 0.3, fontSize: 8, italic: true, color: GREY });
     foot(s);
   }
@@ -639,7 +639,7 @@ async function anBuild(D, S, B) {
   // ── 7. DRIVER TREE & GAP IO ──
   if (B) {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'DRIVER TREE & GAP IO', 'IO = tuas yang dikontrol sales · faktor merah = penahan utama · RE→PS sebagai hasil (tarikan ODP, teknisi, cuaca)');
+    head(s, 'POHON PENYEBAB & KEKURANGAN IO', 'IO adalah hasil yang dikendalikan sales; faktor berwarna merah adalah penghambat utama. RE menjadi PS juga dipengaruhi jarak ke ODP, teknisi, dan cuaca.');
     const n = B.drv.length, cw = Math.min(4.1, (12.53 - (n - 1) * 0.12) / n);
     B.drv.slice(0, 6).forEach((x, i) => {
       const xx = 0.4 + i * (cw + 0.12); card(s, xx, 1.12, cw, 3.25, x.name.toUpperCase(), E[i] ? E[i].color : RED);
@@ -647,12 +647,12 @@ async function anBuild(D, S, B) {
         const yy = 1.55 + j * 0.39, c = r.st === 'ok' ? GRN : r.st === 'warn' ? AMB : RED;
         s.addShape(pres.shapes.RECTANGLE, { x: xx + 0.15, y: yy, w: 0.06, h: 0.32, fill: { color: c }, line: { color: c } });
         tx(s, r.label.replace(' (di luar kendali penuh sales)', '*'), { x: xx + 0.27, y: yy - 0.02, w: cw - 1.2, h: 0.22, fontSize: n > 3 ? 6.5 : 8, color: DARK });
-        tx(s, 'acuan ' + r.ref, { x: xx + 0.27, y: yy + 0.17, w: cw - 1.2, h: 0.17, fontSize: 6.5, color: GREY });
+        tx(s, 'standar: ' + r.ref, { x: xx + 0.27, y: yy + 0.17, w: cw - 1.2, h: 0.17, fontSize: 6.5, color: GREY });
         tx(s, r.val, { x: xx + cw - 0.95, y: yy, w: 0.8, h: 0.32, fontSize: n > 3 ? 9 : 11, bold: true, color: c, align: 'right', valign: 'middle' });
       });
     });
     tx(s, '* RE→PS dipengaruhi faktor di luar kendali penuh sales; tidak dipilih sebagai faktor penahan.', { x: 0.4, y: 4.38, w: 12, h: 0.2, fontSize: 7, color: GREY, italic: true });
-    const hdr = ['Entitas', 'Target IO', 'IO periode', 'Outlook IO', 'Gap IO', 'IO lokasi potensial', 'Butuh IO potensial', 'PS (hasil)', 'Diagnosis'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
+    const hdr = ['Wilayah', 'Target IO', 'IO sejauh ini', 'Perkiraan IO akhir bulan', 'Kekurangan IO', 'IO dari desa Prioritas dan Strategis', 'Tambahan IO yang dibutuhkan dari desa tersebut', 'PS / target PS', 'Penjelasan'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
     s.addTable([hdr, ...B.gap.map((g, i) => [g.name, g.tgt, g.mtd, g.ol, g.gap, `${g.pot} (${g.potShare}%)`, g.potGap ? '+' + g.potGap : '–', `${g.ps}/${g.psTgt}`, ((B.diag[i] || {}).lines || []).slice(1, 3).map(l => l[1]).join(' ')].map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 4 && g.gap > 0, color: j === 4 && g.gap > 0 ? RED : DARK } })))],
       { x: 0.4, y: 4.62, w: 12.53, colW: [1.3, 0.75, 0.75, 0.8, 0.65, 1.15, 1.0, 0.75, 5.38], rowH: 0.36, fontFace: F, fontSize: n > 3 ? 6.5 : 7.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
     foot(s);
@@ -660,7 +660,7 @@ async function anBuild(D, S, B) {
   // ── 8. MATRIKS DESA & JADWAL STRATEGIS ──
   if (B) {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'DESA PRIORITAS & STRATEGIS: SISA POTENSI · JADWAL STRATEGIS', 'Sisa = port avai yang belum jadi PS · ★ = desa Strategis');
+    head(s, 'DESA PRIORITAS & STRATEGIS: SISA POTENSI DAN JADWAL KHUSUS', 'Sisa port = port ODP yang masih kosong dikurangi PS. Tanda (Strategis) = desa berpotensi tinggi tetapi jauh dari kantor.');
     B.matrix.forEach((q, i) => {
       const xx = 0.4, yy = 1.12 + i * 1.95, col = q.c.replace('#', '');
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: xx, y: yy, w: 7.25, h: 1.85, rectRadius: 0.06, fill: { color: 'FFFFFF' }, line: { color: col, width: 2 } });
@@ -668,23 +668,23 @@ async function anBuild(D, S, B) {
       tx(s, q.top.slice(0, 4).map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < Math.min(3, q.top.length - 1) } })), { x: xx + 0.15, y: yy + 0.4, w: 7, h: 1.05, fontSize: 7.5, color: DARK, valign: 'top', paraSpaceAfter: 2 });
       tx(s, '→ ' + q.act, { x: xx + 0.15, y: yy + 1.48, w: 7, h: 0.3, fontSize: 8, bold: true, color: col, valign: 'top', fit: 'shrink' });
     });
-    card(s, 7.82, 1.12, 5.11, 5.8, 'JADWAL DESA STRATEGIS (kurang dikunjungi)', RED);
+    card(s, 7.82, 1.12, 5.11, 5.8, 'JADWAL KHUSUS DESA STRATEGIS YANG JARANG DIKUNJUNGI', RED);
     const lines = [];
     B.strat.forEach(t => {
-      lines.push({ text: `${t.name}: ${t.kurang} dari ${t.total} desa strategis < 2 kunjungan/bln`, options: { bold: true, color: DARK, breakLine: true, fontSize: 9 } });
-      t.grup.slice(0, 3).forEach(gp => lines.push({ text: `Kec. ${gp.kec} (±${gp.jarak} km): ${gp.desa.slice(0, 4).join(', ')}`, options: { bullet: true, breakLine: true, fontSize: 8, color: '404040' } }));
+      lines.push({ text: `${t.name}: ${t.kurang} dari ${t.total} desa Strategis dikunjungi kurang dari 2 kali per bulan`, options: { bold: true, color: DARK, breakLine: true, fontSize: 9 } });
+      t.grup.slice(0, 3).forEach(gp => lines.push({ text: `Kecamatan ${gp.kec} (sekitar ${gp.jarak} km): ${gp.desa.slice(0, 4).join(', ')}`, options: { bullet: true, breakLine: true, fontSize: 8, color: '404040' } }));
     });
-    if (!lines.length) lines.push({ text: 'Semua desa strategis sudah dikunjungi rutin.', options: { fontSize: 9 } });
+    if (!lines.length) lines.push({ text: 'Semua desa Strategis sudah dikunjungi rutin.', options: { fontSize: 9 } });
     tx(s, lines, { x: 8.0, y: 1.55, w: 4.8, h: 5.2, valign: 'top', paraSpaceAfter: 3, fit: 'shrink' });
     foot(s);
   }
   // ── 9. KESIMPULAN & AKSI ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'KESIMPULAN & RENCANA AKSI', `Rangkaian silogisme → keputusan untuk sisa ${mg ? 'minggu & ' : ''}bulan (${D.sisa} hari)`);
+    head(s, 'KESIMPULAN & RENCANA AKSI', `Kesimpulan dari analisa sebelumnya dan keputusan untuk ${D.sisa} hari tersisa di bulan ini`);
     card(s, 0.4, 1.12, 4.1, 2.95);
-    bar(s, names, [{ name: 'IO/hari saat ini', values: E.map(e => Math.round(e.ioDrr * 10) / 10) }, { name: 'Butuh IO/hari', values: E.map(e => Math.round(e.ioNeed * 10) / 10) }],
-      { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: `IO per hari vs kebutuhan (sisa ${D.sisa} hari)`, chartColors: ['8C8C8C', RED], dataLabelFormatCode: '0.0', dataLabelFontSize: k > 3 ? 6 : 8 });
+    bar(s, names, [{ name: 'Rata-rata IO per hari saat ini', values: E.map(e => Math.round(e.ioDrr * 10) / 10) }, { name: 'IO per hari yang dibutuhkan', values: E.map(e => Math.round(e.ioNeed * 10) / 10) }],
+      { x: 0.5, y: 1.18, w: 3.9, h: 2.85, title: `IO per hari: saat ini dan yang dibutuhkan (${D.sisa} hari tersisa)`, chartColors: ['8C8C8C', RED], dataLabelFormatCode: '0.0', dataLabelFontSize: k > 3 ? 6 : 8 });
     syl(s, 4.62, 1.12, 8.31, 2.95, S.final);
     const hdr = ['#', 'Aksi', 'Untuk', 'Ukuran keberhasilan', 'Waktu'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
     s.addTable([hdr, ...S.actions.map((r, i) => [String(i + 1), r[0], r[1], r[3], r[4]].map((v, j) => ({ text: v, options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j === 0 ? 'center' : 'left' } })))],
@@ -694,18 +694,21 @@ async function anBuild(D, S, B) {
   // ── 10. KAMUS ISTILAH ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'KAMUS ISTILAH', 'Agar analisa mudah dibaca');
-    const K = [['IO (Input Order)', 'Order yang diinput sales — satu-satunya hasil yang dikontrol penuh sales, jadi tuas utama.'], ['RE (Register)', 'IO yang lolos registrasi/validasi.'],
-      ['PS (Put In Service)', 'Layanan aktif. Dipengaruhi faktor di luar sales: tarikan rumah ke ODP maks. 250 m, jumlah teknisi, cuaca.'], ['Lokasi potensial', 'Desa Prioritas + Strategis; acuan ≥70% IO dari sini.'],
-      ['Prioritas', 'Potensi tinggi & dekat kantor — digarap rutin.'], ['Strategis', 'Potensi tinggi tapi jauh — wajib digarap lewat jadwal khusus per kecamatan.'], ['Cadangan / Skip', 'Potensi lebih rendah — kunjungan secukupnya.'],
-      ['Kunjungan DJP', '1 SF × 1 desa × 1 hari; dihitung 3 bulan sebelum bulan PS (M-1…M-3).'], ['DRR · Outlook', 'Rata-rata per hari · proyeksi akhir bulan = DRR × hari dalam bulan.'],
-      ['Driver Tree', 'Pohon pemicu: IO dipecah ke faktor pembentuknya untuk menemukan faktor penahan.'], ['Faktor penahan', 'Faktor yang dikontrol sales dengan nilai paling jauh di bawah acuan.'],
-      ['Gap Analysis', 'Selisih target & outlook, diurai ke sumbernya.'], ['Port avai · Penetrasi', 'Port ODP tersedia (potensi) · PS ÷ port avai (potensi yang sudah terambil).'],
-      ['Sisa potensi', 'Belum tergarap (port banyak, PS sedikit) · Sudah tergarap · Perlu ditinjau.'], ['Desa jenuh', 'Sering dikunjungi tapi hasil ≤1 — kunjungan dialihkan.'], ['Silogisme', 'Premis mayor (aturan) + premis minor (fakta) → kesimpulan.']];
+    head(s, 'KAMUS ISTILAH', 'Penjelasan istilah yang dipakai di laporan ini');
+    const K = [['IO (Input Order)', 'Order yang diinput sales. Satu-satunya hasil yang sepenuhnya dikendalikan sales.'], ['RE (Registrasi)', 'IO yang sudah lolos registrasi dan validasi.'],
+      ['PS (Put In Service)', 'Layanan sudah terpasang dan aktif. Dipengaruhi juga oleh faktor di luar sales: jarak rumah ke ODP maksimal 250 meter, jumlah teknisi, dan cuaca.'],
+      ['Prioritas', 'Desa berpotensi tinggi dan dekat kantor; dikunjungi rutin.'], ['Strategis', 'Desa berpotensi tinggi tetapi jauh dari kantor; dikunjungi lewat jadwal khusus per kecamatan.'],
+      ['Cadangan dan Skip', 'Desa dengan potensi lebih rendah; dikunjungi secukupnya.'], ['Kunjungan DJP', 'Satu SF datang ke satu desa pada satu tanggal. Diambil dari DJP_Realisasi_Baru untuk 3 bulan sebelum bulan laporan.'],
+      ['Plan DJP', 'Jadwal kunjungan SF ke desa yang dibuat di menu Plan DJP dashboard (DJP_Plan).'],
+      ['Perkiraan akhir bulan', 'Rata-rata per hari sejauh ini dikali jumlah hari dalam bulan.'], ['Target sampai hari ini', 'Target sebulan dibagi jumlah hari, dikali jumlah hari yang sudah berjalan.'],
+      ['Pohon penyebab', 'IO diuraikan ke faktor pembentuknya (jumlah SF, jumlah kunjungan, sasaran kunjungan, IO per kunjungan) untuk menemukan faktor penghambat.'],
+      ['Port kosong', 'Port ODP yang masih tersedia untuk pelanggan baru.'], ['Penetrasi', 'PS dibagi port ODP; menunjukkan seberapa banyak potensi yang sudah terambil.'],
+      ['Sisa potensi desa', 'Belum tergarap: port kosong banyak, PS sedikit. Sudah tergarap: sebagian besar port sudah terisi. Perlu ditinjau: port hampir habis, atau sering dikunjungi tetapi tidak ada PS.'],
+      ['Alur analisa', 'Aturan umum, lalu fakta dari data, lalu kesimpulan yang ditarik dari keduanya.']];
     const half = Math.ceil(K.length / 2);
     [K.slice(0, half), K.slice(half)].forEach((col, ci) => {
       s.addTable(col.map((r, i) => [{ text: r[0], options: { bold: true, fill: { color: i % 2 ? 'FFFFFF' : BG } } }, { text: r[1], options: { fill: { color: i % 2 ? 'FFFFFF' : BG } } }]),
-        { x: 0.4 + ci * 6.33, y: 1.15, w: 6.2, colW: [1.7, 4.5], rowH: 0.62, fontFace: F, fontSize: 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.06 });
+        { x: 0.4 + ci * 6.33, y: 1.15, w: 6.2, colW: [1.7, 4.5], rowH: 0.7, fontFace: F, fontSize: 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.06 });
     });
     foot(s);
   }
