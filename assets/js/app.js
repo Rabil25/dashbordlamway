@@ -89,6 +89,7 @@ function app() {
 
     // Penetrasi ODP state
     penetrasiData: [],
+    arpuMap: {},          // KEC|DESA → { arpu, n } (rata-rata price_package semua order)
     penetrasiLoading: false,
     penetrasiError: '',
     penetrasiKabFilter: '',
@@ -1185,6 +1186,7 @@ function app() {
         const gasBase = this.cfg.gasUrl || DEFAULT_GAS_URL;
         const bulan   = this.cfg.bulan || '';
         // Fetch odp.json + GAS deepdive_odp (PS per desa) secara paralel
+        this.loadArpu();
         const [odpRes, gasRes] = await Promise.all([
           fetchOdpJson(),
           fetch(`${gasBase}?session_token=${encodeURIComponent(this.sessionToken)}&type=deepdive_odp&periode=${encodeURIComponent(bulan)}&bulan=${periodMonth(bulan)}`)
@@ -1234,13 +1236,22 @@ function app() {
       }
     },
 
+    async loadArpu() {
+      if (this._arpuP) return this._arpuP;
+      this._arpuP = fetch('/api/data?type=arpu_desa', { headers: { Authorization: 'Bearer ' + this.sessionToken } })
+        .then(r => r.json()).then(d => { if (d && d.ok) this.arpuMap = d.data || {}; else this._arpuP = null; })
+        .catch(() => { this._arpuP = null; });
+      return this._arpuP;
+    },
+    arpuOf(kec, desa) { const N = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return this.arpuMap[N(kec) + '|' + N(desa)] || null; },
+    fmtArpu(a) { return a ? 'Rp ' + Math.round(a.arpu / 1000) + 'rb' : '—'; },
     exportPrioritasCsv() {
       const rows = this.prioritasDesaList || []; if (!rows.length) return;
       const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-      const head = ['No','Desa','Kecamatan','Kabupaten','Avail','Occ%','PS Aktif','Jarak (km)','Kantor Terdekat','Kategori','Skor Potensi'];
+      const head = ['No','Desa','Kecamatan','Kabupaten','Avail','Occ%','PS Aktif','ARPU (Rp)','Jumlah order ARPU','Jarak (km)','Kantor Terdekat','Kategori','Skor Potensi'];
       const lines = [head.map(q).join(',')];
       rows.forEach((d, i) => lines.push([i + 1, q(d.desa), q(d.kec), q(d.kab), d.totalAvail || 0, Math.round((d.occ_rate || 0) * 100),
-        d.psAktif || 0, d.nearestDist < 9999 ? d.nearestDist.toFixed(1) : '', q(d.nearestOffice), q(d.katLabel), d.skorPotensi ?? ''].join(',')));
+        d.psAktif || 0, (this.arpuOf(d.kec, d.desa) || {}).arpu || '', (this.arpuOf(d.kec, d.desa) || {}).n || '', d.nearestDist < 9999 ? d.nearestDist.toFixed(1) : '', q(d.nearestOffice), q(d.katLabel), d.skorPotensi ?? ''].join(',')));
       const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = `Prioritas_${this.cluster}_${localYMD(new Date())}.csv`.replace(/\s+/g, '_');

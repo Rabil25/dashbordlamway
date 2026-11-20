@@ -2143,6 +2143,7 @@
                       <th style="text-align:right">Avail</th>
                       <th style="text-align:right">Occ%</th>
                       <th style="text-align:right">PS Aktif</th>
+                      <th style="text-align:right" title="Rata-rata harga paket semua order di desa ini">ARPU</th>
                       <th style="text-align:right">Jarak</th>
                       <th>Kantor</th>
                       <th style="text-align:center">Kategori</th>
@@ -2164,6 +2165,7 @@
                                 x-text="Math.round(d.occ_rate*100)+'%'"></span>
                         </td>
                         <td style="text-align:right;font-size:12px" x-text="d.psAktif || '—'"></td>
+                        <td style="text-align:right;font-size:12px" :title="arpuOf(d.kec,d.desa) ? arpuOf(d.kec,d.desa).n + ' order' : 'Belum ada order'" x-text="fmtArpu(arpuOf(d.kec,d.desa))"></td>
                         <td style="text-align:right;font-size:11px;color:var(--text-2)" x-text="d.nearestDist < 9999 ? d.nearestDist.toFixed(1)+' km' : '—'"></td>
                         <td style="font-size:10px;color:var(--text-2)" x-text="d.nearestOffice"></td>
                         <td style="text-align:center">

@@ -74,6 +74,7 @@ async function wlRender(app, map) {
     if ((r[C.BLN_PS] || '').toString() === app.cfg.bulan && (r[C.VAL_PS] || '').toString().trim()) ps[k] = (ps[k] || 0) + 1;
     ord[k] = (ord[k] || 0) + 1;
   });
+  try { await app.loadArpu(); } catch (e) {}
   let V = { by: {}, months: [], avail: [] };
   if (st.visit || st.sf) { try { V = await wlLoadVisits(app); } catch (e) {} }
   if (wlRaw(app._leafletMap) !== wlRaw(map)) return;
@@ -128,7 +129,8 @@ async function wlRender(app, map) {
     return `<div class="wl-card"><div class="wl-card-h">${wlEsc(p.desa)}</div><div class="wl-card-s">${wlEsc(p.kec)} · ${wlEsc(p.kab)}</div>
       ${kat}${FL ? `<span class="wl-tag" style="color:${FL[1]}">${FL[0]}</span>` : ''}
       <div class="wl-kv"><div>Avai<b>${d.totalAvail != null ? d.totalAvail : '–'}</b></div><div>PS bln ini<b>${ps[k] || 0}</b></div>
-      <div>Kunj. 3 bln<b>${v ? v.n : 0}</b></div><div>Terakhir<b class="sm">${v && v.last ? fmtTglId(v.last) : '–'}</b></div></div>
+      <div>Kunj. 3 bln<b>${v ? v.n : 0}</b></div><div>Terakhir<b class="sm">${v && v.last ? fmtTglId(v.last) : '–'}</b></div>
+      <div title="Rata-rata harga paket semua order di desa ini">ARPU<b>${app.fmtArpu(app.arpuOf(p.kec, p.desa))}</b></div><div>Order ARPU<b>${(app.arpuOf(p.kec, p.desa) || {}).n || 0}</b></div></div>
       ${top.length ? `<table class="wl-mini"><tr><th colspan="3">SF paling sering</th></tr>${top.map(([c, s]) => `<tr><td>${wlEsc(String(s.nama).replace(/\[.*?\]\s*/g, ''))}</td><td class="n">${s.n} kunj.</td><td class="n">${sfPS[c] || 0} PS</td></tr>`).join('')}</table>` : '<div class="wl-none">Belum pernah dikunjungi DJP 3 bulan terakhir.</div>'}
       <div class="wl-note">DJP: ${V.avail.length ? V.avail.map(m => periodLabel(m)).join(', ') : 'data belum tersedia'}</div></div>`;
   };

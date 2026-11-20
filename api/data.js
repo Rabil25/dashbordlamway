@@ -7,7 +7,7 @@
 //  Auth masih diteruskan ke GAS_AUTH_URL.
 // ================================================================
 
-const { getAllData, getRawSheetCached, getListBulan, normPeriod } = require('../lib/sheets');
+const { getAllData, getRawSheetCached, getListBulan, normPeriod, getArpuDesa } = require('../lib/sheets');
 const { verifySession } = require('../lib/session');
 const { getPlanMonth, getRealMonth } = require('../lib/plan');
 
@@ -61,6 +61,9 @@ module.exports = async function handler(req, res) {
       case 'djp_plan':
         data = await getPlanMonth(normPeriod(bulan));
         break;
+      case 'arpu_desa':
+        data = await getArpuDesa();
+        break;
       case 'djp_real':
         data = await getRealMonth(normPeriod(bulan));
         break;
@@ -77,7 +80,7 @@ module.exports = async function handler(req, res) {
         data = { ok: true, message: 'pong (Vercel)', updatedAt: new Date().toISOString() };
         break;
       default:
-        data = { ok: false, error: 'Unknown type. Use: all | bulan_ini | update_sf | list_bulan | djp_plan | djp_real | wilayah | ping' };
+        data = { ok: false, error: 'Unknown type. Use: all | bulan_ini | update_sf | list_bulan | djp_plan | djp_real | arpu_desa | wilayah | ping' };
     }
 
     // Data hanya untuk user login → TIDAK boleh di-cache CDN publik.
