@@ -622,12 +622,12 @@ async function anBuild(D, S, B) {
     const tw = Math.min(2.0, (4.1 - 0.1 * (k - 1)) / k);
     tiles.forEach(([lbl, fv, fs, fc], r) => {
       tx(s, lbl, { x: 0.4, y: 1.15 + r * 1.6, w: 4.1, h: 0.25, fontSize: 10, bold: true, color: DARK });
-      E.forEach((e, i) => tile(s, 0.4 + i * (tw + 0.1), 1.42 + r * 1.6, tw, 1.2, e.short, fv(e), fs(e), fc(e)));
+      E.forEach((e, i) => tile(s, 0.4 + i * (tw + 0.1), 1.42 + r * 1.6, tw, 1.2, anTitle(e.name), fv(e), fs(e), fc(e)));
     });
     card(s, 4.62, 1.12, 8.31, 3.05);
-    bar(s, AN.KAT_L, E.map(e => ({ name: e.short, values: e.disc.kat.map(c => c.plan ? Math.round(c.hit / c.plan * 100) : 0) })),
+    bar(s, AN.KAT_L, E.map(e => ({ name: anTitle(e.name), values: e.disc.kat.map(c => c.plan ? Math.round(c.hit / c.plan * 100) : 0) })),
       { x: 4.72, y: 1.18, w: 8.1, h: 2.95, title: 'Persentase jadwal desa yang didatangi, per kategori desa', chartColors: cols, valAxisMaxVal: 100, valAxisLabelFormatCode: '0"%"', dataLabelFormatCode: '0"%"' });
-    const hdr = ['Kategori', ...E.flatMap(e => [e.short + ': jadwal di plan', 'didatangi', 'di luar plan'])].map(x => ({ text: x, options: { bold: true, color: 'FFFFFF', fill: { color: RED }, align: 'center' } }));
+    const hdr = ['Kategori', ...E.flatMap(e => [anTitle(e.name) + ': jadwal di plan', 'didatangi', 'di luar plan'])].map(x => ({ text: x, options: { bold: true, color: 'FFFFFF', fill: { color: RED }, align: 'center' } }));
     const rowsK = AN.KAT_L.map((l, ki) => [l, ...E.flatMap(e => { const c = e.disc.kat[ki]; return [c.plan, c.plan ? `${c.hit} (${anP(c.hit, c.plan)}%)` : '–', e.disc.luar[ki]]; })]);
     const nc = 1 + 3 * k, cw0 = 1.3, cwi = (8.31 - cw0) / (3 * k);
     s.addTable([hdr, ...rowsK.map((r, i) => r.map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j ? 'center' : 'left', color: j === 0 ? AN.KAT_C[i] === 'D9D9D9' ? GREY : AN.KAT_C[i] : DARK } })))],
