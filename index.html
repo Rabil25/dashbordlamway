@@ -420,6 +420,10 @@
           <button type="button" role="menuitem" @click="open=false; exportPPT('all')">
             <b>Detail semua cluster</b><small>Semua kabupaten LB + WK · 7 slide</small>
           </button>
+          <div class="ppt-sep" role="separator"></div>
+          <button type="button" role="menuitem" @click="open=false; exportPPT('ado')">
+            <b>📊 ADO · Analisis Daerah Operasi</b><small x-text="cluster + ' · 3 slide'"></small>
+          </button>
         </div>
       </div>
       <!-- Export PDF -->
@@ -3055,6 +3059,7 @@
 <script src="assets/js/report.js"></script>
 <script src="assets/js/report_cmp.js"></script>
 <script src="assets/js/report_an.js"></script>
+<script src="assets/js/report_ado.js"></script>
 <script src="assets/js/wilayah.js"></script>
 </body>
 </html>
