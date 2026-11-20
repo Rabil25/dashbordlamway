@@ -648,7 +648,7 @@ async function anBuild(D, S, B) {
         const yy = 1.55 + j * 0.39, c = r.st === 'ok' ? GRN : r.st === 'warn' ? AMB : RED;
         s.addShape(pres.shapes.RECTANGLE, { x: xx + 0.15, y: yy, w: 0.06, h: 0.32, fill: { color: c }, line: { color: c } });
         tx(s, r.label.replace(' (di luar kendali penuh sales)', '*'), { x: xx + 0.27, y: yy - 0.02, w: cw - 1.2, h: 0.22, fontSize: n > 3 ? 6.5 : 8, color: DARK });
-        tx(s, 'standar: ' + r.ref, { x: xx + 0.27, y: yy + 0.17, w: cw - 1.2, h: 0.17, fontSize: 6.5, color: GREY });
+        tx(s, 'pembanding: ' + r.ref, { x: xx + 0.27, y: yy + 0.17, w: cw - 1.2, h: 0.17, fontSize: 6.5, color: GREY });
         tx(s, r.val, { x: xx + cw - 0.95, y: yy, w: 0.8, h: 0.32, fontSize: n > 3 ? 9 : 11, bold: true, color: c, align: 'right', valign: 'middle' });
       });
     });

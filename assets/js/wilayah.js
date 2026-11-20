@@ -300,7 +300,7 @@ async function wlBizAnalysis(app, D, E) {
       ioRe: e.io ? e.re / e.io * 100 : 0, rePs: e.psre || 0,
     },
   }));
-  const FL = { sf: ['SF yang melakukan kunjungan DJP', '', 1], kunj: ['Kunjungan per SF per bulan', '', 1], sasaran: ['Kunjungan ke desa Prioritas + Strategis', '%', 1],
+  const FL = { sf: ['SF yang melakukan kunjungan DJP', '', 1], kunj: ['Kunjungan per SF per bulan', '', 1], sasaran: ['Kunjungan ke desa Prioritas dan Strategis', '%', 1],
     ioHasil: ['IO per 10 kunjungan', '', 1], ioPot: ['IO dari desa Prioritas dan Strategis', '%', 1],
     ioRe: ['IO yang menjadi RE', '%', 1], rePs: ['RE yang menjadi PS (di luar kendali penuh sales)', '%', 0] };
   const avg = k => drv.reduce((a, x) => a + x.f[k], 0) / Math.max(1, drv.length);
