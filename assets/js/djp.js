@@ -206,12 +206,23 @@ function djpPlanData() {
       this._odpAll
         .filter(o => (!kab || o.kab === kab) && (o.avai||0) > 0)
         .forEach(o => {
-          const d = o.desa||'';
+          const d = this.dId(o.kec, o.desa);
           if (!stats[d]) stats[d] = { avail: 0 };
           stats[d].avail += 1;
         });
       return stats;
     },
+
+    // Nama desa yang sama di kab ini tapi beda kecamatan → dibedakan "Desa (Kec)"
+    get _desaDup() {
+      const kab = this.form.kab;
+      return memo('desaDup', kab + '|' + this._odpAll.length, () => {
+        const k = {}; this._odpAll.forEach(o => { if (o.kab === kab && o.desa) (k[o.desa] = k[o.desa] || new Set()).add(String(o.kec || '').trim().toUpperCase()); });
+        return new Set(Object.keys(k).filter(d => k[d].size > 1));
+      });
+    },
+    dId(kec, desa) { desa = String(desa || '').trim(); return this._desaDup.has(desa) ? `${desa} (${String(kec || '').trim()})` : desa; },
+    dNama(id) { return String(id || '').replace(/ \(.*\)$/, ''); },   // id → nama desa asli
 
     // ── Getters: desa list dengan search ──
     get desaListFiltered() {
@@ -241,8 +252,8 @@ function djpPlanData() {
         if (!raw.length || !kab) return out;
         this.klasifikasiDesa('', '').forEach(d => {
           if ((d.kab || '').toUpperCase() !== kab) return;
-          const prev = out[d.desa];
-          if (!prev || DJP_KAT[d.kat].order < DJP_KAT[prev.kat].order) out[d.desa] = { kat: d.kat, skor: d.skorPotensi };
+          const id = this.dId(d.kec, d.desa), prev = out[id];
+          if (!prev || DJP_KAT[d.kat].order < DJP_KAT[prev.kat].order) out[id] = { kat: d.kat, skor: d.skorPotensi };
         });
         return out;
       });
@@ -251,7 +262,7 @@ function djpPlanData() {
     get desaAllKab() {
       const kab = this.form.kab;
       return memo('desaAll', kab + '|' + this._odpAll.length, () => [...new Set(
-        this._odpAll.filter(o => o.kab === kab && (o.avai||0) > 0 && o.desa).map(o => o.desa)
+        this._odpAll.filter(o => o.kab === kab && (o.avai||0) > 0 && o.desa).map(o => this.dId(o.kec, o.desa))
       )].sort());
     },
     get desaKatReady() { return Object.keys(this.desaKatMap).length > 0; },
@@ -278,8 +289,8 @@ function djpPlanData() {
           else if ((d.kat === 'prioritas' || d.kat === 'strategis') && avai >= 20 && (vis == null || vis < 2)) {
             k = 'garap'; txt = `${avai} port tersisa, ${vis == null ? '?' : vis.toFixed(1).replace('.', ',')}× kunjungan/bln — garap` + (d.kat === 'strategis' ? `; desa Strategis: gabung dengan desa lain di Kec. ${d.kec} dalam satu hari` : '');
           }
-          const prev = out[d.desa];
-          if (!prev || (k === 'garap' && prev.k !== 'garap')) out[d.desa] = { k, txt, kat: d.kat, kec: d.kec, avai, vis };
+          const id = this.dId(d.kec, d.desa), prev = out[id];
+          if (!prev || (k === 'garap' && prev.k !== 'garap')) out[id] = { k, txt, kat: d.kat, kec: d.kec, avai, vis };
         });
         return out;
       });
@@ -297,7 +308,7 @@ function djpPlanData() {
       const tgl = this.form.tgl, rows = this.viewTgl === tgl ? (this.planData || []) : (this.usedPlanRows[tgl] || []);
       const nm = {}; (this.sfList || []).forEach(u => { nm[u.username] = u.nama; });
       const desa = {}, sf = {};
-      rows.forEach(r => { const u = r.username_sf || r[1] || '', d = String(r.desa || r[7] || '').trim(); if (!u) return;
+      rows.forEach(r => { const u = r.username_sf || r[1] || '', d0 = String(r.desa || r[7] || '').trim(), d = d0 ? this.dId(r.kec || r[6], d0) : ''; if (!u) return;
         const n = r.nama_sf || r[2] || nm[u] || u;
         (sf[u] = sf[u] || new Set()); if (d) sf[u].add(d);
         if (d) (desa[d.toUpperCase()] = desa[d.toUpperCase()] || {})[u] = n; });
@@ -394,7 +405,7 @@ function djpPlanData() {
         if (o.kab !== kab || !o.desa) return;
         const la = parseFloat(o.lat), ln = parseFloat(o.lng);
         if (!la || !ln) return;
-        const a = acc[o.desa] || (acc[o.desa] = { la: 0, ln: 0, n: 0 });
+        const id = this.dId(o.kec, o.desa), a = acc[id] || (acc[id] = { la: 0, ln: 0, n: 0 });
         a.la += la; a.ln += ln; a.n++;
       });
       const out = {};
@@ -467,7 +478,7 @@ function djpPlanData() {
       try {
         const gasUrl = this._gasUrl();
         const st = localStorage.getItem('wok_token')||'';
-        const desas = JSON.stringify(this.desaSelected);
+        const desas = JSON.stringify([...new Set(this.desaSelected.map(d => this.dNama(d)))]);
         const url = `${gasUrl}?type=djp_plan_history&session_token=${encodeURIComponent(st)}&kab=${encodeURIComponent(this.form.kab)}&desas=${encodeURIComponent(desas)}`;
         const r = await fetch(url);
         const d = await r.json();
@@ -490,7 +501,7 @@ function djpPlanData() {
         // 1. Build ODP pool: hanya desa yang dipilih, avail > 0
         const pool = this._odpAll.filter(o =>
           o.kab === this.form.kab &&
-          this.desaSelected.includes(o.desa||'') &&
+          this.desaSelected.includes(this.dId(o.kec, o.desa)) &&
           (o.avai||0) > 0
         );
 
