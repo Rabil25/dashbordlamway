@@ -82,10 +82,12 @@ async function anCollect(app, mode) {
     ...needRows.map(m => getJSON(`/api/data?type=bulan_ini&bulan=${encodeURIComponent(m)}`)),
     ...djpM.map(m => getJSON(`/api/data?type=djp_real&bulan=${encodeURIComponent(m)}`)),
     getJSON(`/api/data?type=djp_plan&bulan=${encodeURIComponent(bulan)}`),
+    getJSON(`/api/data?type=djp_real&bulan=${encodeURIComponent(bulan)}`),
   ]);
   const extraRows = res.slice(0, 3).flatMap(d => (d && d.data) || []);
   const planByM = djpM.map((m, i) => ((res[3 + i] && res[3 + i].data) || []));
   const planCur = (res[6] && res[6].data) || [];
+  const realCur = (res[7] && res[7].data) || [];
 
   if (!app.prioritasOdpRaw.length) { try { await app.loadPrioritas(); } catch (e) {} }
   const stack = document.body._x_dataStack;
@@ -131,7 +133,32 @@ async function anCollect(app, mode) {
   const D = { mode, bulan, prev, days, refDay, sisa: Math.max(days - refDay, 0), W, W0, label, label0, trendM, djpM, availM, hasDesa,
     wDays: Math.round((dateOfYmd(W[1]) - dateOfYmd(W[0])) / 864e5) + 1, ents: [], katMap, allRows: all };
   ents.forEach((e, i) => D.ents.push(anEntity(app, D, e, i, all, visits, visCur, desaAll, katMap)));
+  anDisiplin(D, planCur, realCur, katMap);
   return D;
+}
+
+// ── Disiplin plan vs realisasi DJP (periode laporan, s.d. tanggal realisasi terakhir) ──
+// SF-hari: SF punya plan di hari itu & tercatat visit · desa-hari per kategori: desa plan didatangi
+function anDisiplin(D, planCur, realCur, katMap) {
+  const ymd = n => { const t = String(n); return t.slice(0, 4) + '-' + t.slice(4, 6) + '-' + t.slice(6, 8); };
+  const last = realCur.reduce((m, r) => r.tgl > m ? r.tgl : m, '');
+  const from = ymd(D.W[0]); let to = ymd(D.W[1]); if (last && last < to) to = last;
+  D.discRange = last ? [from, to] : null;
+  const KI = { prioritas: 0, strategis: 1, cadangan: 2, skip: 3 };
+  const inW = t => t >= from && t <= to;
+  D.ents.forEach(e => {
+    const inK = kab => e.kabs.includes(anN(kab));
+    const P = planCur.filter(p => p.desa && inW(p.tgl) && inK(p.kab)), R = realCur.filter(r => inW(r.tgl) && inK(r.kab));
+    const rSF = new Set(R.map(r => anN(r.username_sf) + '|' + r.tgl)), rD = new Set(R.filter(r => r.desa).map(r => anK(r.kec, r.desa) + '|' + r.tgl));
+    const pSF = new Set(P.map(p => anN(p.username_sf) + '|' + p.tgl));
+    const pD = new Map(); P.forEach(p => pD.set(anK(p.kec, p.desa) + '|' + p.tgl, (katMap[anK(p.kec, p.desa)] || {}).kat || 'skip'));
+    const kat = [0, 1, 2, 3].map(() => ({ plan: 0, hit: 0 }));
+    pD.forEach((kt, key) => { const c = kat[KI[kt] ?? 3]; c.plan++; if (rD.has(key)) c.hit++; });
+    const luar = [0, 0, 0, 0]; rD.forEach(key => { if (!pD.has(key)) { const kt = (katMap[key.split('|').slice(0, 2).join('|')] || {}).kat || 'skip'; luar[KI[kt] ?? 3]++; } });
+    const sfHit = [...pSF].filter(x => rSF.has(x)).length;
+    e.disc = { sfPlan: pSF.size, sfHit, sfPct: anP(sfHit, pSF.size), kat, luar,
+      desaPlan: sum(kat.map(c => c.plan)), desaHit: sum(kat.map(c => c.hit)) };
+  });
 }
 
 // ── metrik satu entitas ──
@@ -581,6 +608,32 @@ async function anBuild(D, S, B) {
     tl.forEach((v, i) => tile(s, 0.4 + (i % 2) * 2.05, 4.22 + Math.floor(i / 2) * 1.4, 1.95, 1.28, ...v));
     syl(s, 4.62, 4.22, 8.31, 2.6, S.prio);
     foot(s, L2 + 'tile: ' + names.join(' / '));
+  }
+
+  // ── 6b. DISIPLIN PLAN vs REALISASI DJP ──
+  if (D.discRange) {
+    const s = pres.addSlide({ masterName: 'AN' });
+    const [f, t] = D.discRange, fl = x => +x.slice(8, 10) + ' ' + anMonthShort(x.slice(0, 7));
+    head(s, 'DISIPLIN PLAN vs REALISASI DJP', `Plan (DJP_Plan) dibanding kunjungan nyata (DJP_Realisasi_Baru) ${fl(f)} – ${fl(t)}${L2}SF-hari & desa-hari`);
+    const tiles = [['SF plan → visit', e => anPs(e.disc.sfPct), e => `${e.disc.sfHit} dari ${e.disc.sfPlan} SF-hari`, e => e.disc.sfPct == null ? GREY : e.disc.sfPct >= 80 ? GRN : e.disc.sfPct >= 50 ? AMB : RED],
+      ['Desa plan didatangi', e => anPs(anP(e.disc.desaHit, e.disc.desaPlan)), e => `${e.disc.desaHit} dari ${e.disc.desaPlan} desa-hari`, e => { const p = anP(e.disc.desaHit, e.disc.desaPlan); return p == null ? GREY : p >= 80 ? GRN : p >= 50 ? AMB : RED; }],
+      ['Visit di luar plan', e => anI(sum(e.disc.luar)), () => 'desa-hari tanpa plan', () => DARK]];
+    const tw = Math.min(2.0, (4.1 - 0.1 * (k - 1)) / k);
+    tiles.forEach(([lbl, fv, fs, fc], r) => {
+      tx(s, lbl, { x: 0.4, y: 1.15 + r * 1.6, w: 4.1, h: 0.25, fontSize: 10, bold: true, color: DARK });
+      E.forEach((e, i) => tile(s, 0.4 + i * (tw + 0.1), 1.42 + r * 1.6, tw, 1.2, e.short, fv(e), fs(e), fc(e)));
+    });
+    card(s, 4.62, 1.12, 8.31, 3.05);
+    bar(s, AN.KAT_L, E.map(e => ({ name: e.short, values: e.disc.kat.map(c => c.plan ? Math.round(c.hit / c.plan * 100) : 0) })),
+      { x: 4.72, y: 1.18, w: 8.1, h: 2.95, title: 'Desa plan yang didatangi per kategori (%)', chartColors: cols, valAxisMaxVal: 100, valAxisLabelFormatCode: '0"%"', dataLabelFormatCode: '0"%"' });
+    const hdr = ['Kategori', ...E.flatMap(e => [e.short + ' plan', 'didatangi', 'luar plan'])].map(x => ({ text: x, options: { bold: true, color: 'FFFFFF', fill: { color: RED }, align: 'center' } }));
+    const rowsK = AN.KAT_L.map((l, ki) => [l, ...E.flatMap(e => { const c = e.disc.kat[ki]; return [c.plan, c.plan ? `${c.hit} (${anP(c.hit, c.plan)}%)` : '–', e.disc.luar[ki]]; })]);
+    const nc = 1 + 3 * k, cw0 = 1.3, cwi = (8.31 - cw0) / (3 * k);
+    s.addTable([hdr, ...rowsK.map((r, i) => r.map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j ? 'center' : 'left', color: j === 0 ? AN.KAT_C[i] === 'D9D9D9' ? GREY : AN.KAT_C[i] : DARK } })))],
+      { x: 4.62, y: 4.32, w: 8.31, colW: [cw0, ...Array(nc - 1).fill(cwi)], rowH: 0.36, fontFace: F, fontSize: k > 3 ? 6.5 : 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
+    tx(s, 'SF-hari = 1 SF dalam 1 hari · desa-hari = 1 desa dalam 1 hari · dihitung s.d. tanggal realisasi terakhir yang sudah di-upload.',
+      { x: 4.62, y: 6.25, w: 8.31, h: 0.3, fontSize: 8, italic: true, color: GREY });
+    foot(s);
   }
 
   // ── 7. DRIVER TREE & GAP IO ──

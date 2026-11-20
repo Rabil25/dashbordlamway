@@ -158,8 +158,6 @@ function adoBuild(X) {
   bar(2.6, 'Desa plan yang didatangi', djp.desaPct, `${djp.desaHit} dari ${djp.planDesa} desa-hari · ${djp.luarPlan} desa-hari visit di luar plan`);
   const tp = djp.pot ? 100 - pct(djp.belum, djp.pot) : null;
   bar(3.35, 'Desa potensial tersentuh bulan ini', tp, `${djp.pot - djp.belum} dari ${djp.pot} desa Prioritas + Strategis`);
-  s.addText('Catatan: lokasi DJP sering mengikuti lokasi yang sudah ada inputan, jadi angka ini mengukur disiplin, bukan dampak DJP ke penjualan.',
-    { x: 5.4, y: 4.15, w: 3.9, h: 0.55, fontSize: 8, italic: true, color: RP.muted, margin: 0, isTextBox: true });
 
   // ── Slide 3: Isu & Rencana Aksi ──
   s = pres.addSlide({ masterName: 'ADO' });
