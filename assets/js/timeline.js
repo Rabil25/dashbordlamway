@@ -20,6 +20,14 @@ function tlKey(kec, desa) {
   return (kec || '').trim().toUpperCase() + '||' + (desa || '').trim().toUpperCase();
 }
 
+// Cache hasil hitung berat (di luar proxy Alpine): dihitung ulang hanya bila dependensi berubah
+const _tlCache = {};
+function _tlMemo(name, deps, fn) {
+  const c = _tlCache[name];
+  if (c && c.deps.length === deps.length && c.deps.every((d, i) => d === deps[i])) return c.val;
+  const val = fn(); _tlCache[name] = { deps, val }; return val;
+}
+
 function timelineData() {
   return {
     tlPeriode: currentPeriod(),
@@ -80,20 +88,24 @@ function timelineData() {
 
     // Peta kategori per desa (per cluster, tanpa filter kab/kategori)
     get tlKatMap() {
+      return _tlMemo('tlKatMap', [this.cluster, this.prioritasOdpRaw, this.penetrasiData], () => {
       const m = {};
       if (!this.prioritasOdpRaw.length) return m;
       this.klasifikasiDesa('', '').forEach(d => {
         m[tlKey(d.kec, d.desa)] = { kat: d.kat, skor: d.skorPotensi, kab: d.kab, kec: d.kec, desa: d.desa, avail: d.totalAvail };
       });
       return m;
+      });
     },
 
     get tlClusterRows() {
+      return _tlMemo('tlClusterRows', [this.cluster, this.tlKab, this.tlSf, this.tlRows], () => {
       const kabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
       return this.tlRows.filter(r =>
         kabs.includes((r.kab || '').toUpperCase()) &&
         (!this.tlKab || r.kab === this.tlKab.toUpperCase()) &&
         (!this.tlSf || r.username_sf === this.tlSf));
+      });
     },
 
     get tlSfList() {
@@ -105,6 +117,7 @@ function timelineData() {
 
     // Satu entri per hari di bulan berjalan, berisi desa yang diplan
     get tlDays() {
+      return _tlMemo('tlDays', [this.cluster, this.tlKab, this.tlSf, this.tlKat, this.tlPeriode, this.tlRows, this.tlReal, this.tlKatMap, localYMD(new Date())], () => {
       const p = this.tlPeriode, n = daysInPeriod(p), km = this.tlKatMap;
       const today = localYMD(new Date());
       const byTgl = {};
@@ -153,11 +166,13 @@ function timelineData() {
         });
       }
       return out;
+      });
     },
 
     // ── Plan vs Realisasi per desa (bulan ini, s.d. hari ini) ──
     // Di-plan = SF×hari desa masuk plan · Dikunjungi = SF×hari desa dikunjungi (realisasi)
     get tlPvrAll() {
+      return _tlMemo('tlPvrAll', [this.cluster, this.tlKab, this.tlSf, this.tlKat, this.tlPeriode, this.tlRows, this.tlReal, this.tlKatMap, localYMD(new Date())], () => {
       const kabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase()), today = localYMD(new Date()), km = this.tlKatMap;
       const okKab = kab => kabs.includes(kab) && (!this.tlKab || kab === this.tlKab.toUpperCase());
       const m = {};
@@ -172,6 +187,7 @@ function timelineData() {
         return { ...d, plan: p, vis: v, st };
       }).filter(d => (!this.tlKat || d.kat === this.tlKat))
         .sort((a, b) => ({ tidak: 0, kurang: 1, sesuai: 2, luar: 3 }[a.st] - { tidak: 0, kurang: 1, sesuai: 2, luar: 3 }[b.st]) || (TL_KAT[a.kat].order - TL_KAT[b.kat].order) || b.plan - a.plan);
+      });
     },
     get tlPvr() { const st = this.tlPvrSt, a = this.tlPvrAll; return st ? a.filter(d => d.st === st) : a; },
     get tlPvrSum() {
