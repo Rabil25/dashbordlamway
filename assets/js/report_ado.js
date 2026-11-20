@@ -146,10 +146,10 @@ function adoBuild(X) {
     { x: 0.5, y: 4.35, w: 4.4, h: 0.4, fontSize: 10, bold: true, color: gap != null && gap < 0 ? RP.amber : RP.green, margin: 0, isTextBox: true });
   card(s, 5.2, 1.15, 4.3, 3.65, RP.brandSoft);
   s.addText('Eksekusi DJP', { x: 5.4, y: 1.25, w: 3.9, h: 0.3, fontSize: 12, bold: true, color: RP.brand, margin: 0, isTextBox: true });
-  s.addText(`data kunjungan nyata sampai ${djp.cut}`, { x: 5.4, y: 1.5, w: 3.9, h: 0.22, fontSize: 8.5, italic: true, color: RP.muted, margin: 0, isTextBox: true });
+  s.addText(`data kunjungan nyata sampai ${new Date(djp.cut + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, { x: 5.4, y: 1.5, w: 3.9, h: 0.22, fontSize: 8.5, italic: true, color: RP.muted, margin: 0, isTextBox: true });
   const bar = (y, label, p, detail) => {
-    s.addText(label, { x: 5.4, y, w: 2.9, h: 0.25, fontSize: 10, color: RP.ink, margin: 0, isTextBox: true });
-    s.addText(fmtPct(p), { x: 8.3, y, w: 1.0, h: 0.25, fontSize: 12, bold: true, align: 'right', color: p == null ? RP.muted : p >= 80 ? RP.green : p >= 50 ? RP.amber : RP.prioritas, margin: 0, isTextBox: true });
+    s.addText(label, { x: 5.4, y, w: 3.35, h: 0.25, fontSize: 9, fit: 'shrink', color: RP.ink, margin: 0, isTextBox: true });
+    s.addText(fmtPct(p), { x: 8.75, y, w: 0.55, h: 0.25, fontSize: 12, bold: true, align: 'right', color: p == null ? RP.muted : p >= 80 ? RP.green : p >= 50 ? RP.amber : RP.prioritas, margin: 0, isTextBox: true });
     s.addShape(pres.shapes.RECTANGLE, { x: 5.4, y: y + 0.3, w: 3.9, h: 0.12, fill: { color: RP.white }, line: { color: RP.white } });
     if (p) s.addShape(pres.shapes.RECTANGLE, { x: 5.4, y: y + 0.3, w: 3.9 * Math.min(p, 100) / 100, h: 0.12, fill: { color: p >= 80 ? RP.green : p >= 50 ? RP.amber : RP.prioritas }, line: { color: RP.white, transparency: 100 } });
     s.addText(detail, { x: 5.4, y: y + 0.45, w: 3.9, h: 0.22, fontSize: 8.5, color: RP.muted, margin: 0, isTextBox: true });
