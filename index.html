@@ -2393,6 +2393,47 @@
                 </div>
               </div>
             </div>
+
+          <!-- Plan vs Realisasi per desa -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+              <div>
+                <div class="card-title">Plan vs Realisasi Desa</div>
+                <div class="tl-sub">Di-plan & dikunjungi = jumlah SF × hari · bulan ini s.d. hari ini · realisasi dari DJP_Realisasi_Baru</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <select class="select" x-model="tlPvrSt" aria-label="Filter status" style="font-size:11px">
+                  <option value="">Semua status</option><option value="tidak">🔴 Tidak didatangi</option><option value="kurang">🟡 Kurang</option>
+                  <option value="sesuai">🟢 Sesuai</option><option value="luar">🔵 Di luar plan</option>
+                </select>
+                <button class="btn-sm btn-outline" @click="tlPvrCsv()" :disabled="!tlPvr.length">⬇ CSV</button>
+              </div>
+            </div>
+            <div class="tl-sub" style="padding:4px 2px 10px">
+              <b x-text="tlPvrSum.plan"></b> desa di-plan ·
+              🟢 <b x-text="tlPvrSum.sesuai"></b> sesuai · 🟡 <b x-text="tlPvrSum.kurang"></b> kurang ·
+              🔴 <b x-text="tlPvrSum.tidak"></b> tidak didatangi · 🔵 <b x-text="tlPvrSum.luar"></b> desa dikunjungi di luar plan
+            </div>
+            <div class="tbl-wrap" style="max-height:420px;overflow:auto">
+              <table>
+                <thead><tr><th>Desa</th><th>Kec</th><th>Kab</th><th>Kategori</th><th class="num">Di-plan</th><th class="num">Dikunjungi</th><th>Status</th></tr></thead>
+                <tbody>
+                  <template x-for="d in tlPvr" :key="d.key">
+                    <tr>
+                      <td style="font-weight:600" x-text="d.desa"></td>
+                      <td x-text="d.kec"></td>
+                      <td x-text="d.kab"></td>
+                      <td><span :style="'color:' + TL_KAT[d.kat].color + ';font-weight:600'" x-text="TL_KAT[d.kat].label"></span></td>
+                      <td class="num" x-text="d.plan + '×'"></td>
+                      <td class="num" x-text="d.vis + '×'"></td>
+                      <td x-text="{sesuai:'🟢 Sesuai',kurang:'🟡 Kurang',tidak:'🔴 Tidak didatangi',luar:'🔵 Di luar plan'}[d.st]"></td>
+                    </tr>
+                  </template>
+                  <tr x-show="!tlPvr.length"><td colspan="7" class="tl-sub" style="text-align:center;padding:14px">Belum ada plan / realisasi untuk filter ini.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
           </div>
         </template>
       </div>

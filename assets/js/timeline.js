@@ -32,6 +32,8 @@ function timelineData() {
     tlSf: '',
     tlKat: '',          // filter kategori
     tlOpen: {},         // desa yang dibuka daftar ODP-nya
+    tlReal: [],         // kunjungan nyata (DJP_Realisasi_Baru) bulan ini
+    tlPvrSt: '',        // filter status Plan vs Realisasi
 
     async tlLoad(force = false) {
       if (this.tlLoading) return;
@@ -49,9 +51,11 @@ function timelineData() {
             }),
         ];
         // Kategori desa butuh data ODP + PS (sama dengan menu Prioritas)
+        tasks.push(fetch(`/api/data?type=djp_real&bulan=${encodeURIComponent(this.tlPeriode)}`, { headers: { Authorization: 'Bearer ' + this.sessionToken } })
+          .then(r => r.json()).then(d => (d && d.data) || []).catch(() => []));
         if (!this.prioritasOdpRaw.length) tasks.push(this.loadPrioritas());
-        const [rows] = await Promise.all(tasks);
-        this.tlRows = rows;
+        const [rows, real] = await Promise.all(tasks);
+        this.tlRows = rows; this.tlReal = real || [];
         this.tlLoaded = true;
         this.tlPickDefault();
       } catch (e) {
@@ -131,6 +135,38 @@ function timelineData() {
         });
       }
       return out;
+    },
+
+    // ── Plan vs Realisasi per desa (bulan ini, s.d. hari ini) ──
+    // Di-plan = SF×hari desa masuk plan · Dikunjungi = SF×hari desa dikunjungi (realisasi)
+    get tlPvrAll() {
+      const kabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase()), today = localYMD(new Date()), km = this.tlKatMap;
+      const okKab = kab => kabs.includes(kab) && (!this.tlKab || kab === this.tlKab.toUpperCase());
+      const m = {};
+      const get = (kab, kec, desa) => { const k = tlKey(kec, desa); return m[k] || (m[k] = { key: k, kab, kec, desa, kat: km[k]?.kat || 'lain', plan: new Set(), vis: new Set() }); };
+      this.tlRows.forEach(r => { const kab = (r.kab || '').toUpperCase(); if (!okKab(kab) || !r.desa || r.tgl > today) return;
+        if (this.tlSf && r.username_sf !== this.tlSf) return; get(kab, r.kec, r.desa).plan.add(r.username_sf + '|' + r.tgl); });
+      this.tlReal.forEach(r => { const kab = (r.kab || '').toUpperCase(); if (!okKab(kab) || !r.desa) return;
+        if (this.tlSf && r.username_sf !== String(this.tlSf).toUpperCase()) return; get(kab, r.kec, r.desa).vis.add(r.username_sf + '|' + r.tgl); });
+      return Object.values(m).map(d => {
+        const p = d.plan.size, v = d.vis.size;
+        const st = !p ? 'luar' : !v ? 'tidak' : v / p >= 0.8 ? 'sesuai' : 'kurang';
+        return { ...d, plan: p, vis: v, st };
+      }).filter(d => (!this.tlKat || d.kat === this.tlKat))
+        .sort((a, b) => ({ tidak: 0, kurang: 1, sesuai: 2, luar: 3 }[a.st] - { tidak: 0, kurang: 1, sesuai: 2, luar: 3 }[b.st]) || (TL_KAT[a.kat].order - TL_KAT[b.kat].order) || b.plan - a.plan);
+    },
+    get tlPvr() { const st = this.tlPvrSt, a = this.tlPvrAll; return st ? a.filter(d => d.st === st) : a; },
+    get tlPvrSum() {
+      const all = this.tlPvrAll;
+      const c = { sesuai: 0, kurang: 0, tidak: 0, luar: 0 }; all.forEach(d => c[d.st]++);
+      return { ...c, plan: all.length - c.luar };
+    },
+    tlPvrCsv() {
+      const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"', L = { sesuai: 'Sesuai', kurang: 'Kurang', tidak: 'Tidak didatangi', luar: 'Di luar plan' };
+      const lines = [['Desa', 'Kecamatan', 'Kabupaten', 'Kategori', 'Di-plan', 'Dikunjungi', 'Status'].map(q).join(',')];
+      this.tlPvr.forEach(d => lines.push([q(d.desa), q(d.kec), q(d.kab), q(TL_KAT[d.kat].label), d.plan, d.vis, q(L[d.st])].join(',')));
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' }));
+      a.download = `Plan_vs_Realisasi_Desa_${this.cluster}_${this.tlPeriode}.csv`.replace(/\s+/g, '_'); a.click();
     },
 
     get tlSelDay() {
