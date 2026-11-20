@@ -31,6 +31,7 @@ const AN = {
   PROD_C: ['C00000', '404040', 'D48A00', 'BFBFBF', 'E7E6E6'],
   TL: { 'Lampung Barat': 'TL Andres', 'Way Kanan': 'TL Agus' },
 };
+const AN_BLN = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 const anN = s => (s || '').toString().trim().toUpperCase();
 const anK = (kec, desa) => anN(kec) + '|' + anN(desa);
 const anTitle = s => String(s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -273,13 +274,13 @@ function anEntity(app, D, e, idx, all, visits, visCur, desaAll, katMap) {
 //  2. ANALISA (silogisme) — teks dari angka, bisa ditelusuri
 // ================================================================
 function anAnalyze(D) {
-  const per = (f) => D.ents.map(e => `${e.short} ${f(e)}`).join(', ');
+  const per = (f) => D.ents.map(e => `${anTitle(e.name)} ${f(e)}`).join(', ');
   const nv = v => (v == null || !isFinite(v)) ? 'tidak ada SF' : anD(v);
-  const E = D.ents, nm = e => e.short;
+  const E = D.ents, nm = e => anTitle(e.name);
   const by = (f, dir = -1) => [...E].filter(e => f(e) != null && isFinite(f(e))).sort((a, b) => dir * (f(a) - f(b)));
   const best = (f) => by(f)[0], worst = (f) => by(f, 1)[0];
   const S = {};
-  const djpLbl = D.availM.length ? D.availM.map(anMonthShort).join('–') : '—';
+  const djpLbl = D.availM.length ? D.availM.map(m => AN_BLN[periodMonth(m)] || m).join(', ') + ' ' + D.availM[D.availM.length - 1].slice(0, 4) : 'tidak ada data';
   const missing = D.djpM.filter(m => !D.availM.includes(m)).map(periodLabel);
   S.djpLbl = djpLbl; S.missing = missing;
   const mg = D.mode === 'mingguan';
@@ -418,7 +419,7 @@ async function anBuild(D, S, B) {
   };
   const tile = (s, x, y, w, h, label, val, sub, color) => {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.06, fill: { color: BG }, line: { color: 'E8E8E8', width: 0.75 } });
-    tx(s, label, { x: x + 0.12, y: y + 0.06, w: w - 0.24, h: 0.26, fontSize: 8.5, color: GREY });
+    tx(s, label, { x: x + 0.12, y: y + 0.04, w: w - 0.24, h: 0.3, fontSize: 8.5, color: GREY, fit: 'shrink' });
     const L = String(val).length;
     tx(s, String(val), { x: x + 0.12, y: y + 0.3, w: w - 0.24, h: 0.45, fontSize: L > 18 ? 11 : L > 12 ? 13 : L > 8 ? 15 : 19, bold: true, color: color || DARK, valign: 'middle' });
     if (sub) tx(s, sub, { x: x + 0.12, y: y + h - 0.34, w: w - 0.24, h: 0.3, fontSize: 7.5, color: GREY, fit: 'shrink' });
@@ -459,7 +460,7 @@ async function anBuild(D, S, B) {
   // ── 1. RINGKASAN ──
   {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, `ANALISA PS ${mg ? 'MINGGUAN' : periodLabel(D.bulan).toUpperCase()} DAN KUNJUNGAN DJP 3 BULAN SEBELUMNYA`, `${modeTxt}${L2}PS periode ${D.label}${L2}kunjungan DJP ${S.djpLbl}${L2}${names.join(' dibanding ')}`);
+    head(s, `ANALISA PS ${mg ? 'MINGGUAN' : periodLabel(D.bulan).toUpperCase()} DAN KUNJUNGAN DJP 3 BULAN SEBELUMNYA`, `${modeTxt}${L2}PS periode ${D.label}${L2}kunjungan DJP ${S.djpLbl}${L2}${E.map(e => anTitle(e.name)).join(' dibanding ')}`);
     if (k === 2) {
       E.forEach((e, i) => {
         const x = 0.4 + i * 4.2;
