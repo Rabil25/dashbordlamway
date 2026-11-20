@@ -931,12 +931,12 @@ function djpRealData() {
       this.msg = 'Mengupload...';
       if (this.mode === 'detail') {
         try {
-          const rows = this.detailRows, CH = 1500; let tot = { baris: 0, replaced: 0, sf: 0, terplan: 0, dikunjungi: 0 };
+          const rows = this.detailRows, CH = 5000; let tot = { baris: 0, replaced: 0, sf: 0, terplan: 0, dikunjungi: 0 };
           // kirim per kelompok tanggal agar request tidak terlalu besar
           const tgls = [...new Set(rows.map(r => r.tgl))].sort(); let buf = [];
           const send = async b => { const res = await fetch(gasUrl, { method:'POST', body: JSON.stringify({ type:'djp_realisasi_upload', format:'detail_djp', session_token:st, rows: b }) });
             const d = await res.json(); if (!d.ok) throw new Error(d.error || 'Upload gagal'); Object.keys(tot).forEach(k => tot[k] += d[k] || 0); };
-          for (const t of tgls) { const part = rows.filter(r => r.tgl === t); if (buf.length && buf.length + part.length > CH) { await send(buf); buf = []; } buf = buf.concat(part); this.msg = `Mengupload… ${t}`; }
+          for (const t of tgls) { const part = rows.filter(r => r.tgl === t); if (buf.length && buf.length + part.length > CH) { await send(buf); buf = []; } buf = buf.concat(part); this.msg = `⏳ Sedang diproses server, mohon tunggu… jangan tutup halaman (${rows.length} baris)`; }
           if (buf.length) await send(buf);
           this.msg = `✅ Detail DJP tersimpan ke DJP_Realisasi_Baru: ${tot.baris} baris SF×desa×hari · ${tot.dikunjungi} baris dikunjungi > 0 · ${tot.terplan} baris ada plan` + (tot.replaced ? ` · ${tot.replaced} baris lama diganti` : '');
           this.csvRows = []; this.csvPreview = []; this.detailRows = []; this.fileName = '';

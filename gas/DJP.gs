@@ -723,11 +723,14 @@ function djpRealBaruSheet_() {
 }
 // Hapus baris yang cocok: filter(row) → true
 function djpRealBaruDelete_(ws, match) {
-  const v = ws.getDataRange().getValues(), hit = [];
-  for (let i = 1; i < v.length; i++) if (match(v[i])) hit.push(i + 1);
-  let end = hit.length - 1;
-  while (end >= 0) { let st = end; while (st > 0 && hit[st - 1] === hit[st] - 1) st--; ws.deleteRows(hit[st], end - st + 1); end = st - 1; }
-  return hit.length;
+  // Cepat: baca sekali, saring, tulis ulang sekali (tanpa deleteRows berulang)
+  const n = ws.getLastRow() - 1; if (n < 1) return 0;
+  const W = RB_HEAD.length, rg = ws.getRange(2, 1, n, W), v = rg.getValues();
+  const keep = v.filter(r => !match(r)), hapus = v.length - keep.length;
+  if (!hapus) return 0;
+  rg.clearContent();
+  if (keep.length) ws.getRange(2, 1, keep.length, W).setValues(keep);
+  return hapus;
 }
 function djpRealBaruAppend_(ws, out) {
   for (let i = 0; i < out.length; i += DJP_CONFIG.BATCH_SIZE) {
@@ -861,11 +864,15 @@ function djpDetailSave_(rows, by) {
     if (!Object.keys(keys).length) return { ok:false, error:'Tidak ada baris valid.' };
     // SF punya plan web di tanggal itu?
     const ada = {};
-    SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN).getDataRange().getValues().slice(1).forEach(p => {
-      const t = djpNormTgl(p[P.TGL]); if (!tglSet[t]) return;
-      if ((p[P.DIBUAT_OLEH] || '').toString().trim() === DJP_IMPORT_TAG) return;
-      ada[t + '|' + U(p[P.USERNAME_SF])] = true;
-    });
+    const wp = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN), np = wp.getLastRow() - 1;
+    if (np > 0) {
+      const ab = wp.getRange(2, 1, np, 2).getValues(), by_ = wp.getRange(2, P.DIBUAT_OLEH + 1, np, 1).getValues();   // TGL, USERNAME_SF, DIBUAT_OLEH saja
+      for (let i = 0; i < np; i++) {
+        const t = djpNormTgl(ab[i][0]); if (!tglSet[t]) continue;
+        if ((by_[i][0] || '').toString().trim() === DJP_IMPORT_TAG) continue;
+        ada[t + '|' + U(ab[i][1])] = true;
+      }
+    }
     const now = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
     let terplan = 0, dikunjungi = 0;
     const out = rows.filter(r => djpNormTgl(r.tgl) && r.kode_sf).map(r => {
