@@ -121,11 +121,13 @@ function timelineData() {
       // SF per hari: plan vs realisasi (username dinormalisasi UPPER)
       const U = v => String(v || '').trim().toUpperCase();
       const kabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
-      const sfPlan = {}, sfReal = {}, sfNm = {};
+      const sfPlan = {}, sfReal = {}, sfNm = {}, dsReal = {};
       this.tlClusterRows.forEach(r => { (sfPlan[r.tgl] || (sfPlan[r.tgl] = new Set())).add(U(r.username_sf)); sfNm[U(r.username_sf)] = r.nama_sf || r.username_sf; });
       this.tlReal.forEach(r => { const kab = U(r.kab);
         if (!kabs.includes(kab) || (this.tlKab && kab !== U(this.tlKab)) || (this.tlSf && U(r.username_sf) !== U(this.tlSf))) return;
-        (sfReal[r.tgl] || (sfReal[r.tgl] = new Set())).add(U(r.username_sf)); });
+        (sfReal[r.tgl] || (sfReal[r.tgl] = new Set())).add(U(r.username_sf));
+        if (r.desa) { const dm = dsReal[r.tgl] || (dsReal[r.tgl] = {}), k = tlKey(r.kec, r.desa);
+          (dm[k] || (dm[k] = { key: k, desa: r.desa, kec: r.kec, kab: r.kab, sf: new Set() })).sf.add(sfNm[U(r.username_sf)] || r.nama_sf || r.username_sf); } });
       const out = [];
       for (let i = 1; i <= n; i++) {
         const tgl = p + '-' + String(i).padStart(2, '0');
@@ -134,12 +136,18 @@ function timelineData() {
           .map(d => ({ ...d, sfNames: Object.values(d.sf) }))
           .sort((a, b) => TL_KAT[a.kat].order - TL_KAT[b.kat].order || (b.skor ?? -1) - (a.skor ?? -1));
         const odpCount = desas.reduce((s, d) => s + d.odps.length, 0);
+        const dr = dsReal[tgl] || {};
+        desas = desas.map(d => ({ ...d, vis: !!dr[d.key] }));
+        const planKeys = new Set(desas.map(d => d.key));
+        const desaR = Object.keys(dr).length;
+        const luarPlan = Object.values(dr).filter(d => !planKeys.has(d.key)).map(d => ({ ...d, sfNames: [...d.sf] }));
         if (this.tlKat) desas = desas.filter(d => d.kat === this.tlKat);
         out.push({
           tgl, day: i, hari: TL_HARI[dt.getDay()], minggu: dt.getDay() === 0,
           isToday: tgl === today, isFuture: tgl > today,
           desas, odpCount,
           sfCount: new Set(desas.flatMap(d => Object.keys(d.sf))).size,
+          desaR, desaRPlan: desas.filter(d => d.vis).length, luarPlan,
           sfP: (sfPlan[tgl]?.size) || 0, sfR: (sfReal[tgl]?.size) || 0,
           sfMiss: [...(sfPlan[tgl] || [])].filter(u => !sfReal[tgl]?.has(u)).map(u => sfNm[u]).sort(),
         });

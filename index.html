@@ -2325,7 +2325,7 @@
                       </template>
                       <em x-show="d.desas.length>8" x-text="'+'+(d.desas.length-8)"></em>
                     </span>
-                    <span class="tl-cnt" x-text="d.desas.length ? d.desas.length+' desa' : '–'"></span>
+                    <span class="tl-cnt"><span x-text="d.desas.length ? d.desas.length+' desa' : '–'"></span><template x-if="!d.isFuture && (d.desas.length || d.desaR)"><span> · ✔ <b :style="'color:'+(d.desas.length && !d.desaRPlan ? '#dc2626' : d.desaRPlan >= d.desas.length ? '#16a34a' : '#ca8a04')" x-text="d.desaRPlan"></b><span x-show="d.luarPlan.length" style="color:#2563eb" x-text="' +'+d.luarPlan.length"></span></span></template></span>
                     <span class="tl-cnt" x-show="d.sfP || d.sfR" style="font-size:10px"
                           :title="'SF plan / SF realisasi'">👤 <span x-text="d.sfP"></span><template x-if="!d.isFuture"><span> / <b :style="'color:'+(d.sfP && !d.sfR ? '#dc2626' : d.sfR >= d.sfP ? '#16a34a' : '#ca8a04')" x-text="d.sfR"></b></span></template></span>
                   </button>
@@ -2361,7 +2361,7 @@
                     <div class="tl-desa" :style="'--kc:'+TL_KAT[x.kat].color">
                       <button type="button" class="tl-desa-h" @click="tlOpen[x.key] = !tlOpen[x.key]" :aria-expanded="!!tlOpen[x.key]">
                         <span class="tl-desa-name">
-                          <b x-text="x.desa"></b>
+                          <b><span x-show="!tlSelDay.isFuture" :style="'color:'+(x.vis?'#16a34a':'#dc2626')" x-text="x.vis?'✔ ':'✖ '"></span><span x-text="x.desa"></span></b>
                           <small x-text="x.kec + ' · ' + x.kab"></small>
                         </span>
                         <span class="tl-badge" x-text="TL_KAT[x.kat].label"></span>
@@ -2373,6 +2373,15 @@
                           <span class="tl-odp"><code x-text="o.odp"></code><small x-text="o.sf"></small></span>
                         </template>
                       </div>
+                    </div>
+                  </template>
+                  <template x-if="tlSelDay && tlSelDay.luarPlan.length">
+                    <div style="margin-top:10px">
+                      <div class="tl-sub" style="color:#2563eb;font-weight:600;padding:2px">🔵 Dikunjungi di luar plan (<span x-text="tlSelDay.luarPlan.length"></span>)</div>
+                      <template x-for="x in tlSelDay.luarPlan" :key="'L'+x.key">
+                        <div class="tl-desa" style="--kc:#2563eb"><div class="tl-desa-h"><span class="tl-desa-name"><b x-text="x.desa"></b><small x-text="x.kec + ' · ' + x.kab"></small></span></div>
+                          <div class="tl-desa-sf" x-text="'SF: ' + x.sfNames.join(', ')"></div></div>
+                      </template>
                     </div>
                   </template>
                 </div>
