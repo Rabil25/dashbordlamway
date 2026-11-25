@@ -1693,15 +1693,15 @@ function app() {
 
     // Daftar SF yang punya order bertitik di bulan & rentang tanggal aktif (untuk filter peta)
     get petaSfList() {
-      const sf = this.petaFilterSF; this.petaFilterSF = '';
-      const rows = this.koordinatRows; this.petaFilterSF = sf;
+      const rows = this._koordRows('');
       const m = {};
       rows.forEach(r => { const n = (r.sf || '').trim(); if (n) m[n] = (m[n] || 0) + 1; });
       return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0])).map(([nama, n]) => ({ nama, n }));
     },
 
     // ── Koordinat rows ──
-    get koordinatRows() {
+    get koordinatRows() { return this._koordRows(this.petaFilterSF); },
+    _koordRows(fSF) {
       const bulan = this.cfg.bulan;
       const tglA  = parseInt(this.cfg.tglAwal)  || 1;
       const tglB  = parseInt(this.cfg.tglAkhir) || new Date().getDate();
@@ -1721,7 +1721,7 @@ function app() {
           const key = (r[C.PRODUK_KAT]||'').trim() + '|' + (r[C.SPEED]||'').toString().trim();
           if (key !== fProduk) return false;
         }
-        if (this.petaFilterSF && (r[C.NAMA_SF]||'').trim() !== this.petaFilterSF) return false;
+        if (fSF && (r[C.NAMA_SF]||'').trim() !== fSF) return false;
         // Harus punya koordinat valid
         const dr = r[C.KOORDINAT]||'';
         const parts = dr.split(',');
