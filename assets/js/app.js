@@ -1724,7 +1724,10 @@ function app() {
         // type: 'ps' = hijau, 'kendala' = merah, 'proses' = kuning
         const type = sudahPS ? 'ps' : (kendala ? 'kendala' : 'proses');
         const statusLabel = sudahPS ? 'Put In Service' : (kendala ? ('Kendala: ' + kendala) : 'Belum PS');
-        return { lat, lng, status: statusLabel, type, kendala, sf: r[C.NAMA_SF]||'', id: r[C.ID_ORDER]||'' };
+        // Alasan kendala dari CY ("Kategori|Alasan") → ambil bagian alasan
+        const dtl = (r[C.KENDALA_DTL]||'').toString().trim();
+        const alasan = dtl.includes('|') ? dtl.split('|').slice(1).join('|').trim() : dtl;
+        return { lat, lng, status: statusLabel, type, kendala, alasan, sf: r[C.NAMA_SF]||'', id: r[C.ID_ORDER]||'' };
       });
     },
 
@@ -2049,6 +2052,7 @@ function app() {
           <b>${esc(r.id)}</b><br>
           SF: <b>${esc(r.sf)}</b><br>
           Status: <b style="color:${color}">${esc(r.status)}</b><br>
+          ${r.alasan ? `Alasan: <b>${esc(r.alasan)}</b><br>` : ''}
           <small>${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}</small>
         </div>`);
         markers.addLayer(circle);
