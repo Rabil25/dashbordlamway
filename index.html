@@ -1201,6 +1201,21 @@
               ✕
             </button>
           </div>
+          <!-- SF dropdown -->
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;font-weight:600;color:var(--text-3);min-width:24px">SF</span>
+            <select x-model="petaFilterSF" @change="$nextTick(()=>renderPeta())" aria-label="Filter SF titik order" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-1);cursor:pointer;min-width:200px">
+              <option value="">Semua SF</option>
+              <template x-for="s in petaSfList" :key="s.nama">
+                <option :value="s.nama" x-text="s.nama + ' (' + s.n + ')'"></option>
+              </template>
+            </select>
+            <button x-show="petaFilterSF"
+              @click="petaFilterSF='';$nextTick(()=>renderPeta())"
+              style="font-size:11px;padding:3px 10px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer">
+              ✕
+            </button>
+          </div>
         </div>
 
         <!-- Filter checkbox Belum PS / Kendala / PS -->

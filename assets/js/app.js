@@ -48,7 +48,8 @@ function app() {
     petaFilter: { io: true, re: true, ps: true },  // checkbox filter peta
     mapLayer: 'osm',  // 'osm' | 'satellite'
     petaFilterSTO: [],     // [] = semua STO, array untuk multi-select
-    petaFilterProduk: '',  // '' = semua produk
+    petaFilterProduk: '',
+    petaFilterSF: '',      // '' = semua SF (filter titik order di peta)  // '' = semua produk
     showODP: false,        // toggle ODP markers, default off
     _odpData: null,        // cache ODP JSON
     _odpLayer: null,       // Leaflet layer group ODP
@@ -1690,6 +1691,15 @@ function app() {
       return [...s].sort();
     },
 
+    // Daftar SF yang punya order bertitik di bulan & rentang tanggal aktif (untuk filter peta)
+    get petaSfList() {
+      const sf = this.petaFilterSF; this.petaFilterSF = '';
+      const rows = this.koordinatRows; this.petaFilterSF = sf;
+      const m = {};
+      rows.forEach(r => { const n = (r.sf || '').trim(); if (n) m[n] = (m[n] || 0) + 1; });
+      return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0])).map(([nama, n]) => ({ nama, n }));
+    },
+
     // ── Koordinat rows ──
     get koordinatRows() {
       const bulan = this.cfg.bulan;
@@ -1711,6 +1721,7 @@ function app() {
           const key = (r[C.PRODUK_KAT]||'').trim() + '|' + (r[C.SPEED]||'').toString().trim();
           if (key !== fProduk) return false;
         }
+        if (this.petaFilterSF && (r[C.NAMA_SF]||'').trim() !== this.petaFilterSF) return false;
         // Harus punya koordinat valid
         const dr = r[C.KOORDINAT]||'';
         const parts = dr.split(',');
