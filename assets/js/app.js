@@ -1908,11 +1908,11 @@ function app() {
       chart.setOption(Object.assign({}, (function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()), {
         tooltip: { ...(function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()).tooltip, trigger:'item' },
         series: [{
-          type:'pie', radius:['45%','70%'], center:['50%','50%'],
-          data:[{name:'Homepass',value:hp},{name:'Non-HP',value:nonHp}],
+          type:'pie', radius:['38%','60%'], center:['50%','45%'],
+          data:[{name:'Homepass',value:hp},{name:'Non-Homepass',value:nonHp}],
           color:['#58a6ff','#30363d'],
-          label:{ show:true, fontSize:10, color:'#8b949e', formatter:'{b}\n{c} ({d}%)' },
-          labelLine:{ lineStyle:{color:'#484f58'} },
+          label:{ show:true, fontSize:10, lineHeight:15, color:'#8b949e', formatter:'{b}\n{c} ({d}%)' },
+          labelLine:{ length:12, length2:14, lineStyle:{color:'#484f58'} },
           itemStyle:{ borderColor:'#0d1117', borderWidth:2 },
         }],
         legend:{ bottom:0, ...(function(){const {xAxis,yAxis,grid,...t}=getChartTheme();return t;}()).legend },
