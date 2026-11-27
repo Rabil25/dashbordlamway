@@ -889,7 +889,10 @@ function djpRealData() {
           const agg = await this._detailAgg(all); this.detailRows = agg.rows;
           const tg = [...new Set(agg.rows.map(r => r.tgl))].sort();
           this.msg = `📋 Detail DJP: ${agg.tugas} tugas wilayah kita (dari ${all.length} baris file) · ${agg.done} CHECKOUT · ${new Set(agg.rows.map(r => r.kode_sf)).size} SF · ${tg[0] || '?'} s.d. ${tg[tg.length - 1] || '?'} → ${agg.rows.length} baris SF×desa×hari` +
-            (agg.unknown ? ` · ${agg.unknown} ODP di luar wilayah/tidak dikenal diabaikan` : '');
+            (agg.unknown ? ` · ${agg.unknown} ODP di luar wilayah/tidak dikenal diabaikan` : '') +
+            (Object.keys(agg.avail).length ? '\n⚠ Data belum final (masih ada tugas berstatus AVAILABLE, file diunduh sebelum cutoff): ' +
+              Object.keys(agg.avail).sort().map(t => `${t} (${agg.avail[t]} tugas)`).join(', ') +
+              '. Tugas AVAILABLE sementara dihitung belum dikunjungi. Upload ulang file yang diunduh setelah cutoff untuk tanggal tersebut; datanya akan ditimpa.' : '');
         } else if (this.mode === 'laporan') {
           const tg = [...new Set(all.map(r => this._tgl(r['Tanggal'] || r['Periode'])).filter(Boolean))].sort();
           const dk = all.filter(r => +r['Dikunjungi'] > 0).length;
@@ -910,7 +913,7 @@ function djpRealData() {
       const od = await getOdpJson(), list = Array.isArray(od) ? od : (od.data || []), map = {};
       const N = s => String(s || '').toUpperCase().replace(/\s+/g, '');
       list.forEach(o => { map[N(o.odp)] = o; });
-      const g = {}, unk = new Set(); let done = 0, tugas = 0;
+      const g = {}, unk = new Set(), avail = {}; let done = 0, tugas = 0;
       all.forEach(r => {
         const tgl = this._tgl(r['TANGGAL_TUGAS']), sf = String(r['SF_CODE'] || '').trim().toUpperCase(); if (!tgl || !sf) return;
         const odp = String(r['ODP'] || '').trim(), o = map[N(odp)];
@@ -921,10 +924,11 @@ function djpRealData() {
         x.target++; tugas++;
         const st = String(r['STATUS_DJP'] || '').trim().toUpperCase();
         if (st === 'CHECKOUT' || st === 'CHECKIN') { x.dik++; x.odps.add(odp); done++; }
+        else if (st === 'AVAILABLE') avail[tgl] = (avail[tgl] || 0) + 1;   // belum dikerjakan, file diunduh sebelum cutoff
       });
       const rows = Object.values(g).map(x => ({ tgl: x.tgl, kode_sf: x.kode_sf, nama_sf: x.nama_sf, kab: x.kab, kec: x.kec, desa: x.desa,
         jml_odp: x.odps.size, dikunjungi: x.dik, target: x.target }));
-      return { rows, done, tugas, unknown: unk.size };
+      return { rows, done, tugas, unknown: unk.size, avail };
     },
 
     get csvHeaders() {

@@ -2871,7 +2871,7 @@
               </button>
               <button type="button" class="btn btn-ghost" :disabled="uploading" :title="uploading ? 'Upload sedang diproses server, tidak bisa dibatalkan' : ''" @click="csvRows=[];csvPreview=[];detailRows=[];msg=''">Batal</button>
             </div>
-            <div x-show="msg" x-text="msg" style="font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;background:var(--surface-2);color:var(--text-1);margin-bottom:8px"></div>
+            <div x-show="msg" x-text="msg" style="font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;background:var(--surface-2);color:var(--text-1);margin-bottom:8px;white-space:pre-line"></div>
             <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
               <table style="width:100%;font-size:11px;border-collapse:collapse">
                 <thead style="position:sticky;top:0;background:var(--surface-2)">
