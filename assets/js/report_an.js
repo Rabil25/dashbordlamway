@@ -329,7 +329,7 @@ function anAnalyze(D) {
     const T = sum(E.map(kt)), P = sum(E.map(kp));
     S.kendala = [
       'Kendala teknik berarti calon pelanggan ada, tetapi jaringan belum siap (misalnya ODP penuh, ODP jauh, atau tidak ada ODP). Kendala pelanggan berarti calon pelanggan batal, tidak bisa dihubungi, atau alamatnya tidak ditemukan. Cara menanganinya berbeda.',
-      E.map(e => `${nm(e)}: ${kt(e)} order terhambat kendala teknik, ${kp(e)} kendala pelanggan, ${ks(e)} kendala sistem` + (e.kendTop[0] ? `; alasan terbanyak ${e.kendTop[0][0].toLowerCase()} (${e.kendTop[0][1]} order)` : '')).join('. ') + '.',
+      E.map(e => `${nm(e)}: ${kt(e)} order terhambat kendala teknik, ${kp(e)} kendala pelanggan, ${ks(e)} kendala sistem` + (e.kendTop[0] ? `; alasan terbanyak: ${e.kendTop[0][0].split(': ').slice(1).join(': ')} (${e.kendTop[0][1]} order)` : '')).join('. ') + '.',
       T > P ? `Kendala terbesar ada di jaringan. Kirim daftar lokasi ODP penuh dan ODP jauh ke tim jaringan sebagai usulan penambahan ODP, dan jangan dihitung sebagai kegagalan SF.`
         : `Kendala terbesar ada di sisi pelanggan. Pastikan data calon pelanggan lengkap dan benar sebelum order diinput, dan hubungi ulang pelanggan yang belum bisa dihubungi.`,
     ]; }
