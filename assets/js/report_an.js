@@ -443,7 +443,7 @@ async function anBuild(D, S, B) {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.06, fill: { color: BG }, line: { color: 'E8E8E8', width: 0.75 } });
     tx(s, label, { x: x + 0.12, y: y + 0.04, w: w - 0.24, h: 0.3, fontSize: 8.5, color: GREY, fit: 'shrink' });
     const L = String(val).length;
-    tx(s, String(val), { x: x + 0.12, y: y + 0.3, w: w - 0.24, h: 0.45, fontSize: L > 18 ? 11 : L > 12 ? 13 : L > 8 ? 15 : 19, bold: true, color: color || DARK, valign: 'middle' });
+    tx(s, String(val), { x: x + 0.12, y: y + 0.3, w: w - 0.24, h: 0.45, fontSize: Math.max(8, Math.min(L > 18 ? 11 : L > 12 ? 13 : L > 8 ? 15 : 19, Math.floor((w - 0.24) * 72 / (L * 0.62)))), bold: true, color: color || DARK, valign: 'middle' });
     if (sub) tx(s, sub, { x: x + 0.12, y: y + h - 0.34, w: w - 0.24, h: 0.3, fontSize: 7.5, color: GREY, fit: 'shrink' });
   };
   const ax = { catAxisLabelColor: GREY, valAxisLabelColor: GREY, catAxisLabelFontFace: F, valAxisLabelFontFace: F, catAxisLabelFontSize: 9, valAxisLabelFontSize: 8,
@@ -677,9 +677,9 @@ async function anBuild(D, S, B) {
     const rowsK = AN.KAT_L.map((l, ki) => [l, ...E.flatMap(e => { const c = e.disc.kat[ki]; return [c.plan, c.plan ? `${c.hit} (${anP(c.hit, c.plan)}%)` : '–', e.disc.luar[ki]]; })]);
     const nc = 1 + 3 * k, cw0 = 1.3, cwi = (8.31 - cw0) / (3 * k);
     s.addTable([hdr, ...rowsK.map((r, i) => r.map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j ? 'center' : 'left', color: j === 0 ? AN.KAT_C[i] === 'D9D9D9' ? GREY : AN.KAT_C[i] : DARK } })))],
-      { x: 4.62, y: 4.32, w: 8.31, colW: [cw0, ...Array(nc - 1).fill(cwi)], rowH: 0.36, fontFace: F, fontSize: k > 3 ? 6.5 : 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
+      { x: 4.62, y: 4.32, w: 8.31, colW: [cw0, ...Array(nc - 1).fill(cwi)], rowH: k > 2 ? 0.3 : 0.36, fontFace: F, fontSize: k > 2 ? 6 : 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
     tx(s, `Satu jadwal SF = satu SF yang dijadwalkan kunjungan pada satu tanggal. Satu jadwal desa = satu desa yang dijadwalkan dikunjungi pada satu tanggal. Dihitung sampai ${fl(t)}, tanggal terakhir data kunjungan yang sudah di-upload. Bila file DJP tanggal itu diunduh sebelum hari ditutup, angkanya masih bisa bertambah.`,
-      { x: 4.62, y: 6.25, w: 8.31, h: 0.3, fontSize: 8, italic: true, color: GREY });
+      { x: 4.62, y: k > 2 ? 6.62 : 6.25, w: 8.31, h: 0.4, fontSize: k > 2 ? 7 : 8, italic: true, color: GREY, fit: 'shrink' });
     foot(s);
   }
 
@@ -687,15 +687,15 @@ async function anBuild(D, S, B) {
   if (B) {
     const s = pres.addSlide({ masterName: 'AN' });
     head(s, 'APA SAJA YANG MEMBENTUK IO, DAN BERAPA KEKURANGANNYA', 'Kotak berwarna merah adalah faktor yang paling menghambat. Perubahan RE menjadi PS juga dipengaruhi jarak ke ODP, teknisi, dan cuaca.');
-    const n = B.drv.length, cw = Math.min(4.1, (12.53 - (n - 1) * 0.12) / n);
+    const n = B.drv.length, cw = (12.53 - (n - 1) * 0.12) / n;
     B.drv.slice(0, 6).forEach((x, i) => {
       const xx = 0.4 + i * (cw + 0.12); card(s, xx, 1.12, cw, 3.25, x.name.toUpperCase(), E[i] ? E[i].color : RED);
       x.rows.forEach((r, j) => {
         const yy = 1.55 + j * 0.39, c = r.st === 'ok' ? GRN : r.st === 'warn' ? AMB : RED;
         s.addShape(pres.shapes.RECTANGLE, { x: xx + 0.15, y: yy, w: 0.06, h: 0.32, fill: { color: c }, line: { color: c } });
-        tx(s, r.label.replace(' (di luar kendali penuh sales)', '*'), { x: xx + 0.27, y: yy - 0.02, w: cw - 1.2, h: 0.22, fontSize: n > 3 ? 6.5 : 8, color: DARK });
-        tx(s, 'pembanding: ' + r.ref, { x: xx + 0.27, y: yy + 0.17, w: cw - 1.2, h: 0.17, fontSize: 6.5, color: GREY });
-        tx(s, r.val, { x: xx + cw - 0.95, y: yy, w: 0.8, h: 0.32, fontSize: n > 3 ? 9 : 11, bold: true, color: c, align: 'right', valign: 'middle' });
+        tx(s, r.label.replace(' (di luar kendali penuh sales)', '*'), { x: xx + 0.27, y: yy - 0.02, w: cw - (n > 3 ? 0.8 : 1.2), h: 0.22, fontSize: n > 3 ? 5.5 : 8, color: DARK, fit: 'shrink' });
+        tx(s, 'pembanding: ' + r.ref, { x: xx + 0.27, y: yy + 0.17, w: cw - (n > 3 ? 0.8 : 1.2), h: 0.17, fontSize: n > 3 ? 5 : 6.5, color: GREY, fit: 'shrink' });
+        tx(s, r.val, { x: xx + cw - (n > 3 ? 0.62 : 0.95), y: yy, w: n > 3 ? 0.5 : 0.8, h: 0.32, fontSize: n > 3 ? 9 : 11, bold: true, color: c, align: 'right', valign: 'middle' });
       });
     });
     tx(s, '* Perubahan RE menjadi PS juga dipengaruhi hal di luar kendali sales, jadi tidak dipilih sebagai faktor penghambat.', { x: 0.4, y: 4.38, w: 12, h: 0.2, fontSize: 7, color: GREY, italic: true });
@@ -735,7 +735,7 @@ async function anBuild(D, S, B) {
     syl(s, 4.62, 1.12, 8.31, 2.95, S.final);
     const hdr = ['#', 'Aksi', 'Untuk', 'Ukuran keberhasilan', 'Waktu'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
     s.addTable([hdr, ...S.actions.map((r, i) => [String(i + 1), r[0], r[1], r[3], r[4]].map((v, j) => ({ text: v, options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j === 0 ? 'center' : 'left' } })))],
-      { x: 0.4, y: 4.22, w: 12.53, colW: [0.4, 5.83, 1.8, 3.1, 1.4], rowH: 0.4, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.05 });
+      { x: 0.4, y: 4.22, w: 12.53, colW: [0.4, 5.83, 1.8, 3.1, 1.4], rowH: S.actions.length > 5 ? 0.33 : 0.4, fontFace: F, fontSize: S.actions.length > 5 ? 6.8 : 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.05 });
     foot(s);
   }
   // ── 10. KAMUS ISTILAH ──
