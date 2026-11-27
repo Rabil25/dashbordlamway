@@ -210,22 +210,22 @@ function timelineData() {
       const U = v => String(v || '').trim().toUpperCase();
       const kabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
       const m = {};
-      const get = (u, nama) => m[u] || (m[u] = { u, nama: nama || u, plan: false, desa: [] });
-      this.tlClusterRows.forEach(r => { if (r.tgl === t) get(U(r.username_sf), r.nama_sf).plan = true; });
+      const get = (u, nama) => m[u] || (m[u] = { u, nama: nama || u, plan: false, desa: [], planDesa: [], pk: new Set(), vk: new Set() });
+      this.tlClusterRows.forEach(r => { if (r.tgl !== t) return; const x = get(U(r.username_sf), r.nama_sf), d = `${r.desa} (${r.kec})`; x.plan = true; x.pk.add(tlKey(r.kec, r.desa)); if (!x.planDesa.includes(d)) x.planDesa.push(d); });
       this.tlReal.forEach(r => {
         const kab = U(r.kab); if (r.tgl !== t || !kabs.includes(kab) || (this.tlKab && kab !== U(this.tlKab)) || (this.tlSf && U(r.username_sf) !== U(this.tlSf))) return;
-        const x = get(U(r.username_sf), r.nama_sf), d = `${r.desa} (${r.kec})`; if (!x.desa.includes(d)) x.desa.push(d);
+        const x = get(U(r.username_sf), r.nama_sf), d = `${r.desa} (${r.kec})`; x.vk.add(tlKey(r.kec, r.desa)); if (!x.desa.includes(d)) x.desa.push(d);
       });
-      const O = { tidak: 0, djp: 1, luar: 2 };
-      return Object.values(m).map(x => ({ ...x, st: x.plan ? (x.desa.length ? 'djp' : 'tidak') : 'luar' }))
+      const O = { tidak: 0, beda: 1, djp: 2, luar: 3 };
+      return Object.values(m).map(x => ({ ...x, st: !x.plan ? 'luar' : !x.desa.length ? 'tidak' : [...x.vk].some(k => x.pk.has(k)) ? 'djp' : 'beda' }))
         .sort((a, b) => O[a.st] - O[b.st] || a.nama.localeCompare(b.nama));
     },
     get tlSfDay() { const st = this.tlSfSt, a = this.tlSfDayAll; return st ? a.filter(x => x.st === st) : a; },
-    get tlSfDaySum() { const c = { djp: 0, tidak: 0, luar: 0 }; this.tlSfDayAll.forEach(x => c[x.st]++); return { ...c, plan: c.djp + c.tidak }; },
+    get tlSfDaySum() { const c = { djp: 0, beda: 0, tidak: 0, luar: 0 }; this.tlSfDayAll.forEach(x => c[x.st]++); return { ...c, plan: c.djp + c.beda + c.tidak }; },
     tlSfDayCsv() {
-      const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"', L = { djp: 'DJP', tidak: 'Tidak DJP', luar: 'DJP tanpa plan' };
-      const lines = [['Tanggal', 'Nama SF', 'Kode SF', 'Plan', 'Status', 'Desa yang dikunjungi'].map(q).join(',')];
-      this.tlSfDay.forEach(x => lines.push([q(this.tlSel), q(x.nama), q(x.u), q(x.plan ? 'Ada plan' : 'Tanpa plan'), q(L[x.st]), q(x.desa.join('; '))].join(',')));
+      const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"', L = { djp: 'DJP sesuai plan', beda: 'DJP di luar desa plan', tidak: 'Tidak DJP', luar: 'DJP tanpa plan' };
+      const lines = [['Tanggal', 'Nama SF', 'Kode SF', 'Desa di plan', 'Status', 'Desa yang dikunjungi'].map(q).join(',')];
+      this.tlSfDay.forEach(x => lines.push([q(this.tlSel), q(x.nama), q(x.u), q(x.planDesa.join('; ') || 'Tanpa plan'), q(L[x.st]), q(x.desa.join('; '))].join(',')));
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' }));
       a.download = `SF_DJP_${this.cluster}_${this.tlSel}.csv`.replace(/\s+/g, '_'); a.click();
     },
