@@ -218,7 +218,7 @@ function anEntity(app, D, e, idx, all, visits, visCur, desaAll, katMap) {
     coh.forEach(r => { const cat = String(r[C.KENDALA_CAT] || '').trim(); const ci = KC.findIndex(c => c.toUpperCase() === cat.toUpperCase()); if (ci < 0) return;
       const out = isPS(r) ? 1 : /CANCEL|BATAL/.test(anN(r[C.STATUS_FNL])) ? 0 : 2; kk[ci][out]++;
       if (out !== 1) { const dtl = String(r[C.KENDALA_DTL] || '').trim(); const al = (dtl.includes('|') ? dtl.split('|').slice(1).join('|') : '').trim() || (ci === 2 ? 'Error sistem' : 'Tanpa keterangan');
-        const key = KC[ci].replace('Kendala ', '') + ': ' + anTitle(al.toLowerCase()); rs[key] = (rs[key] || 0) + 1; } });
+        const key = KC[ci].replace('Kendala ', '') + ': ' + anTitle(al.toLowerCase()).replace(/\bOdp\b/g, 'ODP').replace(/\bRna\b/g, 'RNA (tidak bisa dihubungi)'); rs[key] = (rs[key] || 0) + 1; } });
     o.kend = kk; o.kendTot = sum(kk.map(x => x[0] + x[2])); o.kendTop = Object.entries(rs).sort((a, b) => b[1] - a[1]).slice(0, 6); }
 
   // ── DJP 3 bulan (kunjungan SF×desa×hari) ──
