@@ -408,7 +408,7 @@ function anAnalyze(D) {
 async function anBuild(D, S, B) {
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_WIDE';
-  pres.author = 'Dashboard WOK LamWay'; pres.title = 'Analisa PS ' + D.label;
+  pres.author = 'KALA RIMBA'; pres.title = 'Analisa PS ' + D.label;
   const { F, RED, DARK, GREY, BG, GRN, AMB } = AN;
   let logo = null;
   try { const b = await (await fetch('assets/img/indihome-logo.png')).blob(); logo = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); } catch (e) {}

@@ -287,7 +287,7 @@ function reportBuild(items, mode = 'cluster', CMP = null) {
   const D0 = items[0].D;
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_16x9';               // 10 × 5.625 in
-  pres.author = 'WOK Dashboard';
+  pres.author = 'KALA RIMBA';
   pres.title = `Review Mingguan ${all ? 'WOK Lampung Barat – Way Kanan' : D0.cluster} – ${D0.periode}`;
   pres.theme = { headFontFace: R_FONT, bodyFontFace: R_FONT };
   const now = new Date();

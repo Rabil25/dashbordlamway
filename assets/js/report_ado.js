@@ -80,7 +80,7 @@ function adoBuild(X) {
   const { D, A, wil, djp } = X, k = D.kpi, c = A.core;
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_16x9';
-  pres.author = 'WOK Dashboard';
+  pres.author = 'KALA RIMBA';
   pres.title = `ADO ${D.cluster} – ${D.periode}`;
   pres.theme = { headFontFace: R_FONT, bodyFontFace: R_FONT };
   pres.defineSlideMaster({
