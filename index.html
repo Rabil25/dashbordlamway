@@ -2427,6 +2427,44 @@
               </div>
             </div>
 
+          <!-- SF DJP per hari -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+              <div>
+                <div class="card-title">SF DJP per Hari · <span x-text="tlSel ? new Date(tlSel + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '–'"></span></div>
+                <div class="tl-sub">Tanggal mengikuti pilihan di Garis tanggal · kunjungan dari DJP_Realisasi_Baru (status CHECKOUT)</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <select class="select" x-model="tlSfSt" aria-label="Filter status SF" style="font-size:11px">
+                  <option value="">Semua</option><option value="tidak">🔴 Tidak DJP</option><option value="djp">🟢 DJP</option><option value="luar">🔵 DJP tanpa plan</option>
+                </select>
+                <button class="btn-sm btn-outline" @click="tlSfDayCsv()" :disabled="!tlSfDay.length">⬇ CSV</button>
+              </div>
+            </div>
+            <div class="tl-sub" style="padding:4px 2px 10px">
+              <b x-text="tlSfDaySum.plan"></b> SF punya plan ·
+              🟢 <b x-text="tlSfDaySum.djp"></b> SF DJP · 🔴 <b x-text="tlSfDaySum.tidak"></b> SF tidak DJP ·
+              🔵 <b x-text="tlSfDaySum.luar"></b> SF DJP tanpa plan
+            </div>
+            <div class="tbl-wrap" style="max-height:420px;overflow:auto">
+              <table>
+                <thead><tr><th class="num">No</th><th>Nama SF</th><th>Plan</th><th>Status</th><th>Desa yang dikunjungi</th></tr></thead>
+                <tbody>
+                  <template x-for="(x, i) in tlSfDay" :key="x.u">
+                    <tr>
+                      <td class="num" x-text="i + 1"></td>
+                      <td style="font-weight:600" x-text="x.nama"></td>
+                      <td x-text="x.plan ? 'Ada plan' : 'Tanpa plan'"></td>
+                      <td x-text="{djp:'🟢 DJP',tidak:'🔴 Tidak DJP',luar:'🔵 DJP tanpa plan'}[x.st]"></td>
+                      <td x-text="x.desa.length ? x.desa.join(', ') : '–'"></td>
+                    </tr>
+                  </template>
+                  <tr x-show="!tlSfDay.length"><td colspan="5" class="tl-sub" style="text-align:center;padding:14px">Tidak ada plan atau kunjungan pada tanggal ini.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Plan vs Realisasi per desa -->
           <div class="card" style="margin-top:14px">
             <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">

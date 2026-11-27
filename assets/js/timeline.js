@@ -42,6 +42,7 @@ function timelineData() {
     tlOpen: {},         // desa yang dibuka daftar ODP-nya
     tlReal: [],         // kunjungan nyata (DJP_Realisasi_Baru) bulan ini
     tlPvrSt: '',        // filter status Plan vs Realisasi
+    tlSfSt: '',         // filter status tabel SF DJP per hari
 
     async tlLoad(force = false) {
       if (this.tlLoading) return;
@@ -201,6 +202,32 @@ function timelineData() {
       this.tlPvr.forEach(d => lines.push([q(d.desa), q(d.kec), q(d.kab), q(TL_KAT[d.kat].label), d.plan, d.vis, q(L[d.st])].join(',')));
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' }));
       a.download = `Plan_vs_Realisasi_Desa_${this.cluster}_${this.tlPeriode}.csv`.replace(/\s+/g, '_'); a.click();
+    },
+
+    // ── SF DJP per hari (tanggal = tanggal terpilih di Garis tanggal) ──
+    get tlSfDayAll() {
+      const t = this.tlSel; if (!t) return [];
+      const U = v => String(v || '').trim().toUpperCase();
+      const kabs = (CLUSTER[this.cluster]?.kab || []).map(k => k.toUpperCase());
+      const m = {};
+      const get = (u, nama) => m[u] || (m[u] = { u, nama: nama || u, plan: false, desa: [] });
+      this.tlClusterRows.forEach(r => { if (r.tgl === t) get(U(r.username_sf), r.nama_sf).plan = true; });
+      this.tlReal.forEach(r => {
+        const kab = U(r.kab); if (r.tgl !== t || !kabs.includes(kab) || (this.tlKab && kab !== U(this.tlKab)) || (this.tlSf && U(r.username_sf) !== U(this.tlSf))) return;
+        const x = get(U(r.username_sf), r.nama_sf), d = `${r.desa} (${r.kec})`; if (!x.desa.includes(d)) x.desa.push(d);
+      });
+      const O = { tidak: 0, djp: 1, luar: 2 };
+      return Object.values(m).map(x => ({ ...x, st: x.plan ? (x.desa.length ? 'djp' : 'tidak') : 'luar' }))
+        .sort((a, b) => O[a.st] - O[b.st] || a.nama.localeCompare(b.nama));
+    },
+    get tlSfDay() { const st = this.tlSfSt, a = this.tlSfDayAll; return st ? a.filter(x => x.st === st) : a; },
+    get tlSfDaySum() { const c = { djp: 0, tidak: 0, luar: 0 }; this.tlSfDayAll.forEach(x => c[x.st]++); return { ...c, plan: c.djp + c.tidak }; },
+    tlSfDayCsv() {
+      const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"', L = { djp: 'DJP', tidak: 'Tidak DJP', luar: 'DJP tanpa plan' };
+      const lines = [['Tanggal', 'Nama SF', 'Kode SF', 'Plan', 'Status', 'Desa yang dikunjungi'].map(q).join(',')];
+      this.tlSfDay.forEach(x => lines.push([q(this.tlSel), q(x.nama), q(x.u), q(x.plan ? 'Ada plan' : 'Tanpa plan'), q(L[x.st]), q(x.desa.join('; '))].join(',')));
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' }));
+      a.download = `SF_DJP_${this.cluster}_${this.tlSel}.csv`.replace(/\s+/g, '_'); a.click();
     },
 
     get tlSelDay() {
