@@ -678,6 +678,90 @@ function djpImportSourceWPI() {
   }
 }
 
+// ================================================================
+//  SEKALI JALAN: IMPORT PLAN 1–12 NOV 2026 DARI TAB 'Lamway NOV_26' → DJP_Plan
+//  Kolom dicari dari header baris ke-2: ODP, JADWAL (m/d/yyyy), SF BERTUGAS ... (nama, dipisah koma).
+//  Kab/kec/desa/koordinat diambil dari ODPBot. Kode SF dari nama SF yang sudah ada di DJP_Plan.
+//  Jalankan: pilih djpImportLamwayNov → Jalankan, lalu lihat Log eksekusi.
+//  Batalkan: djpHapusImportLamway.
+// ================================================================
+const DJP_LAMWAY_TAG = 'import Lamway NOV_26';
+const DJP_LAMWAY_SF_EXTRA = { 'MUTO ILLAH': 'SPTLU56' };   // nama SF yang belum pernah ada di plan
+function djpImportLamwayNov() {
+  const TGL_MIN = '2026-11-01', TGL_MAX = '2026-11-12';
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    const ss = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID);
+    const wsL = ss.getSheetByName('Lamway NOV_26'), wsODP = ss.getSheetByName(DJP_CONFIG.SHEET_ODP), wsPlan = ss.getSheetByName(DJP_CONFIG.SHEET_PLAN);
+    if (!wsL || !wsODP || !wsPlan) throw new Error('Tab Lamway NOV_26 / ODPBot / DJP_Plan tidak ditemukan');
+    const U = s => (s === null || s === undefined ? '' : s.toString()).trim().toUpperCase();
+
+    const ov = wsODP.getDataRange().getValues(), oh = ov[0].map(U), oi = n => oh.indexOf(n);
+    const iO = oi('ODP'), iLa = oi('LATITUDE'), iLn = oi('LONGITUDE'), iKab = oi('KAB'), iKec = oi('KEC'), iDes = oi('DESA');
+    if ([iO, iLa, iLn, iKab, iKec, iDes].some(i => i < 0)) throw new Error('Header ODPBot tidak lengkap');
+    const odp = {};
+    for (let i = 1; i < ov.length; i++) { const k = djpNormOdp(ov[i][iO]); if (!k || odp[k]) continue;
+      odp[k] = { lat: ov[i][iLa], lng: ov[i][iLn], kab: (ov[i][iKab] || '').toString().trim(), kec: (ov[i][iKec] || '').toString().trim(), desa: (ov[i][iDes] || '').toString().trim() }; }
+
+    const pv = wsPlan.getDataRange().getValues(), ada = {}, kode = {};
+    for (let i = 1; i < pv.length; i++) {
+      ada[djpNormTgl(pv[i][P.TGL]) + '|' + U(pv[i][P.USERNAME_SF]) + '|' + djpNormOdp(pv[i][P.ODP])] = true;
+      const nm = U(pv[i][P.NAMA_SF]), us = (pv[i][P.USERNAME_SF] || '').toString().trim();
+      if (nm && us && !kode[nm]) kode[nm] = { us, nama: (pv[i][P.NAMA_SF] || '').toString().trim() };
+    }
+    Object.keys(DJP_LAMWAY_SF_EXTRA).forEach(n => { if (!kode[n]) kode[n] = { us: DJP_LAMWAY_SF_EXTRA[n], nama: n }; });
+
+    const lv = wsL.getDataRange().getValues();
+    let hr = -1; for (let i = 0; i < Math.min(5, lv.length); i++) if (lv[i].map(U).indexOf('JADWAL') >= 0) { hr = i; break; }
+    if (hr < 0) throw new Error('Header JADWAL tidak ditemukan di Lamway NOV_26');
+    const lh = lv[hr].map(U), jO = lh.indexOf('ODP'), jJ = lh.indexOf('JADWAL'), jS = lh.findIndex(h => h.indexOf('SF BERTUGAS') === 0);
+    if ([jO, jJ, jS].some(i => i < 0)) throw new Error('Kolom ODP / JADWAL / SF BERTUGAS tidak ditemukan');
+    const tglOf = v => {
+      if (v instanceof Date) return Utilities.formatDate(v, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+      const m = (v || '').toString().trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      return m ? m[3] + '-' + ('0' + m[1]).slice(-2) + '-' + ('0' + m[2]).slice(-2) : djpNormTgl(v);
+    };
+
+    const now = new Date(), out = [], st = { jadwal: 0, ditambah: 0, sudahAda: 0, odpTakDikenal: 0, luarWOK: 0, sfTakDikenal: {} };
+    for (let i = hr + 1; i < lv.length; i++) {
+      const r = lv[i], tgl = tglOf(r[jJ]);
+      if (!tgl || tgl < TGL_MIN || tgl > TGL_MAX) continue;
+      const odpK = djpNormOdp(r[jO]), o = odp[odpK];
+      const names = (r[jS] || '').toString().split(',').map(x => x.trim()).filter(Boolean);
+      if (!names.length) continue;
+      if (!o) { st.odpTakDikenal += names.length; continue; }
+      const cluster = DJP_WOK_KAB[U(o.kab)]; if (!cluster) { st.luarWOK += names.length; continue; }
+      names.forEach(nm => {
+        st.jadwal++;
+        const sf = kode[U(nm)]; if (!sf) { st.sfTakDikenal[nm] = (st.sfTakDikenal[nm] || 0) + 1; return; }
+        const key = tgl + '|' + U(sf.us) + '|' + odpK; if (ada[key]) { st.sudahAda++; return; }
+        ada[key] = true;
+        out.push([tgl, sf.us, sf.nama, odpK, cluster, o.kab.toUpperCase(), o.kec, o.desa, o.lat, o.lng, '', DJP_LAMWAY_TAG, now, tgl.slice(0, 4)]);
+      });
+    }
+    for (let i = 0; i < out.length; i += DJP_CONFIG.BATCH_SIZE) {
+      const b = out.slice(i, i + DJP_CONFIG.BATCH_SIZE), row = wsPlan.getLastRow() + 1;
+      wsPlan.getRange(row, 1, b.length, 1).setNumberFormat('@');
+      wsPlan.getRange(row, 1, b.length, b[0].length).setValues(b);
+    }
+    st.ditambah = out.length;
+    Logger.log(JSON.stringify(st));
+    return st;
+  } finally { lock.releaseLock(); }
+}
+function djpHapusImportLamway() {
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    const ws = SpreadsheetApp.openById(DJP_CONFIG.SHEET_ID).getSheetByName(DJP_CONFIG.SHEET_PLAN);
+    const v = ws.getDataRange().getValues(), hit = [];
+    for (let i = 1; i < v.length; i++) if ((v[i][P.DIBUAT_OLEH] || '').toString().trim() === DJP_LAMWAY_TAG) hit.push(i + 1);
+    let end = hit.length - 1;
+    while (end >= 0) { let start = end; while (start > 0 && hit[start - 1] === hit[start] - 1) start--; ws.deleteRows(hit[start], end - start + 1); end = start - 1; }
+    Logger.log('Dihapus: ' + hit.length + ' baris import Lamway');
+    return hit.length;
+  } finally { lock.releaseLock(); }
+}
+
 // Batalkan import: hapus hanya baris DJP_Plan bertanda 'import Source WPI'
 function djpHapusImportWPI() {
   const lock = LockService.getScriptLock();
