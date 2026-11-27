@@ -723,20 +723,56 @@ function djpRealBaruSheet_(ssOpt) {
 }
 // Hapus baris yang cocok: filter(row) → true
 function djpRealBaruDelete_(ws, match) {
-  // Cepat: baca sekali, saring, tulis ulang sekali (tanpa deleteRows berulang)
+  // Cepat: baca sekali, saring, tulis ulang sekali (tanpa deleteRows berulang).
+  // PENGAMAN TANGGAL: kolom TGL selalu ditulis sebagai teks yyyy-MM-dd; bila ada
+  // tanggal yang akan hilang, proses dibatalkan sebelum sheet diubah.
   const n = ws.getLastRow() - 1; if (n < 1) return 0;
   const W = RB_HEAD.length, rg = ws.getRange(2, 1, n, W), v = rg.getValues();
   const keep = v.filter(r => !match(r)), hapus = v.length - keep.length;
   if (!hapus) return 0;
+  const adaTgl = keep.filter(r => r[0] !== '' && r[0] !== null).length;
+  keep.forEach(r => { r[0] = djpNormTgl(r[0]); });
+  const sesudah = keep.filter(r => r[0]).length;
+  if (sesudah < adaTgl) throw new Error('Dibatalkan: ' + (adaTgl - sesudah) + ' tanggal akan hilang saat menulis ulang DJP_Realisasi_Baru. Sheet tidak diubah.');
   rg.clearContent();
-  if (keep.length) ws.getRange(2, 1, keep.length, W).setValues(keep);
+  if (keep.length) {
+    const out = ws.getRange(2, 1, keep.length, W);
+    ws.getRange(2, 1, keep.length, 1).setNumberFormat('@');
+    out.setValues(keep);
+    SpreadsheetApp.flush();
+    const cek = ws.getRange(2, 1, keep.length, 1).getValues().filter(r => (r[0] || '').toString().trim()).length;
+    if (cek < sesudah) throw new Error('Peringatan: setelah ditulis, ' + (sesudah - cek) + ' tanggal kosong di DJP_Realisasi_Baru. Hubungi admin.');
+  }
   return hapus;
 }
 function djpRealBaruAppend_(ws, out) {
   for (let i = 0; i < out.length; i += DJP_CONFIG.BATCH_SIZE) {
-    const b = out.slice(i, i + DJP_CONFIG.BATCH_SIZE);
-    ws.getRange(ws.getLastRow() + 1, 1, b.length, RB_HEAD.length).setValues(b);
+    const b = out.slice(i, i + DJP_CONFIG.BATCH_SIZE).map(r => { const x = r.slice(); x[0] = djpNormTgl(x[0]); return x; });
+    const row = ws.getLastRow() + 1;
+    ws.getRange(row, 1, b.length, 1).setNumberFormat('@');
+    ws.getRange(row, 1, b.length, RB_HEAD.length).setValues(b);
   }
+}
+
+// ================================================================
+//  SEKALI JALAN: PULIHKAN DJP_Realisasi_Baru setelah tanggal hilang
+//  1) hapus baris yang kolom TGL-nya kosong
+//  2) salin ulang Source WPI dari DJP_Plan (Juni–September)
+//  Setelah ini, upload ulang file Detail DJP Oktober & November lewat menu Realisasi DJP.
+//  Jalankan: pilih djpPulihkanRealisasi → Jalankan, lalu lihat Log eksekusi.
+// ================================================================
+function djpPulihkanRealisasi() {
+  const ws = djpRealBaruSheet_();
+  const n = ws.getLastRow() - 1;
+  if (n > 0) ws.getRange(2, 1, n, 1).setNumberFormat('@');
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  let dihapus = 0;
+  try { dihapus = djpRealBaruDelete_(ws, r => !djpNormTgl(r[0])); }
+  finally { lock.releaseLock(); }
+  Logger.log('Langkah 1: ' + dihapus + ' baris tanpa tanggal dihapus.');
+  const wpi = djpSalinWPIKeRealisasi();
+  Logger.log('Langkah 2: ' + wpi + ' baris Source WPI disalin ulang dari DJP_Plan.');
+  Logger.log('Langkah 3: upload ulang file Detail DJP Oktober dan November lewat menu Realisasi DJP di dashboard.');
 }
 
 // Upload laporan harian Web Telkomsel: rows = [{tgl, kode_sf, nama_sf, target, dikunjungi}]
