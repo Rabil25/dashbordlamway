@@ -58,6 +58,7 @@ const anJoin = arr => arr.join(' / ');
 //  1. KUMPULKAN DATA
 // ================================================================
 async function anCollect(app, mode) {
+  try { await app.loadArpu(); } catch (e) {}
   const bulan = app.cfg.bulan, days = daysInPeriod(bulan);
   const refDay = Math.max(1, Math.min(app.hariBerjalan || days, days));
   const end = +(bulan.replace('-', '') + String(refDay).padStart(2, '0'));
@@ -208,6 +209,18 @@ function anEntity(app, D, e, idx, all, visits, visCur, desaAll, katMap) {
   o.sp20 = anP(psW.filter(r => String(r[C.SPEED] || '').trim() === '20').length, psW.length);
   o.ihReg = anP(o.prod[1], psW.length); o.tselOne = anP(o.prod[0], psW.length);
 
+  // ARPU (rata-rata harga paket semua order) — tertimbang jumlah order per desa
+  { let aS = 0, aN = 0; desaAll.filter(d => inK(d.kab)).forEach(d => { const a = app.arpuOf ? app.arpuOf(d.kec, d.desa) : null; if (a && a.arpu) { aS += a.arpu * a.n; aN += a.n; } });
+    o.arpu = aN ? aS / aN : null; }
+  // Kendala order (CZ kategori, CY alasan) dari IO periode ini: hasil akhir batal / PS / masih menunggu
+  { const KC = ['Kendala Teknik', 'Kendala Pelanggan', 'Kendala Sistem'];
+    const kk = KC.map(() => [0, 0, 0]), rs = {};
+    coh.forEach(r => { const cat = String(r[C.KENDALA_CAT] || '').trim(); const ci = KC.findIndex(c => c.toUpperCase() === cat.toUpperCase()); if (ci < 0) return;
+      const out = isPS(r) ? 1 : /CANCEL|BATAL/.test(anN(r[C.STATUS_FNL])) ? 0 : 2; kk[ci][out]++;
+      if (out !== 1) { const dtl = String(r[C.KENDALA_DTL] || '').trim(); const al = (dtl.includes('|') ? dtl.split('|').slice(1).join('|') : '').trim() || (ci === 2 ? 'Error sistem' : 'Tanpa keterangan');
+        const key = KC[ci].replace('Kendala ', '') + ': ' + anTitle(al.toLowerCase()); rs[key] = (rs[key] || 0) + 1; } });
+    o.kend = kk; o.kendTot = sum(kk.map(x => x[0] + x[2])); o.kendTop = Object.entries(rs).sort((a, b) => b[1] - a[1]).slice(0, 6); }
+
   // ── DJP 3 bulan (kunjungan SF×desa×hari) ──
   const vis = visits.filter(v => inK(v.kab));
   const nM = Math.max(1, D.availM.length);
@@ -311,6 +324,15 @@ function anAnalyze(D) {
     gap >= 3 ? `Bila persentase RE yang menjadi PS di ${nm(wf)} sama dengan ${nm(bf)}, ${nm(wf)} akan mendapat sekitar ${gap} PS tambahan. Prioritas: selesaikan ${wf.coh[2]} order ${nm(wf)} yang masih menunggu, kurangi order batal, dan dorong penjualan IndiHome Reguler karena nilai tagihan bulanannya (ARPU) lebih tinggi.`
       : `Persentase RE yang menjadi PS di semua wilayah relatif setara. Fokus pada ${sum(E.map(e => e.coh[2]))} order yang masih menunggu agar menjadi PS, dan jaga porsi penjualan IndiHome Reguler.`,
   ];
+  // kendala
+  { const kt = e => e.kend[0][0] + e.kend[0][2], kp = e => e.kend[1][0] + e.kend[1][2], ks = e => e.kend[2][0] + e.kend[2][2];
+    const T = sum(E.map(kt)), P = sum(E.map(kp));
+    S.kendala = [
+      'Kendala teknik berarti calon pelanggan ada, tetapi jaringan belum siap (misalnya ODP penuh, ODP jauh, atau tidak ada ODP). Kendala pelanggan berarti calon pelanggan batal, tidak bisa dihubungi, atau alamatnya tidak ditemukan. Cara menanganinya berbeda.',
+      E.map(e => `${nm(e)}: ${kt(e)} order terhambat kendala teknik, ${kp(e)} kendala pelanggan, ${ks(e)} kendala sistem` + (e.kendTop[0] ? `; alasan terbanyak ${e.kendTop[0][0].toLowerCase()} (${e.kendTop[0][1]} order)` : '')).join('. ') + '.',
+      T > P ? `Kendala terbesar ada di jaringan. Kirim daftar lokasi ODP penuh dan ODP jauh ke tim jaringan sebagai usulan penambahan ODP, dan jangan dihitung sebagai kegagalan SF.`
+        : `Kendala terbesar ada di sisi pelanggan. Pastikan data calon pelanggan lengkap dan benar sebelum order diinput, dan hubungi ulang pelanggan yang belum bisa dihubungi.`,
+    ]; }
   // DJP wilayah
   const agg = E.map(e => e.bucket);
   const tot = e => e.bucket.map(b => b.avg);
@@ -410,7 +432,7 @@ async function anBuild(D, S, B) {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.08, fill: { color: AN.PINK }, line: { color: RED, width: 1.25 } });
     tx(s, 'ALUR ANALISA', { x: x + 0.2, y: y + 0.08, w: w - 0.4, h: 0.3, fontSize: 10.5, bold: true, color: RED });
     const rh = (h - 0.45) / 3;
-    [['ATURAN UMUM', GREY], ['FAKTA DATA', AMB], ['KESIMPULAN', RED]].forEach(([l, c], i) => {
+    [['KENAPA PENTING', GREY], ['YANG TERJADI', AMB], ['ARTINYA', RED]].forEach(([l, c], i) => {
       const yy = y + 0.42 + i * rh;
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: x + 0.2, y: yy + 0.04, w: 1.3, h: 0.28, rectRadius: 0.05, fill: { color: c }, line: { color: c } });
       tx(s, l, { x: x + 0.2, y: yy + 0.04, w: 1.3, h: 0.28, fontSize: 7.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle' });
@@ -475,7 +497,8 @@ async function anBuild(D, S, B) {
             : ['Dibanding tanggal yang sama bulan lalu', anSg(anP(e.ps - e.ps0, e.ps0)), `dari ${e.ps0} menjadi ${e.ps} PS`, e.ps >= e.ps0 ? GRN : RED],
           ['RE yang menjadi PS', anPs(Math.round(e.psre || 0)), `IO ${e.io}, RE ${e.re}`, (e.psre || 0) >= 80 ? GRN : AMB],
           ['PS per hari yang dibutuhkan', anD(e.need), `untuk ${D.sisa} hari tersisa`, e.need > e.drrM ? RED : GRN],
-          [`Kunjungan DJP ${S.djpLbl}`, anI(e.vis), `oleh ${e.sfDJP} SF ke ${e.desaTouched} desa`, DARK],
+          e.disc && e.disc.sfPlan ? ['Jadwal SF di plan yang terlaksana', anPs(e.disc.sfPct), `${e.disc.sfHit} dari ${e.disc.sfPlan} jadwal bulan ini`, e.disc.sfPct >= 80 ? GRN : e.disc.sfPct >= 50 ? AMB : RED]
+            : [`Kunjungan DJP ${S.djpLbl}`, anI(e.vis), `oleh ${e.sfDJP} SF ke ${e.desaTouched} desa`, DARK],
           ['PS dari desa yang dikunjungi DJP', anPs(anP(e.psFromVis, e.ps)), `${e.psFromVis} dari ${e.ps} PS`, DARK],
         ];
         t.forEach((v, j) => tile(s, x + 0.2 + (j % 2) * 1.85, 2.65 + Math.floor(j / 2) * 1.4, 1.75, 1.28, ...v));
@@ -489,9 +512,10 @@ async function anBuild(D, S, B) {
         ['PS per hari: rata-rata / dibutuhkan', ...E.map(e => `${anD(e.drrM)} / ${anD(e.need)}`)], ['RE yang menjadi PS', ...E.map(e => anPs(Math.round(e.psre || 0)))],
         [`Kunjungan DJP ${S.djpLbl}`, ...E.map(e => anI(e.vis))], ['SF yang kunjungan / desa dikunjungi', ...E.map(e => `${e.sfDJP} SF / ${e.desaTouched} desa`)],
         ['PS dari desa yang dikunjungi DJP', ...E.map(e => anPs(anP(e.psFromVis, e.ps)))], ['Kunjungan di plan DJP bulan ini', ...E.map(e => anI(e.planCur))],
+        ['Jadwal SF di plan yang terlaksana', ...E.map(e => e.disc && e.disc.sfPlan ? `${anPs(e.disc.sfPct)} (${e.disc.sfHit}/${e.disc.sfPlan})` : '–')],
       ];
       s.addTable([hdr, ...rowsT.map((r, i) => r.map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j ? 'center' : 'left' } })))],
-        { x: 0.6, y: 1.6, w: 7.85, colW: [2.2, ...E.map(() => 5.65 / k)], rowH: 0.44, fontFace: F, fontSize: 9, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.05 });
+        { x: 0.6, y: 1.6, w: 7.85, colW: [2.2, ...E.map(() => 5.65 / k)], rowH: 0.4, fontFace: F, fontSize: 9, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.05 });
     }
     card(s, 8.85, 1.15, 4.08, 5.8, 'KESIMPULAN UTAMA', RED);
     const pts = S.main.slice(0, 5), step = 5.2 / pts.length;
@@ -536,11 +560,33 @@ async function anBuild(D, S, B) {
     pctBar(s, ['PS', 'Batal', 'Masih menunggu'], [GRN, RED, AMB], e => e.coh, { x: 4.72, y: 1.18, w: 3.9, h: 2.95, title: 'Status Order dari IO Periode Ini', showValue: true, dataLabelPosition: 'ctr', dataLabelColor: 'FFFFFF' });
     const pc = AN.PROD.filter((p, i) => sum(E.map(e => e.prod[i])) > 0), pi = pc.map(p => AN.PROD.indexOf(p));
     donutPair(s, 8.84, 1.12, 4.09, 3.05, 'Mix Produk PS', pc, pi.map(i => AN.PROD_C[i]), e => pi.map(i => e.prod[i]));
-    const tl = [['PS lewat agency', anJoin(E.map(e => anPs(e.agency))), 'porsi dari seluruh PS', DARK], ['PS paket 20 Mbps', anJoin(E.map(e => anPs(e.sp20))), 'porsi dari seluruh PS', DARK],
+    const tl = [['Rata-rata harga paket (ARPU)', anJoin(E.map(e => e.arpu ? 'Rp' + Math.round(e.arpu / 1000) + ' ribu' : '–')), 'dari semua order Februari sampai sekarang', DARK], ['PS paket 20 Mbps', anJoin(E.map(e => anPs(e.sp20))), 'porsi dari seluruh PS', DARK],
       ['Order batal per 100 IO', anJoin(E.map(e => anD(e.cancelPer100))), 'jumlah batal: ' + anJoin(E.map(e => e.coh[1])), RED], ['PS IndiHome Reguler', anJoin(E.map(e => anPs(e.ihReg))), 'porsi dari seluruh PS; tagihan bulanan lebih tinggi', AMB]];
     tl.forEach((v, i) => tile(s, 0.4 + (i % 2) * 3.2, 4.32 + Math.floor(i / 2) * 1.36, 3.08, 1.26, ...v));
     tx(s, 'Urutan angka di kotak: ' + names.join(' / '), { x: 0.4, y: 6.98, w: 6.3, h: 0.14, fontSize: 7, color: GREY, italic: true });
     syl(s, 6.92, 4.32, 6.01, 2.68, S.funnel);
+    foot(s);
+  }
+
+  // ── 3b. KENDALA ORDER ──
+  if (E.some(e => e.kendTot || sum((e.kend || []).map(x => x[1])))) {
+    const s = pres.addSlide({ masterName: 'AN' });
+    head(s, 'KENDALA ORDER', `Order dari IO ${D.label} yang tercatat ada kendala, dikelompokkan menjadi kendala teknik (jaringan), kendala pelanggan, dan kendala sistem`);
+    const KL = ['Teknik (jaringan)', 'Pelanggan', 'Sistem (aplikasi)'];
+    card(s, 0.4, 1.12, 6.2, 3.3);
+    bar(s, names, KL.map((l, i) => ({ name: l, values: E.map(e => e.kend[i][0] + e.kend[i][2]) })),
+      { x: 0.5, y: 1.18, w: 6.0, h: 3.2, title: 'Order kendala yang batal atau belum selesai, per jenis kendala', chartColors: [RED, AMB, GREY], dataLabelFontSize: 8 });
+    card(s, 6.72, 1.12, 6.21, 3.3, 'ALASAN KENDALA TERBANYAK', RED);
+    const rowsK = [];
+    E.forEach(e => e.kendTop.forEach(([al, n], i) => rowsK.push([i ? '' : anTitle(e.name), al, n])));
+    const hdr = ['Wilayah', 'Alasan (order batal atau belum selesai)', 'Jumlah order'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
+    s.addTable([hdr, ...rowsK.slice(0, k > 2 ? 10 : 12).map((r, i) => r.map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j === 2 ? 'center' : 'left' } })))],
+      { x: 6.85, y: 1.55, w: 5.95, colW: [1.5, 3.35, 1.1], rowH: 0.22, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.03 });
+    const tl = E.map(e => { const t = e.kend.map(x => x[0] + x[2]); const fin = sum(e.kend.map(x => x[1]));
+      return [anTitle(e.name), `${t[0]} / ${t[1]} / ${t[2]}`, `teknik / pelanggan / sistem · ${fin} order lain tetap jadi PS`, DARK]; });
+    const tw = Math.min(3.0, (6.2 - 0.1 * (k - 1)) / k);
+    tl.forEach((v, i) => tile(s, 0.4 + i * (tw + 0.1), 4.55, tw, 1.3, ...v));
+    syl(s, 6.72, 4.55, 6.21, 2.4, S.kendala);
     foot(s);
   }
 
@@ -632,7 +678,7 @@ async function anBuild(D, S, B) {
     const nc = 1 + 3 * k, cw0 = 1.3, cwi = (8.31 - cw0) / (3 * k);
     s.addTable([hdr, ...rowsK.map((r, i) => r.map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 0, align: j ? 'center' : 'left', color: j === 0 ? AN.KAT_C[i] === 'D9D9D9' ? GREY : AN.KAT_C[i] : DARK } })))],
       { x: 4.62, y: 4.32, w: 8.31, colW: [cw0, ...Array(nc - 1).fill(cwi)], rowH: 0.36, fontFace: F, fontSize: k > 3 ? 6.5 : 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
-    tx(s, 'Satu jadwal SF = satu SF yang dijadwalkan kunjungan pada satu tanggal. Satu jadwal desa = satu desa yang dijadwalkan dikunjungi pada satu tanggal. Dihitung sampai tanggal terakhir data realisasi yang sudah di-upload.',
+    tx(s, `Satu jadwal SF = satu SF yang dijadwalkan kunjungan pada satu tanggal. Satu jadwal desa = satu desa yang dijadwalkan dikunjungi pada satu tanggal. Dihitung sampai ${fl(t)}, tanggal terakhir data kunjungan yang sudah di-upload. Bila file DJP tanggal itu diunduh sebelum hari ditutup, angkanya masih bisa bertambah.`,
       { x: 4.62, y: 6.25, w: 8.31, h: 0.3, fontSize: 8, italic: true, color: GREY });
     foot(s);
   }
@@ -640,7 +686,7 @@ async function anBuild(D, S, B) {
   // ── 7. DRIVER TREE & GAP IO ──
   if (B) {
     const s = pres.addSlide({ masterName: 'AN' });
-    head(s, 'POHON PENYEBAB & KEKURANGAN IO', 'IO adalah hasil yang dikendalikan sales; faktor berwarna merah adalah penghambat utama. RE menjadi PS juga dipengaruhi jarak ke ODP, teknisi, dan cuaca.');
+    head(s, 'APA SAJA YANG MEMBENTUK IO, DAN BERAPA KEKURANGANNYA', 'Kotak berwarna merah adalah faktor yang paling menghambat. Perubahan RE menjadi PS juga dipengaruhi jarak ke ODP, teknisi, dan cuaca.');
     const n = B.drv.length, cw = Math.min(4.1, (12.53 - (n - 1) * 0.12) / n);
     B.drv.slice(0, 6).forEach((x, i) => {
       const xx = 0.4 + i * (cw + 0.12); card(s, xx, 1.12, cw, 3.25, x.name.toUpperCase(), E[i] ? E[i].color : RED);
@@ -702,14 +748,15 @@ async function anBuild(D, S, B) {
       ['Cadangan dan Skip', 'Desa dengan potensi lebih rendah; dikunjungi secukupnya.'], ['Kunjungan DJP', 'Satu SF datang ke satu desa pada satu tanggal. Diambil dari DJP_Realisasi_Baru untuk 3 bulan sebelum bulan laporan.'],
       ['Plan DJP', 'Jadwal kunjungan SF ke desa yang dibuat di menu Plan DJP dashboard (DJP_Plan).'],
       ['Perkiraan akhir bulan', 'Rata-rata per hari sejauh ini dikali jumlah hari dalam bulan.'], ['Target sampai hari ini', 'Target sebulan dibagi jumlah hari, dikali jumlah hari yang sudah berjalan.'],
-      ['Pohon penyebab', 'IO diuraikan ke faktor pembentuknya (jumlah SF, jumlah kunjungan, sasaran kunjungan, IO per kunjungan) untuk menemukan faktor penghambat.'],
+      ['Faktor pembentuk IO', 'IO diuraikan menjadi jumlah SF, jumlah kunjungan, sasaran kunjungan, dan IO per kunjungan, supaya terlihat faktor mana yang menghambat.'],
+      ['ARPU', 'Rata-rata harga paket per bulan dari order yang masuk.'], ['Kendala teknik, pelanggan, sistem', 'Teknik: jaringan belum siap (ODP penuh, jauh, tidak ada). Pelanggan: batal, tidak bisa dihubungi, alamat tidak ditemukan. Sistem: gangguan aplikasi order.'],
       ['Port kosong', 'Port ODP yang masih tersedia untuk pelanggan baru.'], ['Penetrasi', 'PS dibagi port ODP; menunjukkan seberapa banyak potensi yang sudah terambil.'],
       ['Sisa potensi desa', 'Belum tergarap: port kosong banyak, PS sedikit. Sudah tergarap: sebagian besar port sudah terisi. Perlu ditinjau: port hampir habis, atau sering dikunjungi tetapi tidak ada PS.'],
-      ['Alur analisa', 'Aturan umum, lalu fakta dari data, lalu kesimpulan yang ditarik dari keduanya.']];
+      ['Alur analisa', 'Kenapa hal itu penting, apa yang terjadi menurut data, dan artinya untuk kita.']];
     const half = Math.ceil(K.length / 2);
     [K.slice(0, half), K.slice(half)].forEach((col, ci) => {
       s.addTable(col.map((r, i) => [{ text: r[0], options: { bold: true, fill: { color: i % 2 ? 'FFFFFF' : BG } } }, { text: r[1], options: { fill: { color: i % 2 ? 'FFFFFF' : BG } } }]),
-        { x: 0.4 + ci * 6.33, y: 1.15, w: 6.2, colW: [1.7, 4.5], rowH: 0.7, fontFace: F, fontSize: 8.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.06 });
+        { x: 0.4 + ci * 6.33, y: 1.15, w: 6.2, colW: [1.7, 4.5], rowH: 0.6, fontFace: F, fontSize: 8, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.06 });
     });
     foot(s);
   }

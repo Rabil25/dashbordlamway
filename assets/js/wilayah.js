@@ -252,11 +252,11 @@ async function wlAnalisa(app, force) {
       key, label: D.label, djp: S.djpLbl, missing: S.missing, sisa: D.sisa,
       tiles: [
         ['PS ' + D.label, tot.ps, 'target ' + tot.tgt],
-        ['Outlook akhir bulan', tot.ol + ' (' + pct(tot.ol, tot.tgt) + ')', D.sisa + ' hari tersisa'],
-        ['PS / RE', pct(tot.ps, tot.re), 'IO ' + tot.io + ' · RE ' + tot.re],
-        ['Kunjungan DJP ' + S.djpLbl, tot.vis.toLocaleString('id-ID'), 'SF × desa × hari'],
-        ['PS dari desa ber-DJP', pct(tot.fromVis, tot.ps), tot.fromVis + ' dari ' + tot.ps + ' PS'],
-        ['Desa prioritas tersentuh', tot.prioT + ' / ' + tot.prio, tot.untouched + ' belum disentuh'],
+        ['Perkiraan PS akhir bulan', tot.ol + ' (' + pct(tot.ol, tot.tgt) + ')', D.sisa + ' hari tersisa'],
+        ['RE yang menjadi PS', pct(tot.ps, tot.re), 'IO ' + tot.io + ', RE ' + tot.re],
+        ['Kunjungan DJP ' + S.djpLbl, tot.vis.toLocaleString('id-ID'), '1 kunjungan = 1 SF ke 1 desa pada 1 tanggal'],
+        ['PS dari desa yang dikunjungi DJP', pct(tot.fromVis, tot.ps), tot.fromVis + ' dari ' + tot.ps + ' PS'],
+        ['Desa Prioritas yang sudah dikunjungi', tot.prioT + ' dari ' + tot.prio, tot.untouched + ' desa belum dikunjungi'],
       ],
       kab: E.map(e => ({
         name: e.name, ps: e.ps, tgt: e.tgtM, ol: e.ol, olp: Math.round(e.olAch || 0), drr: d1(e.drrM), need: d1(e.need), psre: Math.round(e.psre || 0),
@@ -265,11 +265,11 @@ async function wlAnalisa(app, force) {
         bucket: e.bucket.map(b => b.avg == null ? '–' : d1(b.avg)), bucketN: e.bucket.map(b => b.n),
         sfB: e.sfB.map(b => b.avg == null ? '–' : d1(b.avg)), sfBN: e.sfB.map(b => b.n), corr: e.corr == null ? '–' : (Math.round(e.corr * 100) / 100).toLocaleString('id-ID'),
         psKat: e.psKat.map(v => pct(v, e.ps)), prio: e.prio, untouched: e.prioUntouched.slice(0, 4).join(', '), untouchedN: e.prioUntouched.length,
-        jenuh: e.saturated.map(s => `${s.desa} (${s.v} kunj., ${s.ps} PS)`).join(', '), skipPS: e.skipProd.map(s => `${s.desa} (${s.ps} PS)`).join(', '),
-        watch: e.watch.map(w => `${w.n} (${w.v} kunj.)`).join(', '), plan: e.planCur,
+        jenuh: e.saturated.map(s => `${s.desa} (${s.v} kunjungan, ${s.ps} PS)`).join(', '), skipPS: e.skipProd.map(s => `${s.desa} (${s.ps} PS)`).join(', '),
+        watch: e.watch.map(w => `${w.n} (${w.v} kunjungan)`).join(', '), plan: e.planCur,
       })),
       bucketL: (E[0] || {}).bucketL || [], sfBL: (E[0] || {}).sfBL || [], months: D.djpM.map(m => periodLabel(m) + (D.availM.includes(m) ? '' : ' (n/a)')),
-      syl: [['Pencapaian', S.pace], ['Funnel order', S.funnel], ['DJP 3 bulan → PS (wilayah desa)', S.djp], ['SF & teritori', S.sf], ['Kategori desa & plan', S.prio], ['Kesimpulan', S.final]],
+      syl: [['Pencapaian', S.pace], ['Alur order', S.funnel], ['Kendala order', S.kendala], ['Kunjungan DJP 3 bulan dan PS per desa', S.djp], ['SF dan desa wilayah kerjanya', S.sf], ['Kategori desa dan plan', S.prio], ['Kesimpulan', S.final]],
       main: S.main.map(m => m.join('')), actions: S.actions,
     };
     Object.assign(obj, await wlBizAnalysis(app, D, E));

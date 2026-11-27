@@ -491,7 +491,7 @@
             <tr><td>MoM</td><td><strong>Month over Month</strong> — Perbandingan aktual bulan ini vs bulan sebelumnya (rentang tanggal sama)</td></tr>
             <tr><td>WoW</td><td><strong>Week over Week</strong> — Perbandingan minggu ini vs minggu lalu</td></tr>
             <tr><td>LOS</td><td><strong>Length of Stay</strong> — Masa kerja SF (dalam bulan/hari)</td></tr>
-            <tr><td>PS/RE</td><td>Rasio konversi Register menjadi Put in Service (dalam %)</td></tr>
+            <tr><td>RE yang menjadi PS</td><td>Rasio konversi Register menjadi Put in Service (dalam %)</td></tr>
             <tr><td>RE/IO</td><td>Rasio konversi Input Order menjadi Register (dalam %)</td></tr>
             <tr><td>SF</td><td><strong>Sales Force</strong> — Tenaga penjual lapangan</td></tr>
             <tr><td>STO</td><td><strong>Sentral Telepon Otomat</strong> — Lokasi/titik jaringan IndiHome</td></tr>
@@ -706,7 +706,7 @@
                 <th>PS / Target</th>
                 <th>ACV PS</th>
                 <th>RE</th>
-                <th>PS/RE</th>
+                <th>RE yang menjadi PS</th>
                 <th>IO</th>
                 <th>Δ MoM</th>
               </tr>
@@ -952,7 +952,7 @@
                   <th style="text-align:right">RE</th>
                   <th style="text-align:right">PS</th>
                   <th style="min-width:110px">ACV%</th>
-                  <th style="text-align:right">PS/RE</th>
+                  <th style="text-align:right">RE yang menjadi PS</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -1299,7 +1299,7 @@
           <div class="section-hdr" style="margin-top:6px">
             <div>
               <div class="section-title" x-text="'Analisa Wilayah · ' + cluster"></div>
-              <div class="section-sub" x-text="wlAn && !wlAn.error ? ('PS ' + wlAn.label + ' vs kunjungan DJP ' + wlAn.djp + ' · per kabupaten · silogisme') : 'PS bulan aktif vs DJP 3 bulan sebelumnya'"></div>
+              <div class="section-sub" x-text="wlAn && !wlAn.error ? ('PS ' + wlAn.label + ' dibanding kunjungan DJP ' + wlAn.djp + ' · per kabupaten') : 'PS bulan aktif vs DJP 3 bulan sebelumnya'"></div>
             </div>
             <button type="button" class="btn btn-outline" @click="wlAnalisa($data, true)" :disabled="wlAnBusy" x-text="wlAnBusy ? 'Menghitung…' : '↻ Hitung ulang'"></button>
           </div>
@@ -1328,24 +1328,24 @@
                 </template>
               </div>
 
-              <div class="card"><div class="card-title">① Driver Tree — faktor pembentuk PS</div>
-                <div class="card-subtitle">IO tepat sasaran = SF aktif × kunjungan/SF × % kunjungan ke Prioritas+Strategis × IO per kunjungan. RE→PS ditampilkan sebagai hasil (dipengaruhi tarikan ODP, teknisi, cuaca). Merah = penahan.</div>
+              <div class="card"><div class="card-title">① Apa saja yang membentuk IO dan PS</div>
+                <div class="card-subtitle">IO dipengaruhi jumlah SF yang turun, jumlah kunjungan tiap SF, berapa banyak kunjungan ke desa Prioritas dan Strategis, dan berapa IO yang didapat per kunjungan. Perubahan RE menjadi PS juga dipengaruhi jarak ke ODP, teknisi, dan cuaca. Kotak merah adalah faktor yang paling menghambat.</div>
                 <div class="wla-drv">
                   <template x-for="x in wlAn.drv" :key="x.name">
                     <div class="wla-drvcol"><div class="wla-drvh" x-text="x.name"></div>
-                      <template x-for="r in x.rows" :key="r.k"><div class="wla-drvrow" :class="'st-' + r.st"><span x-text="r.label"></span><b x-text="r.val"></b><small x-text="'acuan ' + r.ref"></small></div></template>
+                      <template x-for="r in x.rows" :key="r.k"><div class="wla-drvrow" :class="'st-' + r.st"><span x-text="r.label"></span><b x-text="r.val"></b><small x-text="'pembanding: ' + r.ref"></small></div></template>
                     </div>
                   </template>
                 </div>
               </div>
 
-              <div class="card"><div class="card-title">② Gap Analysis IO — kekurangan IO & ketepatan lokasi</div>
-                <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>Target IO</th><th>IO periode ini</th><th>Outlook IO</th><th>Gap IO</th><th>IO lokasi potensial</th><th>Butuh IO potensial</th><th>PS (hasil)</th><th>Penjelasan</th></tr></thead>
+              <div class="card"><div class="card-title">② Kekurangan IO sampai akhir bulan</div>
+                <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>Target IO</th><th>IO sejauh ini</th><th>Perkiraan IO akhir bulan</th><th>Kekurangan IO</th><th>IO dari desa Prioritas dan Strategis</th><th>Tambahan IO yang dibutuhkan dari desa tersebut</th><th>PS / target PS</th><th>Penjelasan</th></tr></thead>
                 <tbody><template x-for="g in wlAn.gap" :key="g.name"><tr><td x-text="g.name"></td><td x-text="g.tgt"></td><td x-text="g.mtd"></td><td x-text="g.ol"></td><td x-text="g.gap" :style="g.gap?'color:var(--danger);font-weight:700':''"></td><td x-text="g.pot + ' (' + g.potShare + '%)'"></td><td x-text="g.potGap ? ('+' + g.potGap) : '–'"></td><td x-text="g.ps + ' / ' + g.psTgt"></td><td class="wla-txt" x-text="g.txt"></td></tr></template></tbody></table></div>
               </div>
 
-              <div class="card"><div class="card-title">③ Desa Prioritas &amp; Strategis — masih ada sisa atau tidak?</div>
-                <div class="card-subtitle">Sisa = port avai yang belum jadi PS. ★ = desa Strategis.</div>
+              <div class="card"><div class="card-title">③ Desa Prioritas &amp; Strategis: apakah masih ada peluang?</div>
+                <div class="card-subtitle">Sisa port = port ODP yang masih kosong dikurangi PS. Tanda (Strategis) = desa berpotensi tinggi tetapi jauh dari kantor.</div>
                 <div class="wla-mx wla-mx3">
                   <template x-for="q in wlAn.matrix" :key="q.k">
                     <div class="wla-q" :style="'border-color:' + q.c">
@@ -1358,12 +1358,12 @@
                 </div>
               </div>
 
-              <div class="card"><div class="card-title">④ Jadwal desa Strategis (potensi tinggi, jauh)</div>
-                <div class="card-subtitle">Desa Strategis yang dikunjungi &lt; 2 kali/bulan, dikelompokkan per kecamatan → satu hari kunjungan per kelompok.</div>
+              <div class="card"><div class="card-title">④ Jadwal khusus desa Strategis (potensi tinggi, tetapi jauh)</div>
+                <div class="card-subtitle">Desa Strategis yang dikunjungi kurang dari 2 kali per bulan, dikelompokkan per kecamatan. Satu kelompok cukup dikunjungi dalam satu hari.</div>
                 <div class="wla-diag">
                   <template x-for="t in wlAn.strat" :key="t.name">
-                    <div class="wla-strat"><b x-text="t.name"></b> <small x-text="t.kurang + ' dari ' + t.total + ' desa strategis kurang dikunjungi'"></small>
-                      <ul><template x-for="gp in t.grup" :key="gp.kec"><li><b x-text="'Kec. ' + gp.kec"></b> <span x-text="'(±' + gp.jarak + ' km, avai ' + gp.avai + '): ' + gp.desa.join(', ')"></span></li></template></ul>
+                    <div class="wla-strat"><b x-text="t.name"></b> <small x-text="t.kurang + ' dari ' + t.total + ' desa Strategis jarang dikunjungi'"></small>
+                      <ul><template x-for="gp in t.grup" :key="gp.kec"><li><b x-text="'Kecamatan ' + gp.kec"></b> <span x-text="'(sekitar ' + gp.jarak + ' km, ' + gp.avai + ' port kosong): ' + gp.desa.join(', ')"></span></li></template></ul>
                     </div>
                   </template>
                 </div>
@@ -1371,24 +1371,24 @@
 
               <div class="wla-sec" style="margin-top:14px">Data pendukung</div>
               <div class="wla-grid">
-                <div class="card"><div class="card-title">Pencapaian & funnel per kabupaten</div>
-                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>PS</th><th>Target</th><th>Outlook</th><th>DRR / butuh</th><th>PS/RE</th><th>Batal</th><th>Pending</th></tr></thead>
+                <div class="card"><div class="card-title">Pencapaian dan alur order per kabupaten</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>PS</th><th>Target</th><th>Perkiraan akhir bulan</th><th>PS per hari: rata-rata / dibutuhkan</th><th>RE yang menjadi PS</th><th>Batal</th><th>Masih menunggu</th></tr></thead>
                   <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><td x-text="k.ps"></td><td x-text="k.tgt"></td><td x-text="k.ol + ' (' + k.olp + '%)'" :style="k.olp>=100?'color:var(--success)':'color:var(--danger)'"></td><td x-text="k.drr + ' / ' + k.need"></td><td x-text="k.psre + '%'"></td><td x-text="k.batal"></td><td x-text="k.pend"></td></tr></template></tbody></table></div>
                 </div>
-                <div class="card"><div class="card-title">Kunjungan DJP (SF × desa × hari)</div>
-                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="m in wlAn.months" :key="m"><th x-text="m"></th></template><th>SF</th><th>Kunj/SF/bln</th><th>Desa/SF</th><th>Ke prioritas</th></tr></thead>
+                <div class="card"><div class="card-title">Kunjungan DJP (1 kunjungan = 1 SF datang ke 1 desa pada 1 tanggal)</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="m in wlAn.months" :key="m"><th x-text="m"></th></template><th>SF</th><th>Kunjungan per SF per bulan</th><th>Desa per SF</th><th>Ke desa Prioritas</th></tr></thead>
                   <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><template x-for="(v,i) in k.visM" :key="i"><td x-text="v"></td></template><td x-text="k.sfDJP"></td><td x-text="k.visSf"></td><td x-text="k.desaSf"></td><td x-text="(k.prioVis ?? '–') + '%'"></td></tr></template></tbody></table></div>
                 </div>
-                <div class="card"><div class="card-title">Rata-rata PS per desa menurut frekuensi kunjungan / bulan</div>
-                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="b in wlAn.bucketL" :key="b"><th x-text="b"></th></template><th>PS dari desa ber-DJP</th><th>PS oleh SF di desa garapannya</th></tr></thead>
+                <div class="card"><div class="card-title">Rata-rata PS per desa, menurut jumlah kunjungan per bulan</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="b in wlAn.bucketL" :key="b"><th x-text="b"></th></template><th>PS dari desa yang dikunjungi DJP</th><th>PS oleh SF di desa yang ia kunjungi</th></tr></thead>
                   <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><template x-for="(v,i) in k.bucket" :key="i"><td><span x-text="v"></span><small class="wla-n" x-text="'(' + k.bucketN[i] + ' desa)'"></small></td></template><td x-text="k.fromVis"></td><td x-text="k.samePair"></td></tr></template></tbody></table></div>
                 </div>
-                <div class="card"><div class="card-title">SF: rata-rata PS menurut kunjungan / bulan</div>
-                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="b in wlAn.sfBL" :key="b"><th x-text="b"></th></template><th>Korelasi</th></tr></thead>
+                <div class="card"><div class="card-title">SF: rata-rata PS menurut jumlah kunjungan per bulan</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><template x-for="b in wlAn.sfBL" :key="b"><th x-text="b"></th></template><th>Hubungan kunjungan dan PS (0 sampai 1)</th></tr></thead>
                   <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><template x-for="(v,i) in k.sfB" :key="i"><td><span x-text="v"></span><small class="wla-n" x-text="'(' + k.sfBN[i] + ' SF)'"></small></td></template><td x-text="k.corr"></td></tr></template></tbody></table></div>
                 </div>
-                <div class="card wla-wide"><div class="card-title">Kategori desa: sumbangan PS & cakupan</div>
-                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>PS Prioritas</th><th>Strategis</th><th>Cadangan</th><th>Skip</th><th>Prioritas tersentuh</th><th>Belum disentuh</th><th>Desa jenuh</th><th>Skip tapi ada PS</th><th>Plan bln ini</th></tr></thead>
+                <div class="card wla-wide"><div class="card-title">Kategori desa: porsi PS dan desa yang sudah dikunjungi</div>
+                  <div class="tbl-wrap" style="box-shadow:none;border:0"><table><thead><tr><th>Kabupaten</th><th>PS dari desa Prioritas</th><th>Strategis</th><th>Cadangan</th><th>Skip</th><th>Desa Prioritas yang dikunjungi</th><th>Desa Prioritas belum dikunjungi</th><th>Sering dikunjungi, PS sedikit</th><th>Desa Skip yang ada PS</th><th>Kunjungan di plan bulan ini</th></tr></thead>
                   <tbody><template x-for="k in wlAn.kab" :key="k.name"><tr><td x-text="k.name"></td><template x-for="(v,i) in k.psKat" :key="i"><td x-text="v"></td></template><td x-text="k.prio[1] + ' / ' + k.prio[0]"></td><td class="wla-txt" x-text="k.untouchedN ? (k.untouchedN + ': ' + k.untouched) : '–'"></td><td class="wla-txt" x-text="k.jenuh || '–'"></td><td class="wla-txt" x-text="k.skipPS || '–'"></td><td x-text="k.plan"></td></tr></template></tbody></table></div>
                 </div>
               </div>
@@ -1396,9 +1396,9 @@
               <div class="wla-syl">
                 <template x-for="s in wlAn.syl" :key="s[0]">
                   <div class="card wla-sylcard"><div class="card-title" x-text="s[0]"></div>
-                    <div class="wla-p"><b>Premis mayor</b><span x-text="s[1][0]"></span></div>
-                    <div class="wla-p"><b>Premis minor</b><span x-text="s[1][1]"></span></div>
-                    <div class="wla-p wla-c"><b>Kesimpulan</b><span x-text="s[1][2]"></span></div>
+                    <div class="wla-p"><b>Kenapa penting</b><span x-text="s[1][0]"></span></div>
+                    <div class="wla-p"><b>Yang terjadi</b><span x-text="s[1][1]"></span></div>
+                    <div class="wla-p wla-c"><b>Artinya</b><span x-text="s[1][2]"></span></div>
                   </div>
                 </template>
               </div>
@@ -1409,25 +1409,25 @@
               </div>
               <details class="card wla-kamus"><summary class="card-title">📖 Kamus istilah analisa</summary>
                 <dl>
-                  <dt>IO (Input Order)</dt><dd>Order yang diinput sales. Satu-satunya hasil yang dikontrol penuh oleh sales, jadi menjadi tuas utama.</dd>
-                  <dt>RE (Register)</dt><dd>IO yang lolos registrasi/validasi.</dd>
-                  <dt>PS (Put In Service)</dt><dd>Layanan aktif terpasang. Dipengaruhi faktor di luar sales: jarak rumah ke ODP (tarikan maks. 250 m), jumlah teknisi, cuaca, dll.</dd>
-                  <dt>Lokasi potensial</dt><dd>Desa kategori Prioritas + Strategis. Acuan: ≥70% IO berasal dari desa ini.</dd>
-                  <dt>Prioritas</dt><dd>Desa potensi tinggi dan dekat kantor — digarap rutin.</dd>
-                  <dt>Strategis</dt><dd>Desa potensi tinggi tapi jauh — tetap wajib digarap dengan jadwal khusus per kecamatan.</dd>
-                  <dt>Cadangan / Skip</dt><dd>Desa potensi lebih rendah — kunjungan secukupnya / tidak diprioritaskan.</dd>
-                  <dt>Kunjungan DJP</dt><dd>1 SF × 1 desa × 1 hari (ODP hanya alat check-in). Dihitung dari 3 bulan sebelum bulan PS (M-1…M-3), karena keputusan berlangganan butuh waktu.</dd>
-                  <dt>DRR</dt><dd>Daily Run Rate: rata-rata per hari bulan berjalan.</dd>
-                  <dt>Outlook</dt><dd>Proyeksi akhir bulan = DRR × jumlah hari dalam bulan.</dd>
-                  <dt>Driver Tree</dt><dd>Pohon pemicu: memecah hasil (IO) menjadi faktor-faktor pembentuknya untuk menemukan faktor penahan.</dd>
-                  <dt>Faktor penahan</dt><dd>Faktor yang dikontrol sales dengan nilai paling jauh di bawah acuan (standar atau rata-rata cluster).</dd>
-                  <dt>Gap Analysis</dt><dd>Selisih target dan outlook, diurai ke sumbernya (kurang kunjungan, salah lokasi, kebocoran).</dd>
-                  <dt>Port avai</dt><dd>Port ODP yang masih tersedia = potensi pelanggan baru.</dd>
-                  <dt>Penetrasi</dt><dd>PS ÷ port avai — seberapa banyak potensi desa yang sudah terambil.</dd>
-                  <dt>Sisa potensi</dt><dd>Untuk desa Prioritas/Strategis: 🔴 belum tergarap (port masih banyak, PS sedikit) · 🟢 sudah tergarap · ⚠️ perlu ditinjau (port hampir habis atau sering dikunjungi tapi PS 0).</dd>
-                  <dt>Desa jenuh</dt><dd>Sering dikunjungi tetapi hasilnya ≤1 — kunjungan sebaiknya dialihkan.</dd>
-                  <dt>Silogisme</dt><dd>Premis mayor (aturan umum) + premis minor (fakta data) → kesimpulan.</dd>
-                  <dt>★</dt><dd>Penanda desa Strategis di daftar desa.</dd>
+                  <dt>IO (Input Order)</dt><dd>Order yang diinput sales. Satu-satunya hasil yang sepenuhnya dikendalikan sales.</dd>
+                  <dt>RE (Registrasi)</dt><dd>IO yang sudah lolos registrasi dan validasi.</dd>
+                  <dt>PS (Put In Service)</dt><dd>Layanan sudah terpasang dan aktif. Juga dipengaruhi hal di luar sales: jarak rumah ke ODP (maksimal 250 meter), jumlah teknisi, dan cuaca.</dd>
+                  <dt>Desa Prioritas dan Strategis</dt><dd>Desa berpotensi tinggi. Standarnya, minimal 70% IO berasal dari desa-desa ini.</dd>
+                  <dt>Prioritas</dt><dd>Desa berpotensi tinggi dan dekat kantor; dikunjungi rutin.</dd>
+                  <dt>Strategis</dt><dd>Desa berpotensi tinggi tetapi jauh dari kantor; dikunjungi lewat jadwal khusus per kecamatan.</dd>
+                  <dt>Cadangan dan Skip</dt><dd>Desa dengan potensi lebih rendah; dikunjungi secukupnya.</dd>
+                  <dt>Kunjungan DJP</dt><dd>Satu SF datang ke satu desa pada satu tanggal. Diambil dari 3 bulan sebelum bulan PS, karena orang butuh waktu sebelum memutuskan berlangganan.</dd>
+                  <dt>Perkiraan akhir bulan</dt><dd>Rata-rata per hari sejauh ini dikali jumlah hari dalam bulan.</dd>
+                  <dt>Faktor pembentuk IO</dt><dd>IO diuraikan menjadi jumlah SF, jumlah kunjungan, sasaran kunjungan, dan IO per kunjungan, supaya terlihat faktor mana yang paling menghambat.</dd>
+                  <dt>Faktor penghambat</dt><dd>Faktor yang bisa dikendalikan sales dan nilainya paling jauh di bawah pembanding (standar atau rata-rata cluster).</dd>
+                  <dt>Kekurangan IO</dt><dd>Selisih antara target IO dan perkiraan IO akhir bulan.</dd>
+                  <dt>Port kosong</dt><dd>Port ODP yang masih tersedia untuk pelanggan baru.</dd>
+                  <dt>Penetrasi</dt><dd>PS dibagi port ODP; menunjukkan seberapa banyak potensi desa yang sudah terambil.</dd>
+                  <dt>Sisa potensi</dt><dd>Untuk desa Prioritas dan Strategis: 🔴 belum tergarap (port kosong masih banyak, PS sedikit), 🟢 sudah tergarap, ⚠️ perlu ditinjau (port hampir habis, atau sering dikunjungi tetapi tidak ada PS).</dd>
+                  <dt>Desa yang sering dikunjungi tetapi PS sedikit</dt><dd>Kunjungannya banyak tetapi hasilnya paling banyak 1 PS; kunjungan sebaiknya dialihkan ke desa lain.</dd>
+                  <dt>ARPU</dt><dd>Rata-rata harga paket per bulan dari order yang masuk.</dd>
+                  <dt>Kendala teknik, pelanggan, sistem</dt><dd>Teknik: jaringan belum siap (ODP penuh, jauh, tidak ada). Pelanggan: batal, tidak bisa dihubungi, alamat tidak ditemukan. Sistem: gangguan aplikasi order.</dd>
+                  <dt>Alur analisa</dt><dd>Kenapa hal itu penting, apa yang terjadi menurut data, dan artinya untuk kita.</dd>
                 </dl>
               </details>
             </div>
@@ -2023,7 +2023,7 @@
                     <th style="text-align:right">RE</th>
                     <th style="text-align:right">PS</th>
                     <th style="min-width:110px">ACV%</th>
-                    <th style="text-align:right">PS/RE</th>
+                    <th style="text-align:right">RE yang menjadi PS</th>
                     <th>Action</th>
                   </tr>
                 </thead>
