@@ -348,9 +348,9 @@ async function wlBizAnalysis(app, D, E) {
   Q.belum.sort((a, b) => (b.avai - b.ps) - (a.avai - a.ps)); Q.sudah.sort((a, b) => b.ps - a.ps); Q.tinjau.sort((a, b) => b.vis - a.vis); Q.kurangi.sort((a, b) => b.vis - a.vis);
   const lbl = x => `${x.desa}${x.kat === 'strategis' ? ' (Strategis)' : ''}: sisa ${Math.max(0, x.avai - x.ps)} port, ${x.ps} PS, ${x.vis} kunjungan`;
   const matrix = [
-    { k: 'belum', t: '🔴 Belum tergarap', s: 'Port masih banyak, PS sedikit', c: '#a8231c', act: 'Kejar IO di desa ini (desa Strategis lewat jadwal khusus).' },
+    { k: 'belum', t: '🔴 Belum tergarap', s: 'Port kosong masih banyak, PS sedikit', c: '#a8231c', act: 'Kejar IO di desa ini (desa Strategis lewat jadwal khusus).' },
     { k: 'sudah', t: '🟢 Sudah tergarap', s: 'Sebagian besar potensi sudah terambil', c: '#3f7d3a', act: 'Cukup dijaga; dorong pelanggan lama memberi referensi pelanggan baru.' },
-    { k: 'tinjau', t: '⚠️ Perlu ditinjau', s: 'Port hampir habis, atau sering dikunjungi tapi PS 0', c: '#c0622a', act: 'Cek ulang kategori desa & ketersediaan ODP.' },
+    { k: 'tinjau', t: '⚠️ Perlu ditinjau', s: 'Port hampir habis, atau sering dikunjungi tetapi belum ada PS', c: '#c0622a', act: 'Cek ulang kategori desa dan apakah ODP-nya masih cukup.' },
   ].map(q => ({ ...q, n: Q[q.k].length, top: Q[q.k].slice(0, 6).map(lbl) }));
   const mx = { avai: mA, pen: d1(mP * 100) };
 

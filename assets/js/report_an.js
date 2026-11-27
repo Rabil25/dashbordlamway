@@ -369,9 +369,9 @@ function anAnalyze(D) {
   // kesimpulan utama
   const wo = worst(e => mg ? e.drr - e.need : e.olAch);
   S.main = [];
-  S.main.push([`IO (sepenuhnya dikendalikan sales), perkiraan akhir bulan dibanding target: ${per(e => anPs(Math.round(e.ioOlAch || 0)))}.`, ` Porsi IO dari desa Prioritas dan Strategis: ${per(e => anPs(Math.round(e.ioPotShare || 0)))} (standar minimal 70%). Paling perlu dorongan: ${nm(worst(e => e.ioOlAch))}, butuh ${anD(worst(e => e.ioOlAch).ioNeed)} IO per hari sampai akhir bulan.`]);
+  S.main.push([`IO: perkiraan akhir bulan dibanding target: ${per(e => anPs(Math.round(e.ioOlAch || 0)))}.`, ` Porsi IO dari desa Prioritas dan Strategis: ${per(e => anPs(Math.round(e.ioPotShare || 0)))} (standar minimal 70%). Paling perlu dorongan: ${nm(worst(e => e.ioOlAch))}, butuh ${anD(worst(e => e.ioOlAch).ioNeed)} IO per hari sampai akhir bulan.`]);
   if (mg) S.main.push([`Momentum minggu ini: ${E.map(e => `${nm(e)} ${anSg(anP(e.ps - e.ps0, e.ps0))}`).join(', ')}.`, ` Paling perlu dorongan: ${nm(wo)} (butuh ${anD(wo.need)} PS per hari sampai akhir bulan).`]);
-  else S.main.push([`PS (hasil akhir), perkiraan akhir bulan dibanding target: ${per(e => anPs(Math.round(e.olAch)))}.`, D.sisa ? ` Perkiraan terendah: ${nm(wo)}.` : '']);
+  else S.main.push([`PS (hasil akhir), perkiraan akhir bulan dibanding target: ${per(e => anPs(Math.round(e.olAch)))}.`, D.sisa ? (E.every(e => (e.olAch || 0) >= 100) ? ' Semua wilayah diperkirakan melampaui target.' : ` Perkiraan terendah: ${nm(wo)}.`) : '']);
   S.main.push([gap >= 3 ? `Di ${nm(wf)}, banyak order tertahan setelah lolos registrasi.` : 'Order yang sudah lolos registrasi umumnya menjadi PS.', ` Persentase RE yang menjadi PS: ${per(e => anPs(Math.round(e.psre || 0)))}; ${sum(E.map(e => e.coh[2]))} order masih menunggu pemasangan (perlu bantuan teknisi).`]);
   S.main.push([`Kunjungan DJP ${djpLbl}:`, ` ${anPs(anP(sum(E.map(e => e.psFromVis)), totPS))} PS bulan ini berasal dari desa yang dikunjungi dalam 3 bulan tersebut${satur.length ? '; beberapa desa sudah sering dikunjungi tetapi PS-nya sedikit' : ''}.`]);
   S.main.push(['Rata-rata PS per SF menurut jumlah kunjungannya:', ` SF dengan lebih dari 25 kunjungan per bulan ${per(e => nv(e.sfB[3].avg))} PS; SF dengan 1–10 kunjungan per bulan ${per(e => nv(e.sfB[1].avg))} PS.`]);
@@ -496,7 +496,7 @@ async function anBuild(D, S, B) {
           mg ? ['Capaian target minggu ini', anPs(Math.round(e.ach)), `target minggu ini ${anD(e.tgtW, 0)} PS`, e.ach >= 100 ? GRN : RED]
             : ['Dibanding tanggal yang sama bulan lalu', anSg(anP(e.ps - e.ps0, e.ps0)), `dari ${e.ps0} menjadi ${e.ps} PS`, e.ps >= e.ps0 ? GRN : RED],
           ['RE yang menjadi PS', anPs(Math.round(e.psre || 0)), `IO ${e.io}, RE ${e.re}`, (e.psre || 0) >= 80 ? GRN : AMB],
-          ['PS per hari yang dibutuhkan', anD(e.need), `untuk ${D.sisa} hari tersisa`, e.need > e.drrM ? RED : GRN],
+          e.mtd >= e.tgtM ? ['PS per hari yang dibutuhkan', 'Target tercapai', `PS sudah ${e.mtd} dari target ${e.tgtM}`, GRN] : ['PS per hari yang dibutuhkan', anD(e.need), `untuk ${D.sisa} hari tersisa`, e.need > e.drrM ? RED : GRN],
           e.disc && e.disc.sfPlan ? ['Jadwal SF di plan yang terlaksana', anPs(e.disc.sfPct), `${e.disc.sfHit} dari ${e.disc.sfPlan} jadwal bulan ini`, e.disc.sfPct >= 80 ? GRN : e.disc.sfPct >= 50 ? AMB : RED]
             : [`Kunjungan DJP ${S.djpLbl}`, anI(e.vis), `oleh ${e.sfDJP} SF ke ${e.desaTouched} desa`, DARK],
           ['PS dari desa yang dikunjungi DJP', anPs(anP(e.psFromVis, e.ps)), `${e.psFromVis} dari ${e.ps} PS`, DARK],
@@ -535,7 +535,7 @@ async function anBuild(D, S, B) {
     card(s, 0.4, 1.12, 6.15, 2.95);
     const ml = D.trendM.map((m, i) => anMonthShort(m) + (i === 4 && D.refDay < D.days ? ' (perkiraan)' : ''));
     s.addChart(pres.charts.LINE, E.map(e => ({ name: e.short, labels: ml, values: [...e.monthly.slice(0, 4), D.refDay < D.days ? e.ol : e.monthly[4]] })),
-      { x: 0.5, y: 1.18, w: 5.95, h: 2.85, ...ax, title: 'PS per Bulan' + (D.refDay < D.days ? ' (bulan berjalan: perkiraan akhir bulan = rata-rata PS per hari × jumlah hari)' : ''), chartColors: cols, lineSize: 2.5, lineDataSymbolSize: 7,
+      { x: 0.5, y: 1.18, w: 5.95, h: 2.85, ...ax, title: 'PS per Bulan' + (D.refDay < D.days ? ' (bulan ini: perkiraan sampai akhir bulan)' : ''), chartColors: cols, lineSize: 2.5, lineDataSymbolSize: 7,
         showValue: true, dataLabelPosition: 't', dataLabelColor: DARK });
     card(s, 6.78, 1.12, 6.15, 2.95);
     if (mg) bar(s, names, [{ name: 'Minggu lalu', values: E.map(e => e.ps0) }, { name: 'Minggu ini', values: E.map(e => e.ps) }, { name: 'Target 7 hari', values: E.map(e => Math.round(e.tgtW)) }],
@@ -698,7 +698,7 @@ async function anBuild(D, S, B) {
         tx(s, r.val, { x: xx + cw - 0.95, y: yy, w: 0.8, h: 0.32, fontSize: n > 3 ? 9 : 11, bold: true, color: c, align: 'right', valign: 'middle' });
       });
     });
-    tx(s, '* RE→PS dipengaruhi faktor di luar kendali penuh sales; tidak dipilih sebagai faktor penahan.', { x: 0.4, y: 4.38, w: 12, h: 0.2, fontSize: 7, color: GREY, italic: true });
+    tx(s, '* Perubahan RE menjadi PS juga dipengaruhi hal di luar kendali sales, jadi tidak dipilih sebagai faktor penghambat.', { x: 0.4, y: 4.38, w: 12, h: 0.2, fontSize: 7, color: GREY, italic: true });
     const hdr = ['Wilayah', 'Target IO', 'IO sejauh ini', 'Perkiraan IO akhir bulan', 'Kekurangan IO', 'IO dari desa Prioritas dan Strategis', 'Tambahan IO yang dibutuhkan dari desa tersebut', 'PS / target PS', 'Penjelasan'].map(t => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: RED } } }));
     s.addTable([hdr, ...B.gap.map((g, i) => [g.name, g.tgt, g.mtd, g.ol, g.gap, `${g.pot} (${g.potShare}%)`, g.potGap ? '+' + g.potGap : '–', `${g.ps}/${g.psTgt}`, ((B.diag[i] || {}).lines || []).slice(1, 3).map(l => l[1]).join(' ')].map((v, j) => ({ text: String(v), options: { fill: { color: i % 2 ? 'FFFFFF' : BG }, bold: j === 4 && g.gap > 0, color: j === 4 && g.gap > 0 ? RED : DARK } })))],
       { x: 0.4, y: 4.62, w: 12.53, colW: [1.3, 0.75, 0.75, 0.8, 0.65, 1.15, 1.0, 0.75, 5.38], rowH: 0.36, fontFace: F, fontSize: n > 3 ? 6.5 : 7.5, color: DARK, border: { type: 'solid', pt: 0.5, color: 'E3E3E3' }, valign: 'middle', margin: 0.04 });
@@ -713,7 +713,7 @@ async function anBuild(D, S, B) {
       s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: xx, y: yy, w: 7.25, h: 1.85, rectRadius: 0.06, fill: { color: 'FFFFFF' }, line: { color: col, width: 2 } });
       tx(s, [{ text: q.t.replace(/^\S+\s/, ''), options: { bold: true, color: col, fontSize: 12 } }, { text: `   ${q.n} desa · ${q.s}`, options: { color: GREY, fontSize: 8.5 } }], { x: xx + 0.15, y: yy + 0.08, w: 7, h: 0.3 });
       tx(s, q.top.slice(0, 4).map((t, j) => ({ text: t, options: { bullet: true, breakLine: j < Math.min(3, q.top.length - 1) } })), { x: xx + 0.15, y: yy + 0.4, w: 7, h: 1.05, fontSize: 7.5, color: DARK, valign: 'top', paraSpaceAfter: 2 });
-      tx(s, '→ ' + q.act, { x: xx + 0.15, y: yy + 1.48, w: 7, h: 0.3, fontSize: 8, bold: true, color: col, valign: 'top', fit: 'shrink' });
+      tx(s, 'Yang perlu dilakukan: ' + q.act, { x: xx + 0.15, y: yy + 1.48, w: 7, h: 0.3, fontSize: 8, bold: true, color: col, valign: 'top', fit: 'shrink' });
     });
     card(s, 7.82, 1.12, 5.11, 5.8, 'JADWAL KHUSUS DESA STRATEGIS YANG JARANG DIKUNJUNGI', RED);
     const lines = [];
